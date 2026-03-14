@@ -21,9 +21,9 @@
 
 ### Knowledge Base
 
-- [ ] **KB-01**: База практик восстановления для каждого типа энергии
-- [ ] **KB-02**: Список факторов расхода для каждого типа энергии
-- [ ] **KB-03**: Правила: нельзя путать способы восстановления (физ выгорание != мотивация)
+- [x] **KB-01**: База практик восстановления для каждого типа энергии
+- [x] **KB-02**: Список факторов расхода для каждого типа энергии
+- [x] **KB-03**: Правила: нельзя путать способы восстановления (физ выгорание != мотивация)
 
 ### Infrastructure
 
@@ -65,9 +65,9 @@
 | INFRA-03 | Phase 1 | Complete |
 | INFRA-04 | Phase 1 | Complete |
 | INFRA-05 | Phase 1 | Complete |
-| KB-01 | Phase 2 | Pending |
-| KB-02 | Phase 2 | Pending |
-| KB-03 | Phase 2 | Pending |
+| KB-01 | Phase 2 | Complete |
+| KB-02 | Phase 2 | Complete |
+| KB-03 | Phase 2 | Complete |
 | BOT-01 | Phase 3 | Pending |
 | BOT-02 | Phase 3 | Pending |
 | BOT-03 | Phase 3 | Pending |
