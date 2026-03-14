@@ -1,6 +1,7 @@
 import { config } from "./config.js";
 import prisma from "./db.js";
 import { bot, setupBot } from "./bot.js";
+import { startScheduler, stopScheduler } from "./services/scheduler.js";
 
 async function main() {
   console.log("EnergyBot starting...");
@@ -15,10 +16,13 @@ async function main() {
   bot.start({
     onStart: () => console.log("Bot is running"),
   });
+
+  startScheduler();
 }
 
 process.on("SIGINT", () => {
   console.log("Shutting down...");
+  stopScheduler();
   bot.stop();
   prisma.$disconnect().then(() => {
     console.log("Shutdown complete");
@@ -27,6 +31,7 @@ process.on("SIGINT", () => {
 });
 
 process.on("SIGTERM", () => {
+  stopScheduler();
   bot.stop();
   prisma.$disconnect().then(() => process.exit(0));
 });
