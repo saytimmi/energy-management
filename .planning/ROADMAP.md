@@ -76,11 +76,11 @@ Plans:
   2. The bot surfaces a likely cause for the drop based on patterns in the user's history (not generic advice)
   3. The bot gives a recovery recommendation specific to the energy type that dropped (not a cross-type substitution)
   4. Recommendations come from the knowledge base methodology, not from unconstrained AI generation
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Energy diagnostics logic (detect drops, identify patterns)
-- [ ] 04-02: Recommendation engine (knowledge base + AI personalization)
+- [ ] 04-01-PLAN.md — Energy diagnostics service (drop detection, pattern analysis) and /report command
+- [ ] 04-02-PLAN.md — Recommendation engine (knowledge base lookup + AI personalization) wired into check-in and /report
 
 ### Phase 5: Mini App
 **Goal**: Users can open the Mini App inside Telegram to see a visual overview of all 4 energies, their history over time, and AI-generated pattern insights
