@@ -12,7 +12,7 @@ From scaffolding to a working Telegram bot that helps users track 4 types of ene
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure** - Project scaffolding, Telegram bot registration, database, AI API, and scheduler
+- [x] **Phase 1: Infrastructure** - Project scaffolding, Telegram bot registration, database, AI API, and scheduler (completed 2026-03-14)
 - [ ] **Phase 2: Knowledge Base** - Codify the 4-energy methodology: recovery practices, drain factors, no-substitution rules
 - [ ] **Phase 3: Bot Check-In Loop** - Morning/evening check-ins and on-demand energy logging via the bot
 - [ ] **Phase 4: Bot Intelligence** - Energy diagnostics and personalized recovery recommendations powered by the knowledge base
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 3/4 | In Progress|  |
+| 1. Infrastructure | 4/4 | Complete   | 2026-03-14 |
 | 2. Knowledge Base | 0/1 | Not started | - |
 | 3. Bot Check-In Loop | 0/2 | Not started | - |
 | 4. Bot Intelligence | 0/2 | Not started | - |
