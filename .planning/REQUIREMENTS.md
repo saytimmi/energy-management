@@ -60,13 +60,28 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (To be filled during roadmap creation) | | |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Pending |
+| KB-01 | Phase 2 | Pending |
+| KB-02 | Phase 2 | Pending |
+| KB-03 | Phase 2 | Pending |
+| BOT-01 | Phase 3 | Pending |
+| BOT-02 | Phase 3 | Pending |
+| BOT-03 | Phase 3 | Pending |
+| BOT-04 | Phase 4 | Pending |
+| BOT-05 | Phase 4 | Pending |
+| APP-01 | Phase 5 | Pending |
+| APP-02 | Phase 5 | Pending |
+| APP-03 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-14*
-*Last updated: 2026-03-14 after initial definition*
+*Last updated: 2026-03-14 after roadmap creation*
