@@ -29,7 +29,7 @@
 
 - [ ] **INFRA-01**: Telegram Bot API интеграция
 - [ ] **INFRA-02**: Telegram Mini App (WebApp)
-- [ ] **INFRA-03**: База данных для хранения истории пользователей
+- [x] **INFRA-03**: База данных для хранения истории пользователей
 - [ ] **INFRA-04**: AI API (Claude/GPT) для персонализированных советов
 - [ ] **INFRA-05**: Cron/scheduler для утренних и вечерних напоминаний
 
@@ -62,7 +62,7 @@
 |-------------|-------|--------|
 | INFRA-01 | Phase 1 | Pending |
 | INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Complete |
 | INFRA-04 | Phase 1 | Pending |
 | INFRA-05 | Phase 1 | Pending |
 | KB-01 | Phase 2 | Pending |

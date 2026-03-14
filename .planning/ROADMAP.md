@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Project setup: TypeScript, dependencies, env config, database schema and persistence
+- [x] 01-01-PLAN.md — Project setup: TypeScript, dependencies, env config, database schema and persistence
 - [ ] 01-02-PLAN.md — Telegram Bot API + Mini App WebApp registration and connectivity
 - [ ] 01-03-PLAN.md — AI API (Anthropic Claude) service wrapper
 - [ ] 01-04-PLAN.md — Cron scheduler service for periodic jobs
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 0/4 | Not started | - |
+| 1. Infrastructure | 1/4 | In Progress|  |
 | 2. Knowledge Base | 0/1 | Not started | - |
 | 3. Bot Check-In Loop | 0/2 | Not started | - |
 | 4. Bot Intelligence | 0/2 | Not started | - |
