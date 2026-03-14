@@ -61,11 +61,11 @@ Plans:
   2. At a configured evening time, the bot sends each registered user an end-of-day check-in
   3. A user can message the bot outside of scheduled times and log their current energy level for any of the 4 types
   4. All check-in responses are stored and associated with the correct user and timestamp
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Scheduled morning/evening check-in messages with 4-energy rating flow
-- [ ] 03-02: On-demand energy logging command/conversation flow
+- [ ] 03-01-PLAN.md — Scheduled morning/evening check-in messages with 4-energy inline keyboard rating flow
+- [ ] 03-02-PLAN.md — On-demand energy logging command (/energy) reusing check-in flow
 
 ### Phase 4: Bot Intelligence
 **Goal**: The bot analyzes the user's energy history to diagnose which energy dropped and why, then delivers specific recovery recommendations from the knowledge base
