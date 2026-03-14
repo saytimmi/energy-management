@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int         @id @default(autoincrement())
+  telegramId BigInt      @unique
+  firstName  String
+  lastName   String?
+  username   String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  energyLogs EnergyLog[]
+}
+
+model EnergyLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  physical  Int
+  mental    Int
+  emotional Int
+  spiritual Int
+  note      String?
+  logType   String   // "morning" | "evening" | "manual"
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
