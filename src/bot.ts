@@ -10,6 +10,7 @@ export const bot = new Bot(config.telegramBotToken);
 bot.command("start", startHandler);
 bot.command("help", helpHandler);
 bot.command("energy", energyHandler);
+bot.command("checkin", energyHandler);
 
 bot.on("callback_query:data", handleCheckinCallback);
 
