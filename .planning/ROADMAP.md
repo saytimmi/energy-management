@@ -47,10 +47,10 @@ Plans:
   2. For each of the 4 energy types, a query returns a list of drain factors
   3. The system correctly rejects a cross-type substitution (e.g., physical burnout cannot be resolved with emotional recovery)
   4. Knowledge base content is accessible to bot logic without hardcoding in bot handlers
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: Knowledge base structure and seeding (practices, drain factors, substitution rules)
+- [ ] 02-01-PLAN.md — Knowledge base types, methodology data seeding, query functions, and substitution validation
 
 ### Phase 3: Bot Check-In Loop
 **Goal**: Users interact with the bot daily — the bot asks about all 4 energies in the morning and evening, and users can log their energy state at any moment
