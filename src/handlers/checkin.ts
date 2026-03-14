@@ -1,5 +1,5 @@
 import { InlineKeyboard } from "grammy";
-import type { CallbackQueryContext, Context } from "grammy";
+import type { Context } from "grammy";
 import prisma from "../db.js";
 import { bot } from "../bot.js";
 
@@ -49,10 +49,10 @@ function getNextEnergy(
 }
 
 export async function handleCheckinCallback(
-  ctx: CallbackQueryContext<Context>
+  ctx: Context
 ): Promise<void> {
-  const data = ctx.callbackQuery.data;
-  if (!data.startsWith("checkin:")) return;
+  const data = ctx.callbackQuery?.data;
+  if (!data || !data.startsWith("checkin:")) return;
 
   const parts = data.split(":");
   if (parts.length !== 4) return;
@@ -62,7 +62,9 @@ export async function handleCheckinCallback(
 
   if (isNaN(value) || value < 1 || value > 10) return;
 
-  const telegramId = ctx.from.id;
+  const from = ctx.from;
+  if (!from) return;
+  const telegramId = from.id;
 
   let pending = pendingCheckIns.get(telegramId);
   if (!pending) {

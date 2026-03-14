@@ -1,4 +1,6 @@
 import cron, { type ScheduledTask } from "node-cron";
+import { config } from "../config.js";
+import { sendCheckInToAll } from "./checkin-sender.js";
 
 const tasks: ScheduledTask[] = [];
 
@@ -11,17 +13,17 @@ export function startScheduler(): void {
   });
   tasks.push(heartbeat);
 
-  // TODO: Wire to bot check-in handler in Phase 3
-  // const morningCheckin = cron.schedule("0 9 * * *", () => {
-  //   // Morning check-in — 9:00 AM
-  // });
-  // tasks.push(morningCheckin);
+  const morningCheckin = cron.schedule(config.morningCheckinCron, () => {
+    sendCheckInToAll("morning");
+  });
+  tasks.push(morningCheckin);
+  console.log(`Morning check-in scheduled: ${config.morningCheckinCron}`);
 
-  // TODO: Wire to bot check-in handler in Phase 3
-  // const eveningCheckin = cron.schedule("0 21 * * *", () => {
-  //   // Evening check-in — 9:00 PM
-  // });
-  // tasks.push(eveningCheckin);
+  const eveningCheckin = cron.schedule(config.eveningCheckinCron, () => {
+    sendCheckInToAll("evening");
+  });
+  tasks.push(eveningCheckin);
+  console.log(`Evening check-in scheduled: ${config.eveningCheckinCron}`);
 }
 
 export function stopScheduler(): void {

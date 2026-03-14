@@ -15,4 +15,6 @@ export const config = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
   databaseUrl: process.env.DATABASE_URL || "file:./data/energy.db",
   webappUrl: process.env.WEBAPP_URL || "",
+  morningCheckinCron: process.env.MORNING_CHECKIN_CRON || "0 9 * * *",
+  eveningCheckinCron: process.env.EVENING_CHECKIN_CRON || "0 21 * * *",
 };
