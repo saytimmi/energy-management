@@ -1,0 +1,27 @@
+{
+  "name": "energy-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for tracking 4 types of energy",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate"
+  },
+  "dependencies": {
+    "grammy": "^1.21.1",
+    "@prisma/client": "^6.5.0",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.3",
+    "prisma": "^6.5.0",
+    "@types/node": "^22.13.10",
+    "@types/node-cron": "^3.0.11"
+  }
+}
