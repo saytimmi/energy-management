@@ -1,5 +1,6 @@
 import { config } from "./config.js";
 import prisma from "./db.js";
+import { bot, setupBot } from "./bot.js";
 
 async function main() {
   console.log("EnergyBot starting...");
@@ -8,9 +9,27 @@ async function main() {
   await prisma.$connect();
   console.log("Database connected");
 
-  await prisma.$disconnect();
-  console.log("Shutdown complete");
+  await setupBot();
+  console.log("Bot commands and menu configured");
+
+  bot.start({
+    onStart: () => console.log("Bot is running"),
+  });
 }
+
+process.on("SIGINT", () => {
+  console.log("Shutting down...");
+  bot.stop();
+  prisma.$disconnect().then(() => {
+    console.log("Shutdown complete");
+    process.exit(0);
+  });
+});
+
+process.on("SIGTERM", () => {
+  bot.stop();
+  prisma.$disconnect().then(() => process.exit(0));
+});
 
 main().catch((err) => {
   console.error("Fatal error:", err);
