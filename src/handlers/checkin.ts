@@ -125,12 +125,14 @@ export async function handleCheckinCallback(
 
 export async function sendCheckInMessage(
   chatId: number,
-  logType: "morning" | "evening"
+  logType: "morning" | "evening" | "manual"
 ): Promise<void> {
-  const greeting =
-    logType === "morning"
-      ? "Доброе утро! Как твои энергии сегодня? Оцени каждую от 1 до 10."
-      : "Добрый вечер! Подведём итоги дня. Как твои энергии сейчас?";
+  const greetings: Record<string, string> = {
+    morning: "Доброе утро! Как твои энергии сегодня? Оцени каждую от 1 до 10.",
+    evening: "Добрый вечер! Подведём итоги дня. Как твои энергии сейчас?",
+    manual: "Записываем энергию! Оцени каждую от 1 до 10.",
+  };
+  const greeting = greetings[logType];
 
   pendingCheckIns.set(chatId, { logType });
 
