@@ -30,13 +30,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A call to the AI API (Claude/GPT) returns a response without errors
   4. The Mini App WebApp URL opens inside Telegram without errors
   5. Scheduler fires a test job at a configured time without manual trigger
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 01-01: Project setup, repo structure, env config
-- [ ] 01-02: Telegram Bot API + Mini App WebApp registration and connectivity
-- [ ] 01-03: Database schema and persistence layer
-- [ ] 01-04: AI API integration and scheduler
+- [ ] 01-01-PLAN.md — Project setup: TypeScript, dependencies, env config, database schema and persistence
+- [ ] 01-02-PLAN.md — Telegram Bot API + Mini App WebApp registration and connectivity
+- [ ] 01-03-PLAN.md — AI API (Anthropic Claude) service wrapper
+- [ ] 01-04-PLAN.md — Cron scheduler service for periodic jobs
 
 ### Phase 2: Knowledge Base
 **Goal**: The 4-energy methodology is fully encoded — every energy type has its recovery practices, drain factors, and substitution rules that the bot can query
