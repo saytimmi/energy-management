@@ -1,2 +1,31 @@
-// Task 1: Types - placeholder for TDD RED phase
-// This file will be implemented after tests are written
+/**
+ * Knowledge base types for the 4-energy methodology.
+ */
+
+export enum EnergyType {
+  physical = 'physical',
+  mental = 'mental',
+  emotional = 'emotional',
+  spiritual = 'spiritual',
+}
+
+export interface Practice {
+  id: string;
+  name: string;
+  description: string;
+  energyType: EnergyType;
+}
+
+export interface DrainFactor {
+  id: string;
+  name: string;
+  description: string;
+  energyType: EnergyType;
+}
+
+export interface SubstitutionRule {
+  fromType: EnergyType;
+  toType: EnergyType;
+  allowed: boolean;
+  reason: string;
+}
