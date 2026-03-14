@@ -4,6 +4,7 @@ import { startHandler } from "./handlers/start.js";
 import { helpHandler } from "./handlers/help.js";
 import { handleCheckinCallback } from "./handlers/checkin.js";
 import { energyHandler } from "./handlers/energy.js";
+import { reportHandler } from "./handlers/report.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
@@ -11,6 +12,7 @@ bot.command("start", startHandler);
 bot.command("help", helpHandler);
 bot.command("energy", energyHandler);
 bot.command("checkin", energyHandler);
+bot.command("report", reportHandler);
 
 bot.on("callback_query:data", handleCheckinCallback);
 
@@ -26,6 +28,7 @@ export async function setupBot() {
     { command: "help", description: "Помощь" },
     { command: "energy", description: "Записать энергию прямо сейчас" },
     { command: "checkin", description: "Записать уровень энергии" },
+    { command: "report", description: "Анализ энергии" },
   ]);
 
   if (config.webappUrl) {
