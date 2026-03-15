@@ -9,6 +9,57 @@ import { findOrCreateUser } from "./db.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
+// Buffer messages per user — collect for 10 seconds, then respond once
+const messageBuffers = new Map<number, { messages: string[]; timer: NodeJS.Timeout; firstName: string; lastName?: string; username?: string }>();
+
+const BUFFER_DELAY = 10_000; // 10 seconds
+
+function bufferMessage(userId: number, text: string, firstName: string, lastName?: string, username?: string) {
+  const existing = messageBuffers.get(userId);
+
+  if (existing) {
+    existing.messages.push(text);
+    clearTimeout(existing.timer);
+    existing.timer = setTimeout(() => flushBuffer(userId), BUFFER_DELAY);
+  } else {
+    const timer = setTimeout(() => flushBuffer(userId), BUFFER_DELAY);
+    messageBuffers.set(userId, { messages: [text], timer, firstName, lastName, username });
+  }
+}
+
+async function flushBuffer(userId: number) {
+  const buf = messageBuffers.get(userId);
+  if (!buf) return;
+  messageBuffers.delete(userId);
+
+  const combined = buf.messages.join("\n");
+  const telegramId = BigInt(userId);
+
+  await findOrCreateUser(telegramId, buf.firstName, buf.lastName, buf.username);
+
+  // Show "typing..." indicator
+  try {
+    await bot.api.sendChatAction(userId, "typing");
+  } catch {}
+
+  const reply = await chat(telegramId, combined, buf.firstName);
+
+  // Small delay to make typing feel natural
+  await new Promise(r => setTimeout(r, 1500));
+
+  try {
+    await bot.api.sendChatAction(userId, "typing");
+  } catch {}
+
+  await new Promise(r => setTimeout(r, 1000));
+
+  try {
+    await bot.api.sendMessage(userId, reply);
+  } catch (err) {
+    console.error("Failed to send buffered reply:", err);
+  }
+}
+
 // Commands
 bot.command("start", startHandler);
 bot.command("report", reportHandler);
@@ -16,26 +67,17 @@ bot.command("report", reportHandler);
 // Inline keyboard callbacks
 bot.on("callback_query:data", handleCheckinCallback);
 
-// Voice messages — transcribe with Gemini, then chat with Claude
+// Voice messages — transcribe, then buffer as text
 bot.on("message:voice", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
 
-  await findOrCreateUser(
-    BigInt(from.id),
-    from.first_name,
-    from.last_name ?? undefined,
-    from.username ?? undefined,
-  );
-
   try {
-    // Download voice file
     const file = await ctx.getFile();
     const url = `https://api.telegram.org/file/bot${config.telegramBotToken}/${file.file_path}`;
     const response = await fetch(url);
     const buffer = Buffer.from(await response.arrayBuffer());
 
-    // Transcribe with Gemini
     const text = await transcribeVoice(buffer);
 
     if (!text) {
@@ -43,29 +85,19 @@ bot.on("message:voice", async (ctx) => {
       return;
     }
 
-    // Send transcribed text to Claude
-    const reply = await chat(BigInt(from.id), text, from.first_name, "voice");
-    await ctx.reply(reply);
+    bufferMessage(from.id, text, from.first_name, from.last_name ?? undefined, from.username ?? undefined);
   } catch (error) {
     console.error("Voice handler error:", error);
     await ctx.reply("Не смог обработать голосовое 😔 Попробуй текстом.");
   }
 });
 
-// Text messages — AI conversation
+// Text messages — buffer and respond after 10s pause
 bot.on("message:text", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
 
-  await findOrCreateUser(
-    BigInt(from.id),
-    from.first_name,
-    from.last_name ?? undefined,
-    from.username ?? undefined,
-  );
-
-  const reply = await chat(BigInt(from.id), ctx.message.text, from.first_name);
-  await ctx.reply(reply);
+  bufferMessage(from.id, ctx.message.text, from.first_name, from.last_name ?? undefined, from.username ?? undefined);
 });
 
 export async function setupBot() {
