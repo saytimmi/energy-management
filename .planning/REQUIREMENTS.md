@@ -16,8 +16,8 @@
 ### Mini App
 
 - [x] **APP-01**: Дашборд с визуализацией текущего уровня 4 энергий
-- [ ] **APP-02**: История изменений энергий за неделю/месяц (графики)
-- [ ] **APP-03**: AI-аналитика — паттерны просадок, персональные инсайты
+- [x] **APP-02**: История изменений энергий за неделю/месяц (графики)
+- [x] **APP-03**: AI-аналитика — паттерны просадок, персональные инсайты
 
 ### Knowledge Base
 
@@ -74,8 +74,8 @@
 | BOT-04 | Phase 4 | Complete |
 | BOT-05 | Phase 4 | Pending |
 | APP-01 | Phase 5 | Complete |
-| APP-02 | Phase 5 | Pending |
-| APP-03 | Phase 5 | Pending |
+| APP-02 | Phase 5 | Complete |
+| APP-03 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 13 total
