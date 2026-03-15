@@ -2,6 +2,8 @@ import { InlineKeyboard } from "grammy";
 import type { Context } from "grammy";
 import prisma from "../db.js";
 import { bot } from "../bot.js";
+import { analyzeEnergyHistory } from "../services/diagnostics.js";
+import { getRecommendations, formatRecommendations } from "../services/recommendations.js";
 
 const ENERGY_LABELS: Record<string, string> = {
   physical: "Физическая",
@@ -120,6 +122,20 @@ export async function handleCheckinCallback(
     await ctx.editMessageText(
       `Записал! Физическая: ${pending.physical}, Ментальная: ${pending.mental}, Эмоциональная: ${pending.emotional}, Духовная: ${pending.spiritual}`
     );
+
+    // Send follow-up recommendations (non-blocking)
+    try {
+      const diagnostic = await analyzeEnergyHistory(user.id);
+      const recs = await getRecommendations(diagnostic, user.id);
+      const formatted = formatRecommendations(recs);
+      if (formatted && ctx.chat) {
+        await bot.api.sendMessage(ctx.chat.id, `<b>Рекомендации:</b>\n\n${formatted}`, {
+          parse_mode: "HTML",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to generate recommendations after check-in:", err);
+    }
   }
 }
 
