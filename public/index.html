@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Energy Dashboard</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>Energy Dashboard</h1>
+    </header>
+
+    <main class="main">
+      <!-- Loading state -->
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Загрузка данных...</p>
+      </div>
+
+      <!-- Error state -->
+      <div id="error" class="error hidden">
+        <p class="error-text"></p>
+      </div>
+
+      <!-- Dashboard view -->
+      <div id="dashboard" class="dashboard hidden">
+        <div class="energy-grid">
+          <div class="energy-card" data-type="physical">
+            <div class="gauge-container">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle class="gauge-bg" cx="60" cy="60" r="50" />
+                <circle class="gauge-fill" cx="60" cy="60" r="50" />
+              </svg>
+              <span class="gauge-value">0</span>
+            </div>
+            <span class="energy-label">Физическая</span>
+          </div>
+
+          <div class="energy-card" data-type="mental">
+            <div class="gauge-container">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle class="gauge-bg" cx="60" cy="60" r="50" />
+                <circle class="gauge-fill" cx="60" cy="60" r="50" />
+              </svg>
+              <span class="gauge-value">0</span>
+            </div>
+            <span class="energy-label">Ментальная</span>
+          </div>
+
+          <div class="energy-card" data-type="emotional">
+            <div class="gauge-container">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle class="gauge-bg" cx="60" cy="60" r="50" />
+                <circle class="gauge-fill" cx="60" cy="60" r="50" />
+              </svg>
+              <span class="gauge-value">0</span>
+            </div>
+            <span class="energy-label">Эмоциональная</span>
+          </div>
+
+          <div class="energy-card" data-type="spiritual">
+            <div class="gauge-container">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle class="gauge-bg" cx="60" cy="60" r="50" />
+                <circle class="gauge-fill" cx="60" cy="60" r="50" />
+              </svg>
+              <span class="gauge-value">0</span>
+            </div>
+            <span class="energy-label">Духовная</span>
+          </div>
+        </div>
+
+        <p class="logged-at" id="loggedAt"></p>
+      </div>
+
+      <!-- History placeholder -->
+      <div id="history" class="placeholder hidden">
+        <p>История check-in'ов</p>
+        <span class="coming-soon">Coming soon</span>
+      </div>
+
+      <!-- Analytics placeholder -->
+      <div id="analytics" class="placeholder hidden">
+        <p>Аналитика энергии</p>
+        <span class="coming-soon">Coming soon</span>
+      </div>
+    </main>
+
+    <nav class="tab-nav">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="history">History</button>
+      <button class="tab" data-tab="analytics">Analytics</button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
