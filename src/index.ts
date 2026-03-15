@@ -2,6 +2,7 @@ import { config } from "./config.js";
 import prisma from "./db.js";
 import { bot, setupBot } from "./bot.js";
 import { startScheduler, stopScheduler } from "./services/scheduler.js";
+import { startServer, stopServer } from "./server.js";
 
 async function main() {
   console.log("EnergyBot starting...");
@@ -18,11 +19,14 @@ async function main() {
   });
 
   startScheduler();
+  startServer();
+  console.log(`Mini App server started on port ${config.port}`);
 }
 
 process.on("SIGINT", () => {
   console.log("Shutting down...");
   stopScheduler();
+  stopServer();
   bot.stop();
   prisma.$disconnect().then(() => {
     console.log("Shutdown complete");
@@ -32,6 +36,7 @@ process.on("SIGINT", () => {
 
 process.on("SIGTERM", () => {
   stopScheduler();
+  stopServer();
   bot.stop();
   prisma.$disconnect().then(() => process.exit(0));
 });

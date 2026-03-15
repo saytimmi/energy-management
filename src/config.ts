@@ -17,4 +17,5 @@ export const config = {
   webappUrl: process.env.WEBAPP_URL || "",
   morningCheckinCron: process.env.MORNING_CHECKIN_CRON || "0 9 * * *",
   eveningCheckinCron: process.env.EVENING_CHECKIN_CRON || "0 21 * * *",
+  port: parseInt(process.env.PORT || "3000", 10),
 };
