@@ -33,6 +33,11 @@ document.addEventListener("DOMContentLoaded", function () {
       if (target === "history" && telegramId && window.initHistory) {
         window.initHistory(telegramId);
       }
+
+      // Initialize analytics when switching to analytics tab
+      if (target === "analytics" && telegramId && window.initAnalytics) {
+        window.initAnalytics(telegramId);
+      }
     });
   });
 
