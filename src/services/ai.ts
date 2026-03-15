@@ -8,6 +8,18 @@ const anthropic = new Anthropic({
 const SYSTEM_PROMPT =
   "Ты — эксперт по управлению энергией. Ты работаешь с методологией 4 типов энергии: физическая, ментальная, эмоциональная, духовная. Каждый тип энергии требует своего способа восстановления — нельзя путать методы. Давай конкретные, практические советы. Отвечай кратко и по делу.";
 
+const PERSONALIZATION_PROMPT =
+  "Ты персонализируешь рекомендацию из базы знаний. НЕ придумывай новые практики. Объясни КРАТКО (2-3 предложения) почему именно эта практика важна для пользователя сейчас, учитывая его историю энергии.";
+
+export async function personalizeRecommendation(
+  practiceName: string,
+  practiceDescription: string,
+  userContext: string,
+): Promise<string> {
+  const message = `Практика: "${practiceName}" — ${practiceDescription}\n\nКонтекст пользователя:\n${userContext}\n\nДай короткий персонализированный совет (2-3 предложения).`;
+  return askAI(message, PERSONALIZATION_PROMPT);
+}
+
 export async function askAI(
   userMessage: string,
   context?: string,
