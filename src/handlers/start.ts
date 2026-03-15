@@ -1,32 +1,24 @@
-import { type CommandContext, Context, InlineKeyboard } from "grammy";
-import { config } from "../config.js";
+import { type CommandContext, Context } from "grammy";
 import { findOrCreateUser } from "../db.js";
+import { chat } from "../services/ai.js";
 
 export async function startHandler(ctx: CommandContext<Context>) {
   const from = ctx.from;
-  if (!from) {
-    await ctx.reply("Не удалось определить пользователя.");
-    return;
-  }
+  if (!from) return;
 
   await findOrCreateUser(
     BigInt(from.id),
     from.first_name,
     from.last_name ?? undefined,
-    from.username ?? undefined
+    from.username ?? undefined,
   );
 
-  const message =
-    `Привет, ${from.first_name}! Я EnergyBot — помогу отслеживать твои 4 типа энергии. ` +
-    `Используй кнопку меню, чтобы открыть приложение.`;
+  // Let AI handle the greeting naturally
+  const greeting = await chat(
+    BigInt(from.id),
+    "Привет! Я только что нажал /start. Расскажи кто ты и как ты можешь мне помочь с энергией. Коротко и тепло.",
+    from.first_name,
+  );
 
-  if (config.webappUrl) {
-    const keyboard = new InlineKeyboard().webApp(
-      "Energy App",
-      config.webappUrl
-    );
-    await ctx.reply(message, { reply_markup: keyboard });
-  } else {
-    await ctx.reply(message);
-  }
+  await ctx.reply(greeting);
 }
