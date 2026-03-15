@@ -76,16 +76,62 @@
         <p class="logged-at" id="loggedAt"></p>
       </div>
 
-      <!-- History placeholder -->
-      <div id="history" class="placeholder hidden">
-        <p>История check-in'ов</p>
-        <span class="coming-soon">Coming soon</span>
+      <!-- History view -->
+      <div id="history" class="history-view hidden">
+        <div class="period-toggle">
+          <button class="period-btn active" data-period="week">Неделя</button>
+          <button class="period-btn" data-period="month">Месяц</button>
+        </div>
+        <div class="chart-container">
+          <canvas id="historyChart"></canvas>
+        </div>
+        <p id="historyEmpty" class="history-empty hidden">Нет данных за этот период</p>
       </div>
 
-      <!-- Analytics placeholder -->
-      <div id="analytics" class="placeholder hidden">
-        <p>Аналитика энергии</p>
-        <span class="coming-soon">Coming soon</span>
+      <!-- Analytics view -->
+      <div id="analytics" class="analytics-view hidden">
+        <!-- Analytics loading -->
+        <div id="analyticsLoading" class="analytics-loading">
+          <div class="spinner"></div>
+          <p>Анализирую паттерны...</p>
+        </div>
+
+        <!-- Not enough data -->
+        <div id="analyticsNoData" class="analytics-no-data hidden">
+          <div class="no-data-icon">&#128202;</div>
+          <p id="analyticsNoDataMsg"></p>
+        </div>
+
+        <!-- Analytics content -->
+        <div id="analyticsContent" class="analytics-content hidden">
+          <!-- Stats summary bar -->
+          <div class="stats-bar">
+            <div class="stat-card" data-stat="physical">
+              <span class="stat-value">-</span>
+              <span class="stat-label">Физическая</span>
+            </div>
+            <div class="stat-card" data-stat="mental">
+              <span class="stat-value">-</span>
+              <span class="stat-label">Ментальная</span>
+            </div>
+            <div class="stat-card" data-stat="emotional">
+              <span class="stat-value">-</span>
+              <span class="stat-label">Эмоциональная</span>
+            </div>
+            <div class="stat-card" data-stat="spiritual">
+              <span class="stat-value">-</span>
+              <span class="stat-label">Духовная</span>
+            </div>
+          </div>
+
+          <p class="stats-meta" id="statsMeta"></p>
+
+          <!-- AI insights -->
+          <div class="insights-section">
+            <h2 class="insights-heading">AI-аналитика паттернов</h2>
+            <div id="insightsList" class="insights-list"></div>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -96,6 +142,8 @@
     </nav>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="history.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

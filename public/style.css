@@ -174,6 +174,52 @@ body {
   color: var(--tg-theme-hint-color, #999);
 }
 
+/* History view */
+.history-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.period-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.period-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--tg-theme-hint-color, #ccc);
+  border-radius: 20px;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #888);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.period-btn.active {
+  background: var(--tg-theme-button-color, #2196F3);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  border-color: var(--tg-theme-button-color, #2196F3);
+}
+
+.chart-container {
+  width: 100%;
+  max-width: 500px;
+  min-height: 300px;
+  position: relative;
+}
+
+.history-empty {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 15px;
+  color: var(--tg-theme-hint-color, #888);
+}
+
 /* Placeholder views */
 .placeholder {
   text-align: center;

@@ -28,6 +28,11 @@ document.addEventListener("DOMContentLoaded", function () {
           views[key].classList.toggle("hidden", key !== target);
         }
       });
+
+      // Initialize history chart when switching to history tab
+      if (target === "history" && telegramId && window.initHistory) {
+        window.initHistory(telegramId);
+      }
     });
   });
 
