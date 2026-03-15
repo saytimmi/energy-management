@@ -90,12 +90,12 @@ Plans:
   1. Opening the Mini App shows current levels for all 4 energy types as a dashboard
   2. Users can view a chart of energy changes over the past week and month
   3. The Mini App displays AI-generated insights about personal energy patterns (e.g., "your mental energy consistently drops on days after late check-ins")
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Mini App scaffolding and energy dashboard (current levels)
-- [ ] 05-02: History charts (week/month view)
-- [ ] 05-03: AI analytics panel with pattern insights
+- [ ] 05-01-PLAN.md — HTTP server, static serving, dashboard API, and energy dashboard UI with visual gauges
+- [ ] 05-02-PLAN.md — History API endpoint and Chart.js line charts (week/month view)
+- [ ] 05-03-PLAN.md — AI analytics API endpoint and pattern insights panel
 
 ## Progress
 
