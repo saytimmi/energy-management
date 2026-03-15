@@ -2,149 +2,152 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Energy Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Energy</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
-    <header class="header">
-      <h1>Energy Dashboard</h1>
-    </header>
+    <!-- Loading -->
+    <div id="loading" class="screen loading-screen">
+      <div class="pulse-ring"></div>
+      <p class="loading-text">Загружаю...</p>
+    </div>
 
-    <main class="main">
-      <!-- Loading state -->
-      <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Загрузка данных...</p>
+    <!-- Welcome (no data yet) -->
+    <div id="welcome" class="screen hidden">
+      <div class="welcome-content">
+        <div class="welcome-icon">✨</div>
+        <h1>Привет!</h1>
+        <p>Напиши боту как ты себя чувствуешь — я начну отслеживать твою энергию.</p>
       </div>
+    </div>
 
-      <!-- Error state -->
-      <div id="error" class="error hidden">
-        <p class="error-text"></p>
-      </div>
-
-      <!-- Dashboard view -->
-      <div id="dashboard" class="dashboard hidden">
-        <div class="energy-grid">
-          <div class="energy-card" data-type="physical">
-            <div class="gauge-container">
-              <svg class="gauge" viewBox="0 0 120 120">
-                <circle class="gauge-bg" cx="60" cy="60" r="50" />
-                <circle class="gauge-fill" cx="60" cy="60" r="50" />
-              </svg>
-              <span class="gauge-value">0</span>
-            </div>
-            <span class="energy-label">Физическая</span>
-          </div>
-
-          <div class="energy-card" data-type="mental">
-            <div class="gauge-container">
-              <svg class="gauge" viewBox="0 0 120 120">
-                <circle class="gauge-bg" cx="60" cy="60" r="50" />
-                <circle class="gauge-fill" cx="60" cy="60" r="50" />
-              </svg>
-              <span class="gauge-value">0</span>
-            </div>
-            <span class="energy-label">Ментальная</span>
-          </div>
-
-          <div class="energy-card" data-type="emotional">
-            <div class="gauge-container">
-              <svg class="gauge" viewBox="0 0 120 120">
-                <circle class="gauge-bg" cx="60" cy="60" r="50" />
-                <circle class="gauge-fill" cx="60" cy="60" r="50" />
-              </svg>
-              <span class="gauge-value">0</span>
-            </div>
-            <span class="energy-label">Эмоциональная</span>
-          </div>
-
-          <div class="energy-card" data-type="spiritual">
-            <div class="gauge-container">
-              <svg class="gauge" viewBox="0 0 120 120">
-                <circle class="gauge-bg" cx="60" cy="60" r="50" />
-                <circle class="gauge-fill" cx="60" cy="60" r="50" />
-              </svg>
-              <span class="gauge-value">0</span>
-            </div>
-            <span class="energy-label">Духовная</span>
-          </div>
+    <!-- Main app -->
+    <div id="main" class="screen hidden">
+      <!-- Header with greeting -->
+      <header class="app-header">
+        <div class="greeting">
+          <span class="greeting-hi" id="greetingText">Привет</span>
+          <span class="greeting-name" id="userName"></span>
         </div>
+        <div class="date" id="currentDate"></div>
+      </header>
 
-        <p class="logged-at" id="loggedAt"></p>
-      </div>
-
-      <!-- History view -->
-      <div id="history" class="history-view hidden">
-        <div class="period-toggle">
-          <button class="period-btn active" data-period="week">Неделя</button>
-          <button class="period-btn" data-period="month">Месяц</button>
-        </div>
-        <div class="chart-container">
-          <canvas id="historyChart"></canvas>
-        </div>
-        <p id="historyEmpty" class="history-empty hidden">Нет данных за этот период</p>
-      </div>
-
-      <!-- Analytics view -->
-      <div id="analytics" class="analytics-view hidden">
-        <!-- Analytics loading -->
-        <div id="analyticsLoading" class="analytics-loading">
-          <div class="spinner"></div>
-          <p>Анализирую паттерны...</p>
-        </div>
-
-        <!-- Not enough data -->
-        <div id="analyticsNoData" class="analytics-no-data hidden">
-          <div class="no-data-icon">&#128202;</div>
-          <p id="analyticsNoDataMsg"></p>
-        </div>
-
-        <!-- Analytics content -->
-        <div id="analyticsContent" class="analytics-content hidden">
-          <!-- Stats summary bar -->
-          <div class="stats-bar">
-            <div class="stat-card" data-stat="physical">
-              <span class="stat-value">-</span>
-              <span class="stat-label">Физическая</span>
+      <!-- Views container -->
+      <main class="views">
+        <!-- Dashboard -->
+        <section id="v-dashboard" class="view">
+          <div class="energy-rings">
+            <div class="ring-card" data-type="physical">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100">
+                  <circle class="ring-bg" cx="50" cy="50" r="42"/>
+                  <circle class="ring-fill" cx="50" cy="50" r="42"/>
+                </svg>
+                <div class="ring-inner">
+                  <span class="ring-val">—</span>
+                  <span class="ring-emoji">🏃</span>
+                </div>
+              </div>
+              <span class="ring-label">Физическая</span>
             </div>
-            <div class="stat-card" data-stat="mental">
-              <span class="stat-value">-</span>
-              <span class="stat-label">Ментальная</span>
+            <div class="ring-card" data-type="mental">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100">
+                  <circle class="ring-bg" cx="50" cy="50" r="42"/>
+                  <circle class="ring-fill" cx="50" cy="50" r="42"/>
+                </svg>
+                <div class="ring-inner">
+                  <span class="ring-val">—</span>
+                  <span class="ring-emoji">🧠</span>
+                </div>
+              </div>
+              <span class="ring-label">Ментальная</span>
             </div>
-            <div class="stat-card" data-stat="emotional">
-              <span class="stat-value">-</span>
-              <span class="stat-label">Эмоциональная</span>
+            <div class="ring-card" data-type="emotional">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100">
+                  <circle class="ring-bg" cx="50" cy="50" r="42"/>
+                  <circle class="ring-fill" cx="50" cy="50" r="42"/>
+                </svg>
+                <div class="ring-inner">
+                  <span class="ring-val">—</span>
+                  <span class="ring-emoji">💚</span>
+                </div>
+              </div>
+              <span class="ring-label">Эмоциональная</span>
             </div>
-            <div class="stat-card" data-stat="spiritual">
-              <span class="stat-value">-</span>
-              <span class="stat-label">Духовная</span>
+            <div class="ring-card" data-type="spiritual">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100">
+                  <circle class="ring-bg" cx="50" cy="50" r="42"/>
+                  <circle class="ring-fill" cx="50" cy="50" r="42"/>
+                </svg>
+                <div class="ring-inner">
+                  <span class="ring-val">—</span>
+                  <span class="ring-emoji">🔮</span>
+                </div>
+              </div>
+              <span class="ring-label">Духовная</span>
             </div>
           </div>
+          <p class="last-update" id="lastUpdate"></p>
 
-          <p class="stats-meta" id="statsMeta"></p>
-
-          <!-- AI insights -->
-          <div class="insights-section">
-            <h2 class="insights-heading">AI-аналитика паттернов</h2>
-            <div id="insightsList" class="insights-list"></div>
+          <!-- Recent observations -->
+          <div class="observations-section" id="obsSection">
+            <h2 class="section-title">Последние наблюдения</h2>
+            <div class="obs-list" id="obsList"></div>
           </div>
-        </div>
-      </div>
-    </main>
+        </section>
 
-    <nav class="tab-nav">
-      <button class="tab active" data-tab="dashboard">Dashboard</button>
-      <button class="tab" data-tab="history">History</button>
-      <button class="tab" data-tab="analytics">Analytics</button>
-    </nav>
+        <!-- Timeline -->
+        <section id="v-timeline" class="view hidden">
+          <div class="timeline-header">
+            <div class="period-pills">
+              <button class="pill active" data-period="week">7 дней</button>
+              <button class="pill" data-period="month">30 дней</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="historyChart"></canvas>
+          </div>
+          <p id="timelineEmpty" class="empty-msg hidden">Пока нет данных</p>
+        </section>
+
+        <!-- Journal -->
+        <section id="v-journal" class="view hidden">
+          <div class="journal-list" id="journalList">
+            <div class="journal-loading">
+              <div class="pulse-ring small"></div>
+              <p>Загружаю дневник...</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Bottom nav -->
+      <nav class="bottom-nav">
+        <button class="nav-btn active" data-view="v-dashboard">
+          <span class="nav-icon">⚡</span>
+          <span class="nav-label">Энергия</span>
+        </button>
+        <button class="nav-btn" data-view="v-timeline">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Динамика</span>
+        </button>
+        <button class="nav-btn" data-view="v-journal">
+          <span class="nav-icon">📖</span>
+          <span class="nav-label">Дневник</span>
+        </button>
+      </nav>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <script src="history.js"></script>
-  <script src="analytics.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
