@@ -1,6 +1,11 @@
 import { Router, Request, Response } from "express";
+import Anthropic from "@anthropic-ai/sdk";
+import { config } from "../config.js";
 import prisma from "../db.js";
-import { askAI } from "../services/ai.js";
+
+const anthropic = new Anthropic({
+  apiKey: config.anthropicApiKey,
+});
 
 const ANALYTICS_SYSTEM_PROMPT =
   "Ты анализируешь паттерны энергии пользователя за последний месяц. Выдели 3-5 конкретных паттернов. Каждый паттерн должен ссылаться на реальные данные. Формат: нумерованный список. Не давай общих советов — только наблюдения о паттернах.";
@@ -110,7 +115,14 @@ export function analyticsRoute(router: Router): void {
 
       // Call AI for pattern analysis
       try {
-        const insights = await askAI(dataSummary, ANALYTICS_SYSTEM_PROMPT);
+        const response = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1024,
+          system: ANALYTICS_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: dataSummary }],
+        });
+        const block = response.content[0];
+        const insights = block.type === "text" ? block.text : null;
         res.json({ hasEnoughData: true, insights, stats });
       } catch {
         // AI unavailable — return stats without insights

@@ -1,6 +1,7 @@
 import { Bot } from "grammy";
 import { config } from "./config.js";
 import { startHandler } from "./handlers/start.js";
+import { helpHandler } from "./handlers/help.js";
 import { handleCheckinCallback } from "./handlers/checkin.js";
 import { reportHandler } from "./handlers/report.js";
 import { chat } from "./services/ai.js";
@@ -62,6 +63,7 @@ async function flushBuffer(userId: number) {
 
 // Commands
 bot.command("start", startHandler);
+bot.command("help", helpHandler);
 bot.command("report", reportHandler);
 
 // Inline keyboard callbacks
@@ -103,7 +105,9 @@ bot.on("message:text", async (ctx) => {
 export async function setupBot() {
   await bot.api.setMyCommands([
     { command: "start", description: "Начать заново" },
+    { command: "energy", description: "Записать уровень энергии" },
     { command: "report", description: "Анализ моей энергии" },
+    { command: "help", description: "Показать справку" },
   ]);
 
   if (config.webappUrl) {

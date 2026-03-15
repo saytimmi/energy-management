@@ -63,7 +63,13 @@ async function getActiveSession(userId: number): Promise<number> {
 
   if (existing) return existing.id;
 
-  // Close old sessions
+  // Summarize and close old sessions
+  const oldSessions = await prisma.session.findMany({
+    where: { userId, status: "active" },
+  });
+  for (const oldSession of oldSessions) {
+    await summarizeSession(oldSession.id);
+  }
   await prisma.session.updateMany({
     where: { userId, status: "active" },
     data: { status: "completed" },
@@ -242,7 +248,41 @@ async function buildUserContext(userId: number): Promise<string> {
   }
 }
 
-// Compatibility exports
+export async function summarizeSession(sessionId: number): Promise<void> {
+  try {
+    const messages = await prisma.message.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (messages.length === 0) return;
+
+    const transcript = messages
+      .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+      .join("\n");
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 150,
+      system: "Кратко резюмируй разговор в 1-2 предложениях на русском: что обсуждалось и какие ключевые наблюдения. Без приветствий, только суть.",
+      messages: [{ role: "user", content: transcript }],
+    });
+
+    const block = response.content[0];
+    const summary = block.type === "text" ? block.text : null;
+
+    if (summary) {
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: { summary },
+      });
+    }
+  } catch (err) {
+    console.error("Failed to summarize session:", err);
+  }
+}
+
+// Compatibility exports — no longer used by analytics, kept for other callers
 export async function askAI(userMessage: string, context?: string): Promise<string> {
   return chat(BigInt(0), userMessage, "пользователь");
 }

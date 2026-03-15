@@ -106,6 +106,12 @@ export async function handleCheckinCallback(
       return;
     }
 
+    // Fetch previous log before saving
+    const previousLog = await prisma.energyLog.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
     await prisma.energyLog.create({
       data: {
         userId: user.id,
@@ -119,12 +125,44 @@ export async function handleCheckinCallback(
 
     pendingCheckIns.delete(telegramId);
 
-    await ctx.editMessageText(
-      `Записал! Физическая: ${pending.physical}, Ментальная: ${pending.mental}, Эмоциональная: ${pending.emotional}, Духовная: ${pending.spiritual}`
-    );
+    // Build smart follow-up message
+    let followUp = `Записал! Физическая: ${pending.physical}, Ментальная: ${pending.mental}, Эмоциональная: ${pending.emotional}, Духовная: ${pending.spiritual}`;
+
+    if (previousLog) {
+      const drops: string[] = [];
+      const energyPairs: Array<{ label: string; current: number; prev: number }> = [
+        { label: "Физическая", current: pending.physical!, prev: previousLog.physical },
+        { label: "Ментальная", current: pending.mental!, prev: previousLog.mental },
+        { label: "Эмоциональная", current: pending.emotional!, prev: previousLog.emotional },
+        { label: "Духовная", current: pending.spiritual!, prev: previousLog.spiritual },
+      ];
+
+      for (const e of energyPairs) {
+        const diff = e.prev - e.current;
+        if (diff >= 2) {
+          drops.push(`${e.label} упала на ${diff} (было ${e.prev}, стало ${e.current})`);
+        }
+      }
+
+      if (drops.length > 0) {
+        followUp += `\n\n⚠️ Заметил снижение:\n${drops.join("\n")}`;
+      } else if (
+        pending.physical! >= 7 &&
+        pending.mental! >= 7 &&
+        pending.emotional! >= 7 &&
+        pending.spiritual! >= 7
+      ) {
+        followUp += "\n\n🔥 Все энергии на высоте! Отличное состояние!";
+      }
+    }
+
+    await ctx.editMessageText(followUp);
 
     // Send follow-up recommendations (non-blocking)
     try {
+      if (ctx.chat) {
+        await bot.api.sendChatAction(ctx.chat.id, "typing");
+      }
       const diagnostic = await analyzeEnergyHistory(user.id);
       const recs = await getRecommendations(diagnostic, user.id);
       const formatted = formatRecommendations(recs);

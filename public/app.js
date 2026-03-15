@@ -37,20 +37,56 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById("loading").classList.add("hidden");
 
-    if ((dashboard.error === "no_data" || dashboard.error === "user_not_found") && obsData.stats && obsData.stats.total === 0) {
+    var hasNoData = (dashboard.error === "no_data" || dashboard.error === "user_not_found") && obsData.stats && obsData.stats.total === 0;
+
+    if (hasNoData) {
       document.getElementById("welcome").classList.remove("hidden");
       return;
     }
 
     document.getElementById("main").classList.remove("hidden");
 
-    // Render energy rings
+    // Render energy rings or empty state
     if (!dashboard.error) {
       renderRings(dashboard);
+      // Show streak badge
+      if (dashboard.streak && dashboard.streak > 0) {
+        var streakEl = document.getElementById("streakBadge");
+        streakEl.textContent = "\uD83D\uDD25 " + dashboard.streak + " " + getDayWord(dashboard.streak) + " подряд";
+        streakEl.classList.remove("hidden");
+      }
+    } else {
+      // Dashboard has error but we have observations — show empty energy state
+      document.querySelector(".energy-rings").insertAdjacentHTML("afterend",
+        '<div class="dashboard-empty-msg">\u0420\u0430\u0441\u0441\u043A\u0430\u0436\u0438 \u0431\u043E\u0442\u0443 \u043A\u0430\u043A \u0442\u044B \u0441\u0435\u0431\u044F \u0447\u0443\u0432\u0441\u0442\u0432\u0443\u0435\u0448\u044C \u2014 \u044F \u043D\u0430\u0447\u043D\u0443 \u043E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430\u0442\u044C \uD83C\uDF31</div>');
     }
 
     // Render observations
     renderObservations(obsData);
+
+    // Load analytics if 3+ logs
+    if (obsData.stats && obsData.stats.total >= 3) {
+      loadAnalytics();
+    }
+
+    // Quick check-in button
+    var checkinBtn = document.getElementById("quickCheckinBtn");
+    checkinBtn.addEventListener("click", function () {
+      checkinBtn.disabled = true;
+      checkinBtn.textContent = "Отправляю...";
+      fetch("/api/checkin-trigger?telegramId=" + telegramId)
+        .then(function () {
+          checkinBtn.textContent = "✓ Бот напишет тебе";
+          setTimeout(function () {
+            checkinBtn.disabled = false;
+            checkinBtn.textContent = "⚡ Записать энергию";
+          }, 3000);
+        })
+        .catch(function () {
+          checkinBtn.disabled = false;
+          checkinBtn.textContent = "⚡ Записать энергию";
+        });
+    });
 
   }).catch(function () {
     document.getElementById("loading").classList.add("hidden");
@@ -81,6 +117,31 @@ document.addEventListener("DOMContentLoaded", function () {
       loadTimeline(pill.dataset.period);
     });
   });
+
+  function getDayWord(n) {
+    var abs = Math.abs(n) % 100;
+    var last = abs % 10;
+    if (abs > 10 && abs < 20) return "дней";
+    if (last > 1 && last < 5) return "дня";
+    if (last === 1) return "день";
+    return "дней";
+  }
+
+  function loadAnalytics() {
+    fetch("/api/analytics?telegramId=" + telegramId)
+      .then(r => r.json())
+      .then(function (data) {
+        if (!data || !data.insights) return;
+        var section = document.getElementById("analyticsSection");
+        var content = document.getElementById("analyticsContent");
+        var insights = Array.isArray(data.insights) ? data.insights : [data.insights];
+        content.innerHTML = insights.map(function (insight) {
+          return '<div class="analytics-card">' + insight + '</div>';
+        }).join("");
+        section.classList.remove("hidden");
+      })
+      .catch(function () { /* silently skip */ });
+  }
 
   function renderRings(data) {
     var types = ["physical", "mental", "emotional", "spiritual"];
@@ -190,19 +251,27 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(r => r.json())
       .then(function (data) {
         if (!data.observations || data.observations.length === 0) {
-          list.innerHTML = '<div class="obs-empty">Дневник пока пуст. Расскажи боту как ты себя чувствуешь.</div>';
+          list.innerHTML = '<div class="journal-empty-state">' +
+            '<div class="journal-empty-icon">📝</div>' +
+            '<p>Твой дневник энергии пока пуст. Каждый разговор с ботом добавит запись сюда</p>' +
+          '</div>';
           return;
         }
 
         var grouped = data.grouped;
         var typeNames = { physical: "Физическая", mental: "Ментальная", emotional: "Эмоциональная", spiritual: "Духовная" };
 
+        // Get today's date key for highlighting
+        var todayKey = new Date().toISOString().split("T")[0];
+
         var html = Object.entries(grouped)
           .sort((a, b) => b[0].localeCompare(a[0]))
           .map(function (entry) {
             var dateKey = entry[0];
             var obs = entry[1];
+            var isToday = dateKey === todayKey;
             var dateStr = new Date(dateKey).toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
+            var dateLabel = isToday ? "Сегодня" : dateStr;
 
             var entries = obs.map(function (o) {
               var time = new Date(o.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -219,8 +288,8 @@ document.addEventListener("DOMContentLoaded", function () {
               '</div>';
             }).join("");
 
-            return '<div class="journal-day">' +
-              '<div class="journal-date">' + dateStr + '</div>' +
+            return '<div class="journal-day' + (isToday ? ' journal-today' : '') + '">' +
+              '<div class="journal-date' + (isToday ? ' journal-date-today' : '') + '">' + dateLabel + '</div>' +
               '<div class="journal-entries">' + entries + '</div>' +
             '</div>';
           }).join("");

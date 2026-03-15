@@ -66,10 +66,26 @@ body {
   padding: 20px 24px 12px;
   display: flex; justify-content: space-between; align-items: baseline;
 }
+.header-left { display: flex; flex-direction: column; gap: 4px; }
 .greeting { display: flex; gap: 6px; }
 .greeting-hi { font-size: 22px; font-weight: 300; color: var(--text2); }
 .greeting-name { font-size: 22px; font-weight: 600; }
 .date { font-size: 13px; color: var(--text2); font-weight: 300; }
+
+/* Streak badge */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(200,255,115,0.12);
+  color: var(--accent);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  width: fit-content;
+  animation: fadeIn 0.4s ease;
+}
 
 /* ── Views ── */
 .views {
@@ -190,6 +206,55 @@ body {
   color: var(--text2); font-size: 14px; font-weight: 300;
 }
 
+/* Dashboard empty state */
+.dashboard-empty-msg {
+  text-align: center;
+  padding: 20px 16px;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* Quick check-in button */
+.quick-checkin-btn {
+  display: block;
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px 20px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.quick-checkin-btn:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+.quick-checkin-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Analytics section */
+.analytics-section { margin-top: 28px; }
+.analytics-content { display: flex; flex-direction: column; gap: 10px; }
+.analytics-card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  animation: cardIn 0.4s ease both;
+}
+
 /* ── Timeline ── */
 .timeline-header { margin-bottom: 16px; }
 .period-pills { display: flex; gap: 8px; }
@@ -262,6 +327,37 @@ body {
   background: rgba(200,255,115,0.08);
   border-radius: 10px;
   font-size: 13px; color: var(--accent);
+}
+
+/* Journal today highlight */
+.journal-today {
+  background: rgba(200,255,115,0.04);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: -4px -4px 0;
+}
+.journal-date-today {
+  color: var(--accent) !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+}
+
+/* Journal empty state */
+.journal-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 24px;
+  gap: 12px;
+}
+.journal-empty-icon { font-size: 40px; }
+.journal-empty-state p {
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.5;
+  max-width: 260px;
 }
 
 .journal-loading {
