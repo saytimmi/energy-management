@@ -4,8 +4,8 @@
   "description": "Telegram bot for tracking 4 types of energy",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "prisma generate && tsc && cp -r public dist/",
+    "start": "prisma db push --accept-data-loss && node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
