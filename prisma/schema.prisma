@@ -16,6 +16,8 @@ model User {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   energyLogs EnergyLog[]
+  messages   Message[]
+  sessions   Session[]
 }
 
 model EnergyLog {
@@ -29,4 +31,27 @@ model EnergyLog {
   logType   String   // "morning" | "evening" | "manual"
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  role      String   // "user" | "assistant"
+  content   String
+  type      String   @default("text") // "text" | "voice"
+  sessionId Int?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  session   Session? @relation(fields: [sessionId], references: [id])
+}
+
+model Session {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  status    String    @default("active") // "active" | "completed"
+  summary   String?   // AI summary of what happened in session
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id])
+  messages  Message[]
 }
