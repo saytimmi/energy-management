@@ -4,6 +4,7 @@ import http from "http";
 import { Router } from "express";
 import { dashboardRoute } from "./api/dashboard.js";
 import { historyRoute } from "./api/history.js";
+import { analyticsRoute } from "./api/analytics.js";
 import { config } from "./config.js";
 
 let server: http.Server | null = null;
@@ -28,6 +29,7 @@ export function startServer(port?: number): http.Server {
   const apiRouter = Router();
   dashboardRoute(apiRouter);
   historyRoute(apiRouter);
+  analyticsRoute(apiRouter);
   app.use("/api", apiRouter);
 
   server = app.listen(listenPort, () => {
