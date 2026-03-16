@@ -112,12 +112,32 @@ async function extractAndSaveObservations(
   while ((match = dataRegex.exec(reply)) !== null) {
     try {
       const data = JSON.parse(match[1]);
+      const energyType = data.energyType || "unknown";
+      const direction = data.direction || "stable";
+      const trigger = data.trigger || null;
+
+      // Deduplicate: skip if similar observation exists within last hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const existing = await prisma.observation.findFirst({
+        where: {
+          userId,
+          energyType,
+          direction,
+          createdAt: { gte: oneHourAgo },
+          ...(trigger ? { trigger: { contains: trigger.slice(0, 20) } } : {}),
+        },
+      });
+
+      if (existing) {
+        continue; // Skip duplicate
+      }
+
       const observationData: Record<string, unknown> = {
         userId,
-        energyType: data.energyType || "unknown",
-        direction: data.direction || "stable",
+        energyType,
+        direction,
         level: data.level || null,
-        trigger: data.trigger || null,
+        trigger,
         recommendation: data.recommendation || null,
         context: data.context || null,
         sessionId,
