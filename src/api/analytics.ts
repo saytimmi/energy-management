@@ -7,6 +7,10 @@ const anthropic = new Anthropic({
   apiKey: config.anthropicApiKey,
 });
 
+// Cache analytics per user for 1 hour to avoid redundant AI calls
+const analyticsCache = new Map<number, { data: unknown; expiresAt: number }>();
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
 const ANALYTICS_SYSTEM_PROMPT =
   "Ты анализируешь паттерны энергии пользователя за последний месяц. Выдели 3-5 конкретных паттернов. Каждый паттерн должен ссылаться на реальные данные. Формат: нумерованный список. Не давай общих советов — только наблюдения о паттернах.";
 
@@ -113,6 +117,13 @@ export function analyticsRoute(router: Router): void {
         ...dayAvgLines,
       ].join("\n");
 
+      // Check cache first
+      const cached = analyticsCache.get(user.id);
+      if (cached && cached.expiresAt > Date.now()) {
+        res.json(cached.data);
+        return;
+      }
+
       // Call AI for pattern analysis
       try {
         const response = await anthropic.messages.create({
@@ -123,7 +134,9 @@ export function analyticsRoute(router: Router): void {
         });
         const block = response.content[0];
         const insights = block.type === "text" ? block.text : null;
-        res.json({ hasEnoughData: true, insights, stats });
+        const result = { hasEnoughData: true, insights, stats };
+        analyticsCache.set(user.id, { data: result, expiresAt: Date.now() + CACHE_TTL });
+        res.json(result);
       } catch {
         // AI unavailable — return stats without insights
         res.json({
