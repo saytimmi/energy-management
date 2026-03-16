@@ -57,6 +57,25 @@ model Session {
   messages  Message[]
 }
 
+// Error and performance tracking for kaizen agent
+model ErrorLog {
+  id        Int      @id @default(autoincrement())
+  source    String   // "bot" | "api" | "voice" | "ai" | "scheduler"
+  message   String
+  stack     String?
+  context   String?  // JSON with extra info
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+}
+
+model Metric {
+  id        Int      @id @default(autoincrement())
+  name      String   // "ai_response_time" | "voice_transcribe_time" | "api_latency"
+  value     Float
+  tags      String?  // JSON tags
+  createdAt DateTime @default(now())
+}
+
 // Structured data extracted from conversations by AI
 model Observation {
   id           Int      @id @default(autoincrement())

@@ -3,6 +3,7 @@ import { config } from "../config.js";
 import prisma from "../db.js";
 import { getRecoveryPractices } from "../knowledge/index.js";
 import { EnergyType } from "../knowledge/types.js";
+import { trackError, measured } from "./monitor.js";
 
 const anthropic = new Anthropic({
   apiKey: config.anthropicApiKey,
@@ -152,15 +153,17 @@ export async function chat(
     (context ? `\n\n${context}` : "");
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 512,
-      system: systemWithContext,
-      messages: history,
-    });
+    const rawReply = await measured("ai_response_ms", async () => {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 512,
+        system: systemWithContext,
+        messages: history,
+      });
 
-    const block = response.content[0];
-    const rawReply = block.type === "text" ? block.text : "Хм, что-то пошло не так 😅";
+      const block = response.content[0];
+      return block.type === "text" ? block.text : "Хм, что-то пошло не так 😅";
+    }, { historyLength: String(history.length) });
 
     // Extract observations and clean reply
     const cleanReply = await extractAndSaveObservations(rawReply, user.id, sessionId);
@@ -172,6 +175,7 @@ export async function chat(
 
     return cleanReply;
   } catch (error) {
+    await trackError("ai", error, { userId: user.id, historyLength: history.length });
     console.error("AI chat error:", error);
     return "Прости, не могу ответить прямо сейчас 😔 Попробуй через минутку.";
   }

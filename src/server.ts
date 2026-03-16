@@ -7,6 +7,7 @@ import { historyRoute } from "./api/history.js";
 import { analyticsRoute } from "./api/analytics.js";
 import { observationsRoute } from "./api/observations.js";
 import { checkinTriggerRoute } from "./api/checkin-trigger.js";
+import { kaizenRoute } from "./api/kaizen.js";
 import { config } from "./config.js";
 
 let server: http.Server | null = null;
@@ -34,6 +35,7 @@ export function startServer(port?: number): http.Server {
   analyticsRoute(apiRouter);
   observationsRoute(apiRouter);
   checkinTriggerRoute(apiRouter);
+  kaizenRoute(apiRouter);
   app.use("/api", apiRouter);
 
   server = app.listen(listenPort, () => {

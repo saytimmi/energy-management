@@ -7,6 +7,7 @@ import { reportHandler } from "./handlers/report.js";
 import { chat } from "./services/ai.js";
 import { transcribeVoice } from "./services/voice.js";
 import { findOrCreateUser } from "./db.js";
+import { trackError } from "./services/monitor.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
@@ -89,6 +90,7 @@ bot.on("message:voice", async (ctx) => {
 
     bufferMessage(from.id, text, from.first_name, from.last_name ?? undefined, from.username ?? undefined);
   } catch (error) {
+    await trackError("bot", error, { handler: "voice", userId: from.id });
     console.error("Voice handler error:", error);
     await ctx.reply("Не смог обработать голосовое 😔 Попробуй текстом.");
   }
