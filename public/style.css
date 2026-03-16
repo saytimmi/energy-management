@@ -216,6 +216,26 @@ body {
 .obs-tag.high { background: rgba(199,125,255,0.15); color: var(--spiritual); }
 .obs-tag.stable { background: rgba(138,134,144,0.15); color: var(--text2); }
 
+/* Today summary card on dashboard */
+.obs-today-card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(200,255,115,0.12);
+}
+.obs-today-title {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  letter-spacing: 0.5px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.obs-today-items { display: flex; flex-direction: column; gap: 4px; }
+.obs-today-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text);
+}
+.obs-today-text { color: var(--text2); }
+
 .obs-empty {
   text-align: center; padding: 24px;
   color: var(--text2); font-size: 14px; font-weight: 300;
@@ -301,13 +321,29 @@ body {
 }
 
 /* ── Journal ── */
-.journal-list { display: flex; flex-direction: column; gap: 16px; }
+.journal-list { display: flex; flex-direction: column; gap: 20px; }
 
 .journal-day { animation: fadeIn 0.4s ease both; }
-.journal-date {
-  font-size: 13px; font-weight: 500; color: var(--accent);
-  margin-bottom: 10px; letter-spacing: 0.5px;
+
+.journal-day-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px;
 }
+.journal-date {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  letter-spacing: 0.3px;
+}
+.journal-day-count {
+  font-size: 11px; font-weight: 400; color: var(--text2);
+}
+.journal-day-summary {
+  font-size: 12px; color: var(--text2); margin-bottom: 10px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-radius: 10px;
+  display: inline-block;
+}
+
 .journal-entries { display: flex; flex-direction: column; gap: 8px; }
 
 .journal-entry {
@@ -322,16 +358,29 @@ body {
 .journal-entry[data-type="spiritual"] { border-left-color: var(--spiritual); }
 
 .journal-entry-header {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; align-items: center; gap: 8px;
   margin-bottom: 6px;
 }
-.journal-type { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+.journal-type {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
 .journal-entry[data-type="physical"] .journal-type { color: var(--physical); }
 .journal-entry[data-type="mental"] .journal-type { color: var(--mental); }
 .journal-entry[data-type="emotional"] .journal-type { color: var(--emotional); }
 .journal-entry[data-type="spiritual"] .journal-type { color: var(--spiritual); }
 
-.journal-time { font-size: 11px; color: var(--text2); }
+.journal-dir-badge {
+  font-size: 10px; font-weight: 500;
+  padding: 2px 6px; border-radius: 6px;
+}
+.journal-dir-badge.drop { background: rgba(255,90,90,0.15); color: #ff6b6b; }
+.journal-dir-badge.rise { background: rgba(91,224,122,0.15); color: var(--physical); }
+.journal-dir-badge.low { background: rgba(255,140,91,0.15); color: var(--emotional); }
+.journal-dir-badge.high { background: rgba(199,125,255,0.15); color: var(--spiritual); }
+.journal-dir-badge.stable { background: rgba(138,134,144,0.15); color: var(--text2); }
+
+.journal-time { font-size: 11px; color: var(--text2); margin-left: auto; }
 .journal-context { font-size: 14px; line-height: 1.45; }
 .journal-trigger {
   margin-top: 6px; font-size: 12px; color: var(--text2);
@@ -353,8 +402,8 @@ body {
 }
 .journal-date-today {
   color: var(--accent) !important;
-  font-weight: 600 !important;
-  font-size: 15px !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
 }
 
 /* Journal empty state */

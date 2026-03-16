@@ -180,23 +180,82 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     var emojiMap = { physical: "🏃", mental: "🧠", emotional: "💚", spiritual: "🔮" };
-    var typeNames = { physical: "Физическая", mental: "Ментальная", emotional: "Эмоциональная", spiritual: "Духовная" };
-    var dirNames = { drop: "просадка", rise: "рост", low: "низкая", high: "высокая", stable: "стабильно" };
+    var dirNames = { drop: "↓ просадка", rise: "↑ рост", low: "↓ низкая", high: "↑ высокая", stable: "— стабильно" };
+    var dirIcons = { drop: "🔻", rise: "🔺", low: "🔻", high: "🔺", stable: "➖" };
 
-    var recent = data.observations.slice(0, 6);
-    list.innerHTML = recent.map(function (o, i) {
-      var emoji = emojiMap[o.energyType] || "•";
-      var text = o.context || o.trigger || typeNames[o.energyType] + " — " + (dirNames[o.direction] || o.direction);
-      var time = new Date(o.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
-      var tag = '<span class="obs-tag ' + o.direction + '">' + (dirNames[o.direction] || o.direction) + '</span>';
+    // Group recent observations by energy type — show latest per type
+    var byType = {};
+    data.observations.forEach(function (o) {
+      if (!byType[o.energyType]) byType[o.energyType] = o;
+    });
 
-      return '<div class="obs-item" style="animation-delay:' + (i * 0.06) + 's">' +
-        '<span class="obs-emoji">' + emoji + '</span>' +
-        '<div class="obs-body">' +
-          '<div class="obs-text">' + text + '</div>' +
-          '<div class="obs-meta">' + tag + '<span>' + time + '</span></div>' +
-        '</div></div>';
-    }).join("");
+    // Also get today's observations for "Сегодня" section
+    var todayKey = new Date().toISOString().split("T")[0];
+    var todayObs = data.observations.filter(function (o) {
+      return o.createdAt.split("T")[0] === todayKey;
+    });
+
+    var html = "";
+
+    // Today's summary card
+    if (todayObs.length > 0) {
+      html += '<div class="obs-today-card">';
+      html += '<div class="obs-today-title">Сегодня</div>';
+      html += '<div class="obs-today-items">';
+      todayObs.forEach(function (o) {
+        var emoji = emojiMap[o.energyType] || "•";
+        var icon = dirIcons[o.direction] || "";
+        var text = o.trigger || o.context || "";
+        html += '<div class="obs-today-item">' +
+          '<span>' + emoji + ' ' + icon + '</span>' +
+          '<span class="obs-today-text">' + text + '</span>' +
+        '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Recent notable events (drops and rises only, last 5)
+    var notable = data.observations
+      .filter(function (o) { return o.direction === "drop" || o.direction === "rise" || o.direction === "low"; })
+      .slice(0, 5);
+
+    if (notable.length > 0) {
+      notable.forEach(function (o, i) {
+        var emoji = emojiMap[o.energyType] || "•";
+        var text = o.context || o.trigger || "";
+        var tag = '<span class="obs-tag ' + o.direction + '">' + (dirNames[o.direction] || o.direction) + '</span>';
+        var timeAgo = getTimeAgo(new Date(o.createdAt));
+
+        html += '<div class="obs-item" style="animation-delay:' + (i * 0.06) + 's">' +
+          '<span class="obs-emoji">' + emoji + '</span>' +
+          '<div class="obs-body">' +
+            '<div class="obs-text">' + text + '</div>' +
+            '<div class="obs-meta">' + tag + '<span>' + timeAgo + '</span></div>' +
+          '</div></div>';
+      });
+    }
+
+    if (html === "") {
+      section.classList.add("hidden");
+      return;
+    }
+
+    list.innerHTML = html;
+  }
+
+  function getTimeAgo(date) {
+    var now = new Date();
+    var diff = now - date;
+    var mins = Math.floor(diff / 60000);
+    var hours = Math.floor(diff / 3600000);
+    var days = Math.floor(diff / 86400000);
+
+    if (mins < 1) return "только что";
+    if (mins < 60) return mins + " мин назад";
+    if (hours < 24) return hours + " ч назад";
+    if (days === 1) return "вчера";
+    if (days < 7) return days + " дн назад";
+    return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
   }
 
   var chartInstance = null;
@@ -262,43 +321,111 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        var grouped = data.grouped;
+        var emojiMap = { physical: "🏃", mental: "🧠", emotional: "💚", spiritual: "🔮" };
         var typeNames = { physical: "Физическая", mental: "Ментальная", emotional: "Эмоциональная", spiritual: "Духовная" };
+        var dirNames = { drop: "просадка", rise: "рост", low: "низкая", high: "высокая", stable: "стабильно" };
 
-        // Get today's date key for highlighting
         var todayKey = new Date().toISOString().split("T")[0];
+        var yesterdayKey = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+        // Re-group on client (server groups but we want sorted entries within each day)
+        var grouped = {};
+        data.observations.forEach(function (o) {
+          var dateKey = o.createdAt.split("T")[0];
+          if (!grouped[dateKey]) grouped[dateKey] = [];
+          grouped[dateKey].push(o);
+        });
+
+        // Sort entries within each day by time ascending (morning → evening)
+        Object.keys(grouped).forEach(function (key) {
+          grouped[key].sort(function (a, b) {
+            return new Date(a.createdAt) - new Date(b.createdAt);
+          });
+        });
 
         var html = Object.entries(grouped)
-          .sort((a, b) => b[0].localeCompare(a[0]))
+          .sort(function (a, b) { return b[0].localeCompare(a[0]); })
           .map(function (entry) {
             var dateKey = entry[0];
             var obs = entry[1];
             var isToday = dateKey === todayKey;
-            var dateStr = new Date(dateKey).toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
-            var dateLabel = isToday ? "Сегодня" : dateStr;
+            var isYesterday = dateKey === yesterdayKey;
 
+            // Date label
+            var dateLabel;
+            if (isToday) {
+              dateLabel = "Сегодня";
+            } else if (isYesterday) {
+              dateLabel = "Вчера";
+            } else {
+              dateLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
+            }
+
+            // Day summary: count drops/rises per energy type
+            var daySummary = buildDaySummary(obs, emojiMap, dirNames);
+
+            // Entries sorted by time
             var entries = obs.map(function (o) {
               var time = new Date(o.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+              var emoji = emojiMap[o.energyType] || "•";
+              var typeName = typeNames[o.energyType] || o.energyType;
+              var dirLabel = dirNames[o.direction] || o.direction;
+              var contextText = o.context || "";
               var rec = o.recommendation ? '<div class="journal-rec">💡 ' + o.recommendation + '</div>' : '';
-              var trigger = o.trigger ? '<div class="journal-trigger">Причина: ' + o.trigger + '</div>' : '';
+              var trigger = o.trigger ? '<div class="journal-trigger">' + o.trigger + '</div>' : '';
 
               return '<div class="journal-entry" data-type="' + o.energyType + '">' +
                 '<div class="journal-entry-header">' +
-                  '<span class="journal-type">' + (typeNames[o.energyType] || o.energyType) + '</span>' +
+                  '<span class="journal-type">' + emoji + ' ' + typeName + '</span>' +
+                  '<span class="journal-dir-badge ' + o.direction + '">' + dirLabel + '</span>' +
                   '<span class="journal-time">' + time + '</span>' +
                 '</div>' +
-                '<div class="journal-context">' + (o.context || o.direction) + '</div>' +
+                (contextText ? '<div class="journal-context">' + contextText + '</div>' : '') +
                 trigger + rec +
               '</div>';
             }).join("");
 
             return '<div class="journal-day' + (isToday ? ' journal-today' : '') + '">' +
-              '<div class="journal-date' + (isToday ? ' journal-date-today' : '') + '">' + dateLabel + '</div>' +
+              '<div class="journal-day-header">' +
+                '<div class="journal-date' + (isToday ? ' journal-date-today' : '') + '">' + dateLabel + '</div>' +
+                '<div class="journal-day-count">' + obs.length + ' ' + getNoteWord(obs.length) + '</div>' +
+              '</div>' +
+              (daySummary ? '<div class="journal-day-summary">' + daySummary + '</div>' : '') +
               '<div class="journal-entries">' + entries + '</div>' +
             '</div>';
           }).join("");
 
         list.innerHTML = html;
       });
+  }
+
+  function buildDaySummary(obs, emojiMap, dirNames) {
+    var drops = obs.filter(function (o) { return o.direction === "drop" || o.direction === "low"; });
+    var rises = obs.filter(function (o) { return o.direction === "rise" || o.direction === "high"; });
+
+    var parts = [];
+
+    if (drops.length > 0) {
+      var dropTypes = drops.map(function (o) { return emojiMap[o.energyType] || ""; });
+      var unique = dropTypes.filter(function (v, i, a) { return a.indexOf(v) === i; });
+      parts.push("🔻 " + unique.join("") + " просадки: " + drops.length);
+    }
+
+    if (rises.length > 0) {
+      var riseTypes = rises.map(function (o) { return emojiMap[o.energyType] || ""; });
+      var unique = riseTypes.filter(function (v, i, a) { return a.indexOf(v) === i; });
+      parts.push("🔺 " + unique.join("") + " рост: " + rises.length);
+    }
+
+    return parts.join("  ·  ");
+  }
+
+  function getNoteWord(n) {
+    var abs = Math.abs(n) % 100;
+    var last = abs % 10;
+    if (abs > 10 && abs < 20) return "записей";
+    if (last > 1 && last < 5) return "записи";
+    if (last === 1) return "запись";
+    return "записей";
   }
 });
