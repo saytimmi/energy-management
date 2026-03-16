@@ -4,6 +4,7 @@ import { startHandler } from "./handlers/start.js";
 import { helpHandler } from "./handlers/help.js";
 import { handleCheckinCallback } from "./handlers/checkin.js";
 import { reportHandler } from "./handlers/report.js";
+import { kaizenHandler } from "./handlers/kaizen.js";
 import { chat } from "./services/ai.js";
 import { transcribeVoice } from "./services/voice.js";
 import { findOrCreateUser } from "./db.js";
@@ -66,6 +67,7 @@ async function flushBuffer(userId: number) {
 bot.command("start", startHandler);
 bot.command("help", helpHandler);
 bot.command("report", reportHandler);
+bot.command("kaizen", kaizenHandler);
 
 // Inline keyboard callbacks
 bot.on("callback_query:data", handleCheckinCallback);

@@ -1,0 +1,64 @@
+name: Kaizen Improvement
+
+on:
+  repository_dispatch:
+    types: [kaizen-improve]
+  schedule:
+    # Run every 6 hours automatically
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  kaizen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build check
+        run: npm run build
+
+      - name: Run tests
+        run: npm test || true
+
+      - name: Fetch kaizen diagnostics
+        id: diagnostics
+        run: |
+          curl -sf "${{ secrets.RAILWAY_URL }}/api/kaizen" > kaizen-report.json || echo '{"health":{"errors24h":0},"usage":{}}' > kaizen-report.json
+          cat kaizen-report.json
+
+      - name: Claude Code Improvement
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Ты — kaizen-агент для energy-management бота. Прочитай CLAUDE.md для контекста.
+
+            Вот текущая диагностика:
+            $(cat kaizen-report.json)
+
+            Сделай ОДНО конкретное улучшение:
+            1. Если есть ошибки — исправь самую критичную
+            2. Если нет ошибок — улучши UX в Mini App (public/), или AI промпт, или добавь мелкую полезную фичу
+            3. Убедись что билд проходит (npm run build)
+            4. Закоммить изменение с понятным сообщением
+
+            НЕ ломай существующий функционал. Одно улучшение за раз.
+          max_turns: 10
+          timeout_minutes: 10
+
+      - name: Push changes
+        run: |
+          git config user.name "Kaizen Bot"
+          git config user.email "kaizen@energy-bot.app"
+          git push origin main || echo "Nothing to push"
