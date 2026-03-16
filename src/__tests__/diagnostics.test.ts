@@ -16,7 +16,7 @@ import {
   analyzeEnergyHistory,
   formatDiagnostic,
   type DiagnosticResult,
-} from "./diagnostics.js";
+} from "../services/diagnostics.js";
 
 const mockedFindMany = vi.mocked(prisma.energyLog.findMany);
 

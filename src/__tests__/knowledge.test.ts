@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { EnergyType } from '../types.js';
-import { RECOVERY_PRACTICES, DRAIN_FACTORS, SUBSTITUTION_RULES } from '../data.js';
+import { EnergyType } from '../knowledge/types.js';
+import { RECOVERY_PRACTICES, DRAIN_FACTORS, SUBSTITUTION_RULES } from '../knowledge/data.js';
 
 describe('EnergyType enum', () => {
   it('has all 4 types', () => {

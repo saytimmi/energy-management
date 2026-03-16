@@ -13,20 +13,20 @@ vi.mock("../knowledge/index.js", () => ({
   getRecoveryPractices: vi.fn(),
 }));
 
-vi.mock("./ai.js", () => ({
+vi.mock("../services/ai.js", () => ({
   personalizeRecommendation: vi.fn(),
 }));
 
 import { getRecoveryPractices } from "../knowledge/index.js";
-import { personalizeRecommendation } from "./ai.js";
+import { personalizeRecommendation } from "../services/ai.js";
 import prisma from "../db.js";
-import type { DiagnosticResult } from "./diagnostics.js";
+import type { DiagnosticResult } from "../services/diagnostics.js";
 import type { Practice } from "../knowledge/types.js";
 import {
   getRecommendations,
   formatRecommendations,
   type Recommendation,
-} from "./recommendations.js";
+} from "../services/recommendations.js";
 
 const mockedGetPractices = vi.mocked(getRecoveryPractices);
 const mockedPersonalize = vi.mocked(personalizeRecommendation);
