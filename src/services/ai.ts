@@ -40,14 +40,28 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - НИКОГДА не говори что у тебя "нет доступа к базе" или "нет доступа к мини-приложению" — у тебя есть.
 - Если человек спросит про базу или данные — скажи что всё сохраняется автоматически и видно в Energy App.
 
+ВАЖНО — ДАТА И ВРЕМЯ:
+Ты всегда знаешь текущую дату и время (они передаются в контексте). Используй это:
+- Приветствуй по времени суток ("доброе утро", "добрый вечер")
+- Понимай временные ссылки: "вчера", "позавчера", "в понедельник", "на прошлой неделе", "утром", "после обеда"
+- Ссылайся на день недели ("как прошёл понедельник?", "к пятнице уже выдохся?")
+- Если человек говорит о событии в прошлом — укажи правильную дату в DATA блоке
+
 ВАЖНО — СТРУКТУРИРОВАННЫЕ ДАННЫЕ:
 Если из разговора ты понимаешь что-то о состоянии энергии человека, добавь в САМЫЙ КОНЕЦ ответа блок данных в формате:
-<!--DATA:{"energyType":"physical|mental|emotional|spiritual","direction":"drop|rise|stable|low|high","level":null,"trigger":"причина если понятна","recommendation":"совет если дал","context":"краткое описание ситуации"}-->
+<!--DATA:{"energyType":"physical|mental|emotional|spiritual","direction":"drop|rise|stable|low|high","level":null,"trigger":"причина если понятна","recommendation":"совет если дал","context":"краткое описание ситуации","when":"ISO дата события если не сейчас, например 2026-03-14T15:00:00"}-->
+
+Поле "when":
+- Если событие происходит СЕЙЧАС — не указывай "when" (или null)
+- Если "вчера" — поставь вчерашнюю дату
+- Если "утром" (а сейчас вечер) — поставь сегодня утром
+- Если "в понедельник" — вычисли дату этого понедельника
+- Если "на прошлой неделе" — поставь примерную дату
 
 Примеры:
-- Человек говорит "устал после 5 часов кодинга" → <!--DATA:{"energyType":"mental","direction":"drop","level":null,"trigger":"5 часов непрерывного кодинга","recommendation":null,"context":"ментальная перегрузка от работы"}-->
-- Человек говорит "поссорился с женой" → <!--DATA:{"energyType":"emotional","direction":"drop","level":null,"trigger":"конфликт с женой","recommendation":null,"context":"эмоциональный конфликт в семье"}-->
-- Ты посоветовал прогулку → <!--DATA:{"energyType":"mental","direction":"drop","level":null,"trigger":"переработка","recommendation":"прогулка без телефона 15 мин","context":"рекомендация на расфокус"}-->
+- "устал после 5 часов кодинга" (сейчас) → <!--DATA:{"energyType":"mental","direction":"drop","level":null,"trigger":"5 часов непрерывного кодинга","recommendation":null,"context":"ментальная перегрузка от работы"}-->
+- "вчера плохо спал" → <!--DATA:{"energyType":"physical","direction":"drop","level":null,"trigger":"плохой сон","recommendation":null,"context":"недосып","when":"2026-03-14T23:00:00"}-->
+- "в понедельник был на подъёме после тренировки" → <!--DATA:{"energyType":"physical","direction":"rise","level":null,"trigger":"тренировка","recommendation":null,"context":"подъём энергии после спорта","when":"2026-03-10T10:00:00"}-->
 
 Если ничего про энергию не понятно (просто болтовня) — НЕ добавляй DATA блок.
 Можно добавить НЕСКОЛЬКО блоков если затронуто несколько энергий.
@@ -98,18 +112,26 @@ async function extractAndSaveObservations(
   while ((match = dataRegex.exec(reply)) !== null) {
     try {
       const data = JSON.parse(match[1]);
-      await prisma.observation.create({
-        data: {
-          userId,
-          energyType: data.energyType || "unknown",
-          direction: data.direction || "stable",
-          level: data.level || null,
-          trigger: data.trigger || null,
-          recommendation: data.recommendation || null,
-          context: data.context || null,
-          sessionId,
-        },
-      });
+      const observationData: Record<string, unknown> = {
+        userId,
+        energyType: data.energyType || "unknown",
+        direction: data.direction || "stable",
+        level: data.level || null,
+        trigger: data.trigger || null,
+        recommendation: data.recommendation || null,
+        context: data.context || null,
+        sessionId,
+      };
+
+      // If AI specified a "when" date, use it as createdAt
+      if (data.when) {
+        const whenDate = new Date(data.when);
+        if (!isNaN(whenDate.getTime())) {
+          observationData.createdAt = whenDate;
+        }
+      }
+
+      await prisma.observation.create({ data: observationData as any });
     } catch (e) {
       console.error("Failed to parse observation:", e);
     }
@@ -148,8 +170,14 @@ export async function chat(
 
   // Build context
   const context = await buildUserContext(user.id);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ru-RU", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  const isoNow = now.toISOString();
+
   const systemWithContext = SYSTEM_PROMPT +
-    `\n\nИмя пользователя: ${userName}` +
+    `\n\nТекущая дата и время: ${dateStr}, ${timeStr} (${isoNow})` +
+    `\nИмя пользователя: ${userName}` +
     (context ? `\n\n${context}` : "");
 
   try {
