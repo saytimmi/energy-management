@@ -111,6 +111,7 @@ export async function setupBot() {
     { command: "start", description: "Начать заново" },
     { command: "energy", description: "Записать уровень энергии" },
     { command: "report", description: "Анализ моей энергии" },
+    { command: "kaizen", description: "Диагностика и улучшения" },
     { command: "help", description: "Показать справку" },
   ]);
 

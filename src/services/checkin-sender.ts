@@ -1,5 +1,6 @@
 import prisma from "../db.js";
 import { sendCheckInMessage } from "../handlers/checkin.js";
+import { trackError } from "./monitor.js";
 
 export async function sendCheckInToAll(
   logType: "morning" | "evening"
@@ -15,6 +16,7 @@ export async function sendCheckInToAll(
       const chatId = Number(user.telegramId);
       await sendCheckInMessage(chatId, logType);
     } catch (err) {
+      await trackError("scheduler", err, { logType, userId: user.id });
       console.warn(
         `Failed to send ${logType} check-in to user ${user.id} (telegramId: ${user.telegramId}):`,
         err
