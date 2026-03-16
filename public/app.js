@@ -138,13 +138,28 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!data || !data.insights) return;
         var section = document.getElementById("analyticsSection");
         var content = document.getElementById("analyticsContent");
-        var insights = Array.isArray(data.insights) ? data.insights : [data.insights];
-        content.innerHTML = insights.map(function (insight) {
-          return '<div class="analytics-card">' + insight + '</div>';
-        }).join("");
+
+        // Split insights by numbered lines and render as cards
+        var text = Array.isArray(data.insights) ? data.insights.join("\n") : data.insights;
+        var items = text.split(/\n(?=\d+\.)/).filter(function (s) { return s.trim(); });
+
+        if (items.length <= 1) {
+          // Single block — render with basic formatting
+          content.innerHTML = '<div class="analytics-card">' + formatInsight(text) + '</div>';
+        } else {
+          content.innerHTML = items.map(function (item) {
+            return '<div class="analytics-card">' + formatInsight(item.trim()) + '</div>';
+          }).join("");
+        }
         section.classList.remove("hidden");
       })
       .catch(function () { /* silently skip */ });
+  }
+
+  function formatInsight(text) {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
   }
 
   function renderRings(data) {
