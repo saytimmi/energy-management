@@ -90,6 +90,9 @@ bot.on("message:voice", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
 
+  // Show typing while transcribing (can take up to 20s with retries)
+  try { await ctx.api.sendChatAction(ctx.chat.id, "typing"); } catch {}
+
   try {
     const file = await ctx.getFile();
     const url = `https://api.telegram.org/file/bot${config.telegramBotToken}/${file.file_path}`;
@@ -99,7 +102,7 @@ bot.on("message:voice", async (ctx) => {
     const text = await transcribeVoice(buffer);
 
     if (!text) {
-      await ctx.reply("Не расслышал 😔 Попробуй ещё раз или напиши текстом.");
+      await ctx.reply("Не удалось расшифровать голосовое 😔\nНапиши текстом — я на связи!");
       return;
     }
 
