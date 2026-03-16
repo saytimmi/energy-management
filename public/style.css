@@ -199,6 +199,7 @@ body {
 .obs-tag.drop { background: rgba(255,90,90,0.15); color: #ff6b6b; }
 .obs-tag.rise { background: rgba(91,224,122,0.15); color: var(--physical); }
 .obs-tag.low { background: rgba(255,140,91,0.15); color: var(--emotional); }
+.obs-tag.high { background: rgba(199,125,255,0.15); color: var(--spiritual); }
 .obs-tag.stable { background: rgba(138,134,144,0.15); color: var(--text2); }
 
 .obs-empty {
