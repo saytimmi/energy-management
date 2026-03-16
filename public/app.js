@@ -91,7 +91,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }).catch(function () {
     document.getElementById("loading").classList.add("hidden");
     document.getElementById("welcome").classList.remove("hidden");
-    document.querySelector(".welcome-content p").textContent = "Не удалось загрузить данные";
+    document.querySelector(".welcome-content").innerHTML =
+      '<div class="welcome-icon">😔</div>' +
+      '<h1>Не удалось загрузить</h1>' +
+      '<p>Проверь соединение и попробуй снова</p>' +
+      '<button class="retry-btn" onclick="location.reload()">🔄 Повторить</button>';
   });
 
   // Navigation

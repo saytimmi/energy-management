@@ -60,6 +60,20 @@ body {
 .welcome-icon { font-size: 48px; }
 .welcome-content h1 { font-size: 28px; font-weight: 600; }
 .welcome-content p { font-size: 16px; color: var(--text2); line-height: 1.5; max-width: 280px; }
+.retry-btn {
+  margin-top: 16px;
+  padding: 12px 28px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.retry-btn:active { transform: scale(0.95); }
 
 /* ── Header ── */
 .app-header {
