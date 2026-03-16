@@ -2,9 +2,10 @@ import { Bot } from "grammy";
 import { config } from "./config.js";
 import { startHandler } from "./handlers/start.js";
 import { helpHandler } from "./handlers/help.js";
-import { handleCheckinCallback } from "./handlers/checkin.js";
+import { handleCheckinCallback, sendCheckInMessage } from "./handlers/checkin.js";
 import { reportHandler } from "./handlers/report.js";
 import { kaizenHandler } from "./handlers/kaizen.js";
+import { energyHandler } from "./handlers/energy.js";
 import { chat } from "./services/ai.js";
 import { transcribeVoice } from "./services/voice.js";
 import { findOrCreateUser } from "./db.js";
@@ -66,10 +67,22 @@ async function flushBuffer(userId: number) {
 // Commands
 bot.command("start", startHandler);
 bot.command("help", helpHandler);
+bot.command("energy", energyHandler);
 bot.command("report", reportHandler);
 bot.command("kaizen", kaizenHandler);
 
-// Inline keyboard callbacks
+// Inline button actions (from start/help keyboards)
+bot.callbackQuery("action:checkin", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  if (ctx.chat) await sendCheckInMessage(ctx.chat.id, "manual");
+});
+
+bot.callbackQuery("action:report", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await reportHandler(ctx);
+});
+
+// Inline keyboard callbacks (checkin flow)
 bot.on("callback_query:data", handleCheckinCallback);
 
 // Voice messages — transcribe, then buffer as text
@@ -107,19 +120,32 @@ bot.on("message:text", async (ctx) => {
 });
 
 export async function setupBot() {
+  // Set commands menu
   await bot.api.setMyCommands([
-    { command: "start", description: "Начать заново" },
-    { command: "energy", description: "Записать уровень энергии" },
-    { command: "report", description: "Анализ моей энергии" },
-    { command: "kaizen", description: "Диагностика и улучшения" },
-    { command: "help", description: "Показать справку" },
+    { command: "start", description: "🏠 Главное меню" },
+    { command: "energy", description: "⚡ Записать энергию" },
+    { command: "report", description: "📊 Анализ и рекомендации" },
+    { command: "help", description: "❓ Справка" },
   ]);
 
+  // Set bot description (shown before user starts the bot)
+  try {
+    await (bot.api as any).callApi("setMyDescription", {
+      description: "🔋 Персональный помощник по управлению энергией.\n\nОтслеживаю 4 типа энергии: физическую, ментальную, эмоциональную и духовную.\n\nПиши текстом или голосом — я пойму.",
+    });
+    await (bot.api as any).callApi("setMyShortDescription", {
+      short_description: "🔋 Управление 4 типами энергии",
+    });
+  } catch (err) {
+    console.warn("Could not set bot description:", err);
+  }
+
+  // Set menu button to open Mini App
   if (config.webappUrl) {
     await bot.api.setChatMenuButton({
       menu_button: {
         type: "web_app",
-        text: "Energy App",
+        text: "📱 Energy App",
         web_app: { url: config.webappUrl },
       },
     });
