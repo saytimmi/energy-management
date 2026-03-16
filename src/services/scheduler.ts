@@ -7,8 +7,8 @@ const tasks: ScheduledTask[] = [];
 export function startScheduler(): void {
   console.log("Scheduler started");
 
-  // Heartbeat job — proves scheduler fires without manual trigger
-  const heartbeat = cron.schedule("* * * * *", () => {
+  // Heartbeat every 15 min — proves scheduler is alive without spamming logs
+  const heartbeat = cron.schedule("*/15 * * * *", () => {
     console.log(`Scheduler heartbeat: ${new Date().toISOString()}`);
   });
   tasks.push(heartbeat);

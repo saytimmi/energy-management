@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "prisma generate && tsc && cp -r public dist/",
-    "start": "prisma db push --accept-data-loss && node dist/index.js",
+    "start": "npx prisma db push --accept-data-loss; node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
@@ -18,13 +18,13 @@
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "grammy": "^1.21.1",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "prisma": "^6.5.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^22.13.10",
     "@types/node-cron": "^3.0.11",
-    "prisma": "^6.5.0",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vitest": "^2.1.9"
