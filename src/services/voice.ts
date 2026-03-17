@@ -1,53 +1,46 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config.js";
 import { trackError, measured } from "./monitor.js";
 
+const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+
 const MAX_RETRIES = 2;
-const RETRY_DELAYS = [3000, 10000];
+const RETRY_DELAYS = [5000, 15000];
 
 /**
- * Transcribe voice message using Groq Whisper API
+ * Transcribe voice message using Gemini
  */
 export async function transcribeVoice(audioBuffer: Buffer): Promise<string | null> {
-  if (!config.groqApiKey) {
-    console.error("GROQ_API_KEY not set, skipping transcription");
-    return null;
-  }
-
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       return await measured("voice_transcribe_ms", async () => {
-        const blob = new Blob([new Uint8Array(audioBuffer)], { type: "audio/ogg" });
-        const formData = new FormData();
-        formData.append("file", blob, "voice.ogg");
-        formData.append("model", "whisper-large-v3-turbo");
-        formData.append("language", "ru");
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${config.groqApiKey}` },
-          body: formData,
-        });
+        const result = await model.generateContent([
+          {
+            inlineData: {
+              mimeType: "audio/ogg",
+              data: audioBuffer.toString("base64"),
+            },
+          },
+          "Расшифруй это голосовое сообщение. Верни ТОЛЬКО текст того что сказал человек, без комментариев и пояснений.",
+        ]);
 
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Groq ${res.status}: ${errText}`);
-        }
-
-        const data = await res.json() as { text?: string };
-        return data.text?.trim() || null;
+        const text = result.response.text().trim();
+        return text || null;
       }, { size: String(audioBuffer.length), attempt: String(attempt) });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      const isRateLimit = errorMsg.includes("429") || errorMsg.includes("rate");
+      const isRateLimit = errorMsg.includes("429") || errorMsg.includes("quota") || errorMsg.includes("Too Many Requests");
 
       if (isRateLimit && attempt < MAX_RETRIES) {
-        console.log(`Groq rate limited, retry ${attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAYS[attempt]}ms`);
+        console.log(`Voice transcription rate limited, retry ${attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAYS[attempt]}ms`);
         await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
         continue;
       }
 
       await trackError("voice", error, { bufferSize: audioBuffer.length, attempt, isRateLimit });
-      console.error("Groq transcription error:", error);
+      console.error("Gemini transcription error:", error);
       return null;
     }
   }
