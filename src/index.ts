@@ -11,16 +11,23 @@ async function main() {
   await prisma.$connect();
   console.log("Database connected");
 
-  await setupBot();
-  console.log("Bot commands and menu configured");
+  // Start HTTP server first — Mini App must be available
+  startServer();
+  console.log(`Mini App server started on port ${config.port}`);
+
+  // Bot setup (non-fatal — don't crash if commands fail)
+  try {
+    await setupBot();
+    console.log("Bot commands and menu configured");
+  } catch (err) {
+    console.warn("Bot setup warning (non-fatal):", err);
+  }
 
   bot.start({
     onStart: () => console.log("Bot is running"),
   });
 
   startScheduler();
-  startServer();
-  console.log(`Mini App server started on port ${config.port}`);
 }
 
 process.on("SIGINT", () => {
