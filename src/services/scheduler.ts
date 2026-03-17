@@ -15,15 +15,15 @@ export function startScheduler(): void {
 
   const morningCheckin = cron.schedule(config.morningCheckinCron, () => {
     sendCheckInToAll("morning");
-  });
+  }, { timezone: "Asia/Shanghai" });
   tasks.push(morningCheckin);
-  console.log(`Morning check-in scheduled: ${config.morningCheckinCron}`);
+  console.log(`Morning check-in scheduled: ${config.morningCheckinCron} (Asia/Shanghai)`);
 
   const eveningCheckin = cron.schedule(config.eveningCheckinCron, () => {
     sendCheckInToAll("evening");
-  });
+  }, { timezone: "Asia/Shanghai" });
   tasks.push(eveningCheckin);
-  console.log(`Evening check-in scheduled: ${config.eveningCheckinCron}`);
+  console.log(`Evening check-in scheduled: ${config.eveningCheckinCron} (Asia/Shanghai)`);
 }
 
 export function stopScheduler(): void {

@@ -199,9 +199,10 @@ export async function chat(
   // Build context
   const context = await buildUserContext(user.id);
   const now = new Date();
-  const dateStr = now.toLocaleDateString("ru-RU", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-  const isoNow = now.toISOString();
+  const TZ = "Asia/Shanghai";
+  const dateStr = now.toLocaleDateString("ru-RU", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: TZ });
+  const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
+  const isoNow = now.toLocaleString("sv-SE", { timeZone: TZ }).replace(" ", "T") + "+08:00";
 
   const systemWithContext = SYSTEM_PROMPT +
     `\n\nТекущая дата и время: ${dateStr}, ${timeStr} (${isoNow})` +
