@@ -1,0 +1,19 @@
+:root {
+  --bg: #0d0d0f;
+  --surface: #1a1a1f;
+  --surface2: #242429;
+  --text: #f0ede8;
+  --text2: #8a8690;
+  --accent: #c8ff73;
+  --physical: #5be07a;
+  --mental: #5ba8ff;
+  --emotional: #ff8c5b;
+  --spiritual: #c77dff;
+  --radius: 20px;
+  --nav-h: 72px;
+  --tg-bg: var(--bg);
+  --tg-text: var(--text);
+  --tg-hint: var(--text2);
+  --tg-button: var(--accent);
+  --tg-surface: var(--surface);
+}
