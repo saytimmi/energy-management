@@ -3,24 +3,11 @@ import prisma from "../db.js";
 
 export function observationsRoute(router: Router): void {
   router.get("/observations", async (req: Request, res: Response) => {
-    const telegramIdParam = req.query.telegramId as string | undefined;
-
-    if (!telegramIdParam) {
-      res.status(400).json({ error: "missing_telegram_id" });
-      return;
-    }
+    const userId = (req as any).userId as number;
 
     try {
-      const telegramId = BigInt(telegramIdParam);
-      const user = await prisma.user.findUnique({ where: { telegramId } });
-
-      if (!user) {
-        res.status(404).json({ error: "user_not_found" });
-        return;
-      }
-
       const observations = await prisma.observation.findMany({
-        where: { userId: user.id },
+        where: { userId },
         orderBy: { createdAt: "desc" },
         take: 50,
       });
@@ -61,7 +48,6 @@ export function observationsRoute(router: Router): void {
         observations: deduped,
         grouped,
         stats: { typeCounts, directionCounts, triggers, total: deduped.length },
-        user: { firstName: user.firstName },
       });
     } catch (err) {
       console.error("Observations API error:", err);

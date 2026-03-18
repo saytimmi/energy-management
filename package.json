@@ -4,26 +4,33 @@
   "description": "Telegram bot for tracking 4 types of energy",
   "main": "dist/index.js",
   "scripts": {
-    "build": "prisma generate && tsc && cp -r public dist/",
+    "build": "prisma generate && tsc && vite build --config vite.config.mts",
     "start": "npx prisma db push --accept-data-loss; node dist/index.js",
-    "dev": "tsx watch src/index.ts",
+    "dev": "concurrently -n bot,vite \"tsx watch src/index.ts\" \"vite dev --config vite.config.mts\"",
+    "dev:bot": "tsx watch src/index.ts",
+    "dev:vite": "vite dev --config vite.config.mts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@preact/signals": "^2.8.2",
     "@prisma/client": "^6.5.0",
+    "chart.js": "^4.5.1",
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "grammy": "^1.21.1",
     "node-cron": "^3.0.3",
+    "preact": "^10.29.0",
     "prisma": "^6.5.0"
   },
   "devDependencies": {
+    "@preact/preset-vite": "^2.9.4",
     "@types/express": "^5.0.6",
     "@types/node": "^22.13.10",
     "@types/node-cron": "^3.0.11",
+    "concurrently": "^9.2.1",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vitest": "^2.1.9"

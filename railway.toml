@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [build.nixpacks]
-buildCmd = "npx prisma generate && npx tsc && cp -r public dist/"
+buildCmd = "npm run build"
 
 [deploy]
 startCommand = "npx prisma generate && node dist/index.js"

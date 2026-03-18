@@ -8,6 +8,7 @@ import { analyticsRoute } from "./api/analytics.js";
 import { observationsRoute } from "./api/observations.js";
 import { checkinTriggerRoute } from "./api/checkin-trigger.js";
 import { kaizenRoute } from "./api/kaizen.js";
+import { telegramAuth } from "./middleware/telegram-auth.js";
 import { config } from "./config.js";
 
 let server: http.Server | null = null;
@@ -20,23 +21,28 @@ export function startServer(port?: number): http.Server {
   app.use((_req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     next();
   });
 
-  // Serve static files from public/ (relative to project root, not dist)
-  const publicPath = path.resolve(process.cwd(), "public");
-  app.use(express.static(publicPath));
+  // Serve Vite-built frontend (replaces public/)
+  const clientPath = path.resolve(process.cwd(), "dist", "client");
+  app.use(express.static(clientPath));
 
-  // API routes
+  // Public API routes (no auth)
   const apiRouter = Router();
-  dashboardRoute(apiRouter);
-  historyRoute(apiRouter);
-  analyticsRoute(apiRouter);
-  observationsRoute(apiRouter);
-  checkinTriggerRoute(apiRouter);
   kaizenRoute(apiRouter);
   app.use("/api", apiRouter);
+
+  // Authenticated API routes
+  const authedRouter = Router();
+  authedRouter.use(telegramAuth);
+  dashboardRoute(authedRouter);
+  historyRoute(authedRouter);
+  analyticsRoute(authedRouter);
+  observationsRoute(authedRouter);
+  checkinTriggerRoute(authedRouter);
+  app.use("/api", authedRouter);
 
   server = app.listen(listenPort, "0.0.0.0", () => {
     console.log(`HTTP server listening on 0.0.0.0:${listenPort}`);

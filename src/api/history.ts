@@ -3,26 +3,10 @@ import prisma from "../db.js";
 
 export function historyRoute(router: Router): void {
   router.get("/history", async (req: Request, res: Response) => {
-    const telegramIdParam = req.query.telegramId as string | undefined;
+    const userId = (req as any).userId as number;
     const period = (req.query.period as string) || "week";
 
-    if (!telegramIdParam) {
-      res.status(400).json({ error: "missing_telegram_id" });
-      return;
-    }
-
     try {
-      const telegramId = BigInt(telegramIdParam);
-
-      const user = await prisma.user.findUnique({
-        where: { telegramId },
-      });
-
-      if (!user) {
-        res.status(404).json({ error: "user_not_found" });
-        return;
-      }
-
       // Calculate date range
       const now = new Date();
       const daysBack = period === "month" ? 30 : 7;
@@ -30,7 +14,7 @@ export function historyRoute(router: Router): void {
 
       const logs = await prisma.energyLog.findMany({
         where: {
-          userId: user.id,
+          userId,
           createdAt: { gte: since },
         },
         orderBy: { createdAt: "asc" },
