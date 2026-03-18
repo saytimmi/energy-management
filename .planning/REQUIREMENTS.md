@@ -49,39 +49,41 @@
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Публичный бот | Только для своего круга (~20-50 человек) |
-| Мобильное приложение | Telegram Mini App достаточно |
-| Носимые устройства | Ручной ввод, без фитнес-браслетов |
-| Монетизация | Бесплатно для своих |
+| Feature              | Reason                                   |
+| -------------------- | ---------------------------------------- |
+| Публичный бот        | Только для своего круга (~20-50 человек) |
+| Мобильное приложение | Telegram Mini App достаточно             |
+| Носимые устройства   | Ручной ввод, без фитнес-браслетов        |
+| Монетизация          | Бесплатно для своих                      |
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| INFRA-01 | Phase 1 | Complete |
-| INFRA-02 | Phase 1 | Complete |
-| INFRA-03 | Phase 1 | Complete |
-| INFRA-04 | Phase 1 | Complete |
-| INFRA-05 | Phase 1 | Complete |
-| KB-01 | Phase 2 | Complete |
-| KB-02 | Phase 2 | Complete |
-| KB-03 | Phase 2 | Complete |
-| BOT-01 | Phase 3 | Complete |
-| BOT-02 | Phase 3 | Complete |
-| BOT-03 | Phase 3 | Complete |
-| BOT-04 | Phase 4 | Complete |
-| BOT-05 | Phase 4 | Pending |
-| APP-01 | Phase 5 | Complete |
-| APP-02 | Phase 5 | Complete |
-| APP-03 | Phase 5 | Complete |
+| Requirement | Phase   | Status   |
+| ----------- | ------- | -------- |
+| INFRA-01    | Phase 1 | Complete |
+| INFRA-02    | Phase 1 | Complete |
+| INFRA-03    | Phase 1 | Complete |
+| INFRA-04    | Phase 1 | Complete |
+| INFRA-05    | Phase 1 | Complete |
+| KB-01       | Phase 2 | Complete |
+| KB-02       | Phase 2 | Complete |
+| KB-03       | Phase 2 | Complete |
+| BOT-01      | Phase 3 | Complete |
+| BOT-02      | Phase 3 | Complete |
+| BOT-03      | Phase 3 | Complete |
+| BOT-04      | Phase 4 | Complete |
+| BOT-05      | Phase 4 | Pending  |
+| APP-01      | Phase 5 | Complete |
+| APP-02      | Phase 5 | Complete |
+| APP-03      | Phase 5 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 13 total
 - Mapped to phases: 13
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-03-14*
-*Last updated: 2026-03-14 after roadmap creation*
+
+_Requirements defined: 2026-03-14_
+_Last updated: 2026-03-14 after roadmap creation_
