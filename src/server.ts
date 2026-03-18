@@ -8,6 +8,7 @@ import { analyticsRoute } from "./api/analytics.js";
 import { observationsRoute } from "./api/observations.js";
 import { checkinTriggerRoute } from "./api/checkin-trigger.js";
 import { kaizenRoute } from "./api/kaizen.js";
+import { telegramAuth } from "./middleware/telegram-auth.js";
 import { config } from "./config.js";
 
 let server: http.Server | null = null;
@@ -28,15 +29,20 @@ export function startServer(port?: number): http.Server {
   const clientPath = path.resolve(process.cwd(), "dist", "client");
   app.use(express.static(clientPath));
 
-  // API routes
+  // Public API routes (no auth)
   const apiRouter = Router();
-  dashboardRoute(apiRouter);
-  historyRoute(apiRouter);
-  analyticsRoute(apiRouter);
-  observationsRoute(apiRouter);
-  checkinTriggerRoute(apiRouter);
   kaizenRoute(apiRouter);
   app.use("/api", apiRouter);
+
+  // Authenticated API routes
+  const authedRouter = Router();
+  authedRouter.use(telegramAuth);
+  dashboardRoute(authedRouter);
+  historyRoute(authedRouter);
+  analyticsRoute(authedRouter);
+  observationsRoute(authedRouter);
+  checkinTriggerRoute(authedRouter);
+  app.use("/api", authedRouter);
 
   server = app.listen(listenPort, "0.0.0.0", () => {
     console.log(`HTTP server listening on 0.0.0.0:${listenPort}`);

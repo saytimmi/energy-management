@@ -16,32 +16,16 @@ const ANALYTICS_SYSTEM_PROMPT =
 
 export function analyticsRoute(router: Router): void {
   router.get("/analytics", async (req: Request, res: Response) => {
-    const telegramIdParam = req.query.telegramId as string | undefined;
-
-    if (!telegramIdParam) {
-      res.status(400).json({ error: "missing_telegram_id" });
-      return;
-    }
+    const userId = (req as any).userId as number;
 
     try {
-      const telegramId = BigInt(telegramIdParam);
-
-      const user = await prisma.user.findUnique({
-        where: { telegramId },
-      });
-
-      if (!user) {
-        res.status(404).json({ error: "user_not_found" });
-        return;
-      }
-
       // Fetch last 30 days of energy logs
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const logs = await prisma.energyLog.findMany({
         where: {
-          userId: user.id,
+          userId,
           createdAt: { gte: thirtyDaysAgo },
         },
         orderBy: { createdAt: "asc" },
@@ -118,7 +102,7 @@ export function analyticsRoute(router: Router): void {
       ].join("\n");
 
       // Check cache first
-      const cached = analyticsCache.get(user.id);
+      const cached = analyticsCache.get(userId);
       if (cached && cached.expiresAt > Date.now()) {
         res.json(cached.data);
         return;
@@ -135,7 +119,7 @@ export function analyticsRoute(router: Router): void {
         const block = response.content[0];
         const insights = block.type === "text" ? block.text : null;
         const result = { hasEnoughData: true, insights, stats };
-        analyticsCache.set(user.id, { data: result, expiresAt: Date.now() + CACHE_TTL });
+        analyticsCache.set(userId, { data: result, expiresAt: Date.now() + CACHE_TTL });
         res.json(result);
       } catch {
         // AI unavailable — return stats without insights
