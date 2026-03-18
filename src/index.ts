@@ -22,8 +22,11 @@ async function main() {
     console.warn("Bot setup warning (non-fatal):", err);
   }
 
+  // Drop pending updates to avoid conflicts, then start polling
+  await bot.api.deleteWebhook({ drop_pending_updates: true });
   bot.start({
     onStart: () => console.log("Bot is running"),
+    drop_pending_updates: true,
   });
 
   startScheduler();
