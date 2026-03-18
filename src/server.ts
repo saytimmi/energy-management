@@ -20,13 +20,13 @@ export function startServer(port?: number): http.Server {
   app.use((_req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     next();
   });
 
-  // Serve static files from public/ (relative to project root, not dist)
-  const publicPath = path.resolve(process.cwd(), "public");
-  app.use(express.static(publicPath));
+  // Serve Vite-built frontend (replaces public/)
+  const clientPath = path.resolve(process.cwd(), "dist", "client");
+  app.use(express.static(clientPath));
 
   // API routes
   const apiRouter = Router();
