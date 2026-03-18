@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@preact/preset-vite": "^2.9.4",
     "@preact/signals": "^2.8.2",
     "@prisma/client": "^6.5.0",
     "chart.js": "^4.5.1",
@@ -23,16 +24,16 @@
     "grammy": "^1.21.1",
     "node-cron": "^3.0.3",
     "preact": "^10.29.0",
-    "prisma": "^6.5.0"
+    "prisma": "^6.5.0",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.21"
   },
   "devDependencies": {
-    "@preact/preset-vite": "^2.9.4",
     "@types/express": "^5.0.6",
     "@types/node": "^22.13.10",
     "@types/node-cron": "^3.0.11",
     "concurrently": "^9.2.1",
     "tsx": "^4.19.3",
-    "typescript": "^5.7.3",
     "vitest": "^2.1.9"
   }
 }
