@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -29,7 +29,7 @@ model EnergyLog {
   emotional Int
   spiritual Int
   note      String?
-  logType   String   // "morning" | "evening" | "manual" | "auto"
+  logType   String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }
@@ -37,9 +37,9 @@ model EnergyLog {
 model Message {
   id        Int      @id @default(autoincrement())
   userId    Int
-  role      String   // "user" | "assistant"
+  role      String
   content   String
-  type      String   @default("text") // "text" | "voice"
+  type      String   @default("text")
   sessionId Int?
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
@@ -49,7 +49,7 @@ model Message {
 model Session {
   id        Int       @id @default(autoincrement())
   userId    Int
-  status    String    @default("active") // "active" | "completed"
+  status    String    @default("active")
   summary   String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -57,36 +57,34 @@ model Session {
   messages  Message[]
 }
 
-// Error and performance tracking for kaizen agent
 model ErrorLog {
   id        Int      @id @default(autoincrement())
-  source    String   // "bot" | "api" | "voice" | "ai" | "scheduler"
+  source    String
   message   String
   stack     String?
-  context   String?  // JSON with extra info
+  context   String?
   count     Int      @default(1)
   createdAt DateTime @default(now())
 }
 
 model Metric {
   id        Int      @id @default(autoincrement())
-  name      String   // "ai_response_time" | "voice_transcribe_time" | "api_latency"
+  name      String
   value     Float
-  tags      String?  // JSON tags
+  tags      String?
   createdAt DateTime @default(now())
 }
 
-// Structured data extracted from conversations by AI
 model Observation {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  energyType   String   // "physical" | "mental" | "emotional" | "spiritual"
-  level        Int?     // 1-10 if mentioned
-  direction    String   // "drop" | "rise" | "stable" | "low" | "high"
-  trigger      String?  // what caused it: "долгое совещание", "плохой сон"
-  recommendation String? // what was suggested
-  context      String?  // free text context from conversation
-  sessionId    Int?
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id])
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  energyType     String
+  level          Int?
+  direction      String
+  trigger        String?
+  recommendation String?
+  context        String?
+  sessionId      Int?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
 }

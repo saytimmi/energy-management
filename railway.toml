@@ -5,6 +5,6 @@ builder = "nixpacks"
 buildCmd = "npx prisma generate && npx tsc && cp -r public dist/"
 
 [deploy]
-startCommand = "npx prisma db push --accept-data-loss; node dist/index.js"
+startCommand = "npx prisma generate && node dist/index.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
