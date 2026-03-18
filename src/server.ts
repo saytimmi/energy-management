@@ -38,8 +38,8 @@ export function startServer(port?: number): http.Server {
   kaizenRoute(apiRouter);
   app.use("/api", apiRouter);
 
-  server = app.listen(listenPort, () => {
-    console.log(`HTTP server listening on port ${listenPort}`);
+  server = app.listen(listenPort, "0.0.0.0", () => {
+    console.log(`HTTP server listening on 0.0.0.0:${listenPort}`);
   });
 
   return server;
