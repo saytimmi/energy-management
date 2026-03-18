@@ -6,7 +6,6 @@ import { startServer, stopServer } from "./server.js";
 
 async function main() {
   console.log("EnergyBot starting...");
-  console.log(`Database URL: ${config.databaseUrl}`);
 
   await prisma.$connect();
   console.log("Database connected");
