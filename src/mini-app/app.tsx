@@ -1,5 +1,6 @@
 import { currentRoute, initRouter } from "./router";
 import { initTelegram, syncTheme } from "./telegram";
+import { Hub } from "./components/hub/Hub";
 import { EnergyDashboard } from "./components/energy/EnergyDashboard";
 import { Timeline } from "./components/timeline/Timeline";
 import { Journal } from "./components/journal/Journal";
@@ -17,7 +18,8 @@ export function App() {
 
   return (
     <>
-      {(route === "hub" || route === "energy") && <EnergyDashboard />}
+      {route === "hub" && <Hub />}
+      {route === "energy" && <EnergyDashboard />}
       {route === "timeline" && <Timeline />}
       {route === "journal" && <Journal />}
       <BottomNav />
