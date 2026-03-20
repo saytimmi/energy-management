@@ -6,6 +6,7 @@ import { WeekHeatmap } from "./WeekHeatmap";
 import { RoutineGroup } from "./RoutineGroup";
 import { HabitCreate } from "./HabitCreate";
 import { HabitDetail } from "./HabitDetail";
+import { MilestoneToast } from "./MilestoneToast";
 import { navigate } from "../../router";
 import type { HabitData } from "../../api/types";
 
@@ -13,12 +14,72 @@ import type { HabitData } from "../../api/types";
 export const suggestedHabit = signal<string | null>(null);
 const showCreate = signal(false);
 const selectedHabit = signal<HabitData | null>(null);
+const milestoneMessage = signal<string | null>(null);
+const showConfetti = signal(false);
 
 function parseSuggestParam() {
   const params = new URLSearchParams(window.location.search);
   const suggest = params.get("suggest");
   if (suggest) {
     suggestedHabit.value = suggest;
+  }
+}
+
+const CONFETTI_COLORS = [
+  "#4CAF50", "#8BC34A", "#FFC107", "#FF9800",
+  "#03A9F4", "#9C27B0", "#E91E63", "#F44336",
+];
+
+function Confetti() {
+  const pieces = Array.from({ length: 14 }, (_, i) => i);
+  return (
+    <div class="confetti-container">
+      {pieces.map((i) => (
+        <div
+          key={i}
+          class="confetti-piece"
+          style={{
+            left: `${10 + (i / 14) * 80}%`,
+            background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+            animationDelay: `${(i % 5) * 0.1}s`,
+            animationDuration: `${1.2 + (i % 4) * 0.1}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function getMilestoneMessage(streak: number): string | null {
+  if (streak === 7) return "🎉 Неделя! Нейронная связь формируется";
+  if (streak === 21) return "🌿 21 день! Привычка укрепляется";
+  if (streak === 60) return "🌳 60 дней! Это теперь часть тебя";
+  return null;
+}
+
+function handleHabitCompleted(completedHabit: HabitData) {
+  // After loadHabits() the store is refreshed — check streak from data
+  const data = habitsData.value;
+  if (!data) return;
+
+  const allHabits = [...data.morning, ...data.afternoon, ...data.evening];
+  const fresh = allHabits.find(h => h.id === completedHabit.id);
+  const streak = fresh ? fresh.streakCurrent : completedHabit.streakCurrent;
+
+  // Milestone check
+  const msg = getMilestoneMessage(streak);
+  if (msg) {
+    milestoneMessage.value = msg;
+    showConfetti.value = true;
+    setTimeout(() => { showConfetti.value = false; }, 1600);
+    return;
+  }
+
+  // All-done confetti (no milestone)
+  const allDone = allHabits.length > 0 && allHabits.every(h => h.completedToday);
+  if (allDone) {
+    showConfetti.value = true;
+    setTimeout(() => { showConfetti.value = false; }, 1600);
   }
 }
 
@@ -85,6 +146,15 @@ export function HabitsScreen() {
 
   return (
     <div class="habits-screen" style={{ paddingBottom: "calc(var(--nav-h) + 20px)" }}>
+      {showConfetti.value && <Confetti />}
+
+      {milestoneMessage.value && (
+        <MilestoneToast
+          message={milestoneMessage.value}
+          onDismiss={() => { milestoneMessage.value = null; }}
+        />
+      )}
+
       <DayProgress
         completed={progress.completed}
         total={progress.total}
@@ -101,9 +171,9 @@ export function HabitsScreen() {
         </div>
       ) : (
         <>
-          <RoutineGroup slot="morning" habits={data!.morning} onOpenDetail={(h) => { selectedHabit.value = h; }} />
-          <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} />
-          <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} />
+          <RoutineGroup slot="morning" habits={data!.morning} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
+          <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
+          <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
         </>
       )}
 

@@ -1,3 +1,4 @@
+import { useState } from "preact/hooks";
 import type { HabitData } from "../../api/types";
 import { toggleComplete } from "../../store/habits";
 import { haptic } from "../../telegram";
@@ -5,6 +6,7 @@ import { haptic } from "../../telegram";
 interface HabitCardProps {
   habit: HabitData;
   onOpenDetail?: (habit: HabitData) => void;
+  onCompleted?: (habit: HabitData) => void;
 }
 
 function formatDuration(minutes: number | null): string {
@@ -13,13 +15,22 @@ function formatDuration(minutes: number | null): string {
   return `${minutes}м`;
 }
 
-export function HabitCard({ habit, onOpenDetail }: HabitCardProps) {
+export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) {
   const done = habit.completedToday;
+  const [completing, setCompleting] = useState(false);
 
-  function handleCheck(e: Event) {
+  async function handleCheck(e: Event) {
     e.stopPropagation();
     haptic("medium");
-    toggleComplete(habit);
+
+    if (!done) {
+      setCompleting(true);
+      await toggleComplete(habit);
+      setCompleting(false);
+      if (onCompleted) onCompleted(habit);
+    } else {
+      await toggleComplete(habit);
+    }
   }
 
   function handleTapName() {
@@ -31,7 +42,10 @@ export function HabitCard({ habit, onOpenDetail }: HabitCardProps) {
 
   return (
     <div class="habit-card">
-      <div class={`habit-check ${done ? "done" : ""}`} onClick={handleCheck}>
+      <div
+        class={`habit-check ${done ? "done" : ""} ${completing ? "completing" : ""}`}
+        onClick={handleCheck}
+      >
         {done && (
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M3 7l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
