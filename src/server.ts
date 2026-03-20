@@ -7,6 +7,7 @@ import { historyRoute } from "./api/history.js";
 import { analyticsRoute } from "./api/analytics.js";
 import { observationsRoute } from "./api/observations.js";
 import { checkinTriggerRoute } from "./api/checkin-trigger.js";
+import { habitsRoute } from "./api/habits.js";
 import { kaizenRoute } from "./api/kaizen.js";
 import { telegramAuth } from "./middleware/telegram-auth.js";
 import { config } from "./config.js";
@@ -44,6 +45,7 @@ export function startServer(port?: number): http.Server {
   analyticsRoute(authedRouter);
   observationsRoute(authedRouter);
   checkinTriggerRoute(authedRouter);
+  habitsRoute(authedRouter);
   app.use("/api", authedRouter);
 
   server = app.listen(listenPort, "0.0.0.0", () => {
