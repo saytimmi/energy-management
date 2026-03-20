@@ -5,11 +5,14 @@ import { DayProgress } from "./DayProgress";
 import { WeekHeatmap } from "./WeekHeatmap";
 import { RoutineGroup } from "./RoutineGroup";
 import { HabitCreate } from "./HabitCreate";
+import { HabitDetail } from "./HabitDetail";
 import { navigate } from "../../router";
+import type { HabitData } from "../../api/types";
 
 // Store suggest param from bot deep link for Task 12
 export const suggestedHabit = signal<string | null>(null);
 const showCreate = signal(false);
+const selectedHabit = signal<HabitData | null>(null);
 
 function parseSuggestParam() {
   const params = new URLSearchParams(window.location.search);
@@ -24,6 +27,15 @@ export function HabitsScreen() {
     parseSuggestParam();
     loadHabits();
   }, []);
+
+  if (selectedHabit.value) {
+    return (
+      <HabitDetail
+        habit={selectedHabit.value}
+        onBack={() => { selectedHabit.value = null; }}
+      />
+    );
+  }
 
   if (showCreate.value) {
     return (
@@ -89,9 +101,9 @@ export function HabitsScreen() {
         </div>
       ) : (
         <>
-          <RoutineGroup slot="morning" habits={data!.morning} />
-          <RoutineGroup slot="afternoon" habits={data!.afternoon} />
-          <RoutineGroup slot="evening" habits={data!.evening} />
+          <RoutineGroup slot="morning" habits={data!.morning} onOpenDetail={(h) => { selectedHabit.value = h; }} />
+          <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} />
+          <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} />
         </>
       )}
 

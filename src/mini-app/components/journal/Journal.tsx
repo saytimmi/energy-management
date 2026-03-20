@@ -3,6 +3,7 @@ import { signal } from "@preact/signals";
 import { api } from "../../api/client";
 import type { Observation } from "../../api/types";
 import { getNoteWord } from "../energy/utils";
+import { habitsData, loadHabits } from "../../store/habits";
 
 const entries = signal<Observation[]>([]);
 const journalLoading = signal(true);
@@ -18,6 +19,7 @@ export function Journal() {
     api.observations()
       .then((data) => { entries.value = data.observations; journalLoading.value = false; })
       .catch(() => { journalError.value = true; journalLoading.value = false; });
+    if (!habitsData.value) loadHabits();
   }, []);
 
   if (journalLoading.value) return <section class="view"><div class="journal-loading"><div class="pulse-ring small" /><p>Загружаю дневник...</p></div></section>;
@@ -31,8 +33,35 @@ export function Journal() {
   for (const key of Object.keys(grouped)) { grouped[key].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); }
   const days = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a));
 
+  // Collect today's completed habits
+  const hData = habitsData.value;
+  const completedToday = hData
+    ? [...hData.morning, ...hData.afternoon, ...hData.evening].filter(h => h.completedToday)
+    : [];
+
   return (
     <section class="view">
+      {completedToday.length > 0 && (
+        <div class="journal-habits-section" style={{ marginBottom: "24px" }}>
+          <div class="tl-day-header">
+            <span class="tl-day-label today">Привычки сегодня</span>
+            <span class="tl-day-meta">{completedToday.length} выполнено</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {completedToday.map((h) => (
+              <div key={h.id} style={{
+                background: "var(--surface)", borderRadius: "10px", padding: "10px 14px",
+                display: "flex", alignItems: "center", gap: "10px", fontSize: "14px",
+              }}>
+                <span style={{ fontSize: "16px" }}>{h.icon}</span>
+                <span style={{ flex: 1, opacity: 0.8 }}>{h.name}</span>
+                <span style={{ fontSize: "12px", color: "var(--accent)" }}>✓</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div class="journal-timeline">
         {days.map(([dateKey, obs]) => {
           const isToday = dateKey === todayKey;

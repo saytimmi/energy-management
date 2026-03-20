@@ -528,3 +528,34 @@ body {
 
 .create-next-btn { width: 100%; padding: 14px; background: var(--accent, #4CAF50); color: white; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; margin-top: auto; }
 .create-next-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Habit Detail */
+.habit-detail { padding: 16px; }
+.habit-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.habit-detail-back { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text, inherit); }
+.habit-detail-name { font-size: 18px; font-weight: 600; }
+
+.stage-indicator { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center; }
+.stage-emoji { font-size: 32px; }
+.stage-label { font-size: 14px; font-weight: 600; margin: 4px 0; }
+.stage-progress { height: 6px; background: var(--bg-secondary, #e0e0e0); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.stage-progress-fill { height: 100%; background: var(--accent, #4CAF50); border-radius: 3px; transition: width 0.3s; }
+
+.detail-stats { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+
+.detail-section-title { font-size: 13px; font-weight: 600; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
+
+.detail-why { background: var(--surface); border-radius: var(--radius); padding: 16px; }
+.detail-why-item { padding: 6px 0; font-size: 14px; }
+.detail-why-label { font-size: 12px; opacity: 0.5; }
+
+.detail-heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.detail-heatmap-dot { aspect-ratio: 1; border-radius: 4px; }
+.detail-heatmap-done { background: var(--accent, #4CAF50); }
+.detail-heatmap-missed { background: var(--bg-secondary, #e0e0e0); }
+
+/* Hub Habits Card */
+.hub-habits-progress { height: 6px; background: var(--bg-secondary, #e0e0e0); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+.hub-habits-fill { height: 100%; background: var(--accent, #4CAF50); border-radius: 3px; }
+.hub-habits-dots { display: flex; gap: 12px; margin: 8px 0; font-size: 12px; }
+.hub-habits-stats { display: flex; gap: 12px; font-size: 12px; opacity: 0.6; }

@@ -4,6 +4,7 @@ import { HabitCard } from "./HabitCard";
 interface RoutineGroupProps {
   slot: "morning" | "afternoon" | "evening";
   habits: HabitData[];
+  onOpenDetail?: (habit: HabitData) => void;
 }
 
 const SLOT_LABELS: Record<string, string> = {
@@ -12,14 +13,14 @@ const SLOT_LABELS: Record<string, string> = {
   evening: "🌙 Вечер",
 };
 
-export function RoutineGroup({ slot, habits }: RoutineGroupProps) {
+export function RoutineGroup({ slot, habits, onOpenDetail }: RoutineGroupProps) {
   if (habits.length === 0) return null;
 
   return (
     <div class="routine-group">
       <div class="routine-header">{SLOT_LABELS[slot]}</div>
       {habits.map((h) => (
-        <HabitCard key={h.id} habit={h} />
+        <HabitCard key={h.id} habit={h} onOpenDetail={onOpenDetail} />
       ))}
     </div>
   );
