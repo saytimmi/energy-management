@@ -2,8 +2,8 @@ import { InlineKeyboard } from "grammy";
 import type { Context } from "grammy";
 import prisma from "../db.js";
 import { bot } from "../bot.js";
-import { analyzeEnergyHistory } from "../services/diagnostics.js";
-import { getRecommendations, formatRecommendations } from "../services/recommendations.js";
+import { getInstantRecommendations } from "../services/instant-recommendations.js";
+import { config } from "../config.js";
 
 const ENERGY_LABELS: Record<string, string> = {
   physical: "Физическая",
@@ -125,9 +125,24 @@ export async function handleCheckinCallback(
 
     pendingCheckIns.delete(telegramId);
 
-    // Build smart follow-up message
-    let followUp = `Записал! Физическая: ${pending.physical}, Ментальная: ${pending.mental}, Эмоциональная: ${pending.emotional}, Духовная: ${pending.spiritual}`;
+    // Format energy values with emojis
+    const ENERGY_EMOJIS: Record<string, string> = {
+      physical: "💪",
+      mental: "🧠",
+      emotional: "❤️",
+      spiritual: "✨",
+    };
 
+    const ENERGY_TYPE_LABELS: Record<string, string> = {
+      physical: "Физическая",
+      mental: "Ментальная",
+      emotional: "Эмоциональная",
+      spiritual: "Духовная",
+    };
+
+    let followUp = `✅ Записал!\n\n${ENERGY_EMOJIS.physical} Физическая: ${pending.physical}\n${ENERGY_EMOJIS.mental} Ментальная: ${pending.mental}\n${ENERGY_EMOJIS.emotional} Эмоциональная: ${pending.emotional}\n${ENERGY_EMOJIS.spiritual} Духовная: ${pending.spiritual}`;
+
+    // Drop detection (preserved from original)
     if (previousLog) {
       const drops: string[] = [];
       const energyPairs: Array<{ label: string; current: number; prev: number }> = [
@@ -146,34 +161,57 @@ export async function handleCheckinCallback(
 
       if (drops.length > 0) {
         followUp += `\n\n⚠️ Заметил снижение:\n${drops.join("\n")}`;
-      } else if (
-        pending.physical! >= 7 &&
-        pending.mental! >= 7 &&
-        pending.emotional! >= 7 &&
-        pending.spiritual! >= 7
-      ) {
-        followUp += "\n\n🔥 Все энергии на высоте! Отличное состояние!";
       }
     }
 
-    await ctx.editMessageText(followUp);
+    // Instant recommendations from knowledge base (sync, no AI call)
+    const result = getInstantRecommendations(
+      {
+        physical: pending.physical!,
+        mental: pending.mental!,
+        emotional: pending.emotional!,
+        spiritual: pending.spiritual!,
+      },
+      undefined,
+      telegramId,
+    );
 
-    // Send follow-up recommendations (non-blocking)
-    try {
-      if (ctx.chat) {
-        await bot.api.sendChatAction(ctx.chat.id, "typing");
+    if (result.allGood) {
+      followUp += "\n\n🔥 Все энергии в норме!";
+    } else {
+      // Group recommendations by energy type
+      const grouped = new Map<string, typeof result.recommendations>();
+      for (const rec of result.recommendations) {
+        const key = rec.energyType;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push(rec);
       }
-      const diagnostic = await analyzeEnergyHistory(user.id);
-      const recs = await getRecommendations(diagnostic, user.id);
-      const formatted = formatRecommendations(recs);
-      if (formatted && ctx.chat) {
-        await bot.api.sendMessage(ctx.chat.id, `<b>Рекомендации:</b>\n\n${formatted}`, {
-          parse_mode: "HTML",
-        });
+
+      followUp += "\n";
+      for (const [type, actions] of grouped) {
+        const emoji = ENERGY_EMOJIS[type] || "•";
+        const label = ENERGY_TYPE_LABELS[type] || type;
+        followUp += `\n${emoji} ${label} просела — вот что поможет:`;
+        for (const action of actions) {
+          followUp += `\n  • ${action.name} (${action.duration} мин)`;
+        }
       }
-    } catch (err) {
-      console.error("Failed to generate recommendations after check-in:", err);
     }
+
+    // Append science fact
+    if (result.fact) {
+      followUp += `\n\n🧬 ${result.fact.text}`;
+    }
+
+    // Build inline keyboard with webapp button
+    const keyboard = new InlineKeyboard();
+    if (config.webappUrl && result.suggestIds.length > 0) {
+      keyboard.webApp("📱 Добавить в привычки", `${config.webappUrl}#habits/suggest?ids=${result.suggestIds.join(",")}`);
+    }
+
+    await ctx.editMessageText(followUp, {
+      reply_markup: keyboard,
+    });
   }
 }
 

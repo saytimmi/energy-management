@@ -87,3 +87,7 @@ export function getEnergyOverview(type: EnergyType): { practices: Practice[]; dr
 export function getSubstitutionRules(): SubstitutionRule[] {
   return SUBSTITUTION_RULES;
 }
+
+export { getMicroActions } from './micro-actions.js';
+export { ENERGY_FACTS } from './energy-facts.js';
+export type { MicroAction, EnergyFact, TimeOfDay, ActionContext, ActionIntensity } from './types.js';
