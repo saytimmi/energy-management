@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import prisma from "../db.js";
+import { getHabitEnergyCorrelation } from "../services/habit-correlation.js";
 
 function todayDateOnly(): Date {
   const now = new Date();
@@ -395,6 +396,31 @@ export function habitsRoute(router: Router): void {
       res.json({ success: true, streakCurrent, streakBest });
     } catch (err) {
       console.error("Habits uncomplete API error:", err);
+      res.status(500).json({ error: "internal_error" });
+    }
+  });
+
+  // GET /api/habits/:id/correlation — habit-energy correlation
+  router.get("/habits/:id/correlation", async (req: Request, res: Response) => {
+    const userId = (req as any).userId as number;
+    const habitId = parseInt(req.params.id as string, 10);
+
+    try {
+      const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+      if (!habit || habit.userId !== userId) {
+        res.status(404).json({ error: "Привычка не найдена" });
+        return;
+      }
+
+      const correlation = await getHabitEnergyCorrelation(habitId, userId);
+      if (!correlation) {
+        res.json({ insufficient: true });
+        return;
+      }
+
+      res.json({ ...correlation, habitName: habit.name, habitIcon: habit.icon });
+    } catch (err) {
+      console.error("Habits correlation API error:", err);
       res.status(500).json({ error: "internal_error" });
     }
   });

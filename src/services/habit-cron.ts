@@ -12,6 +12,44 @@ import {
 import { sendMissedDayNudge } from "../handlers/habits.js";
 
 /**
+ * Phase D intelligence: compute median completion hour for a user's habits
+ * in a given routine slot. Ready to be activated when per-user scheduling is built.
+ *
+ * Returns the median hour (0-23), or null if fewer than 14 logs exist.
+ */
+export async function getMedianCompletionHour(
+  userId: number,
+  routineSlot: string,
+): Promise<number | null> {
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, routineSlot },
+    select: { id: true },
+  });
+
+  if (habits.length === 0) return null;
+
+  const habitIds = habits.map((h) => h.id);
+
+  const logs = await prisma.habitLog.findMany({
+    where: {
+      habitId: { in: habitIds },
+      status: "completed",
+    },
+    select: { completedAt: true },
+    orderBy: { completedAt: "asc" },
+  });
+
+  if (logs.length < 14) return null;
+
+  const hours = logs.map((l) => l.completedAt.getHours()).sort((a, b) => a - b);
+  const mid = Math.floor(hours.length / 2);
+
+  return hours.length % 2 === 0
+    ? Math.round((hours[mid - 1] + hours[mid]) / 2)
+    : hours[mid];
+}
+
+/**
  * Daily cron (midnight): recalculate consistency, check stage transitions,
  * apply auto-freeze when applicable.
  */
@@ -121,8 +159,9 @@ export async function runDailyHabitCron(): Promise<void> {
   });
 
   for (const habit of habitsForNudge) {
-    // Determine missed-day threshold based on stage
-    const missedThreshold = habit.stage === "autopilot" ? 5 : 2;
+    // Determine missed-day threshold based on stage:
+    // seed=1 (fragile, nudge quickly), growth=2, autopilot=5
+    const missedThreshold = habit.stage === "seed" ? 1 : habit.stage === "autopilot" ? 5 : 2;
 
     // Count consecutive missed days from yesterday backwards
     let missedDays = 0;

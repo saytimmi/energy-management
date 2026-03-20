@@ -1,5 +1,5 @@
 import { getInitData } from "../telegram";
-import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload } from "./types";
+import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation } from "./types";
 
 const BASE = "";
 
@@ -46,4 +46,5 @@ export const api = {
   uncompleteHabit: (id: number) => del<{ ok: boolean }>(`/api/habits/${id}/complete`),
   habitStats: (id: number) => request<HabitStats>(`/api/habits/${id}/stats`),
   habitsHeatmap: () => request<HeatmapDay[]>("/api/habits/heatmap"),
+  habitCorrelation: (id: number) => request<HabitCorrelation>(`/api/habits/${id}/correlation`),
 };

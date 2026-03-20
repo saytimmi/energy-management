@@ -587,3 +587,13 @@ body {
 .milestone-toast { position: fixed; bottom: 80px; left: 16px; right: 16px; background: var(--surface); border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 999; transform: translateY(200%); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; font-size: 15px; font-weight: 500; }
 .milestone-toast.visible { transform: translateY(0); }
 .hub-habits-stats { display: flex; gap: 12px; font-size: 12px; opacity: 0.6; }
+
+/* Correlation Card */
+.correlation-card { background: var(--surface); border-radius: 14px; padding: 14px 16px; margin-top: 12px; }
+.correlation-title { font-size: 13px; opacity: 0.7; margin-bottom: 8px; }
+.correlation-items { display: flex; flex-direction: column; gap: 6px; }
+.correlation-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.correlation-label { opacity: 0.8; }
+.correlation-delta { font-weight: 600; font-size: 15px; }
+.correlation-positive { color: #4CAF50; }
+.correlation-negative { color: #F44336; }

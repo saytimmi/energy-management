@@ -101,3 +101,13 @@ export interface HeatmapDay {
   completedCount: number;
   totalCount: number;
 }
+
+export interface HabitCorrelation {
+  insufficient?: boolean;
+  physical?: number;
+  mental?: number;
+  emotional?: number;
+  spiritual?: number;
+  habitName?: string;
+  habitIcon?: string;
+}

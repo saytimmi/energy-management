@@ -7,6 +7,7 @@ import { RoutineGroup } from "./RoutineGroup";
 import { HabitCreate } from "./HabitCreate";
 import { HabitDetail } from "./HabitDetail";
 import { MilestoneToast } from "./MilestoneToast";
+import { CorrelationCard } from "./CorrelationCard";
 import { navigate } from "../../router";
 import type { HabitData } from "../../api/types";
 
@@ -175,6 +176,14 @@ export function HabitsScreen() {
           <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
           <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
         </>
+      )}
+
+      {!isEmpty && allHabits.length > 0 && (
+        <div style={{ marginTop: "8px" }}>
+          {allHabits.map((h) => (
+            <CorrelationCard key={h.id} habitId={h.id} />
+          ))}
+        </div>
       )}
 
       {slotLimitReached ? (

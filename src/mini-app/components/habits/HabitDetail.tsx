@@ -4,6 +4,7 @@ import type { HabitData, HabitStats } from "../../api/types";
 import { api } from "../../api/client";
 import { haptic } from "../../telegram";
 import { StageIndicator } from "./StageIndicator";
+import { CorrelationCard } from "./CorrelationCard";
 
 interface HabitDetailProps {
   habit: HabitData;
@@ -125,6 +126,8 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
       ) : (
         <div style={{ textAlign: "center", padding: "20px", opacity: 0.5 }}>Нет данных</div>
       )}
+
+      <CorrelationCard habitId={habit.id} />
     </div>
   );
 }
