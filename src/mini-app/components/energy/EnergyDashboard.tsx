@@ -4,6 +4,7 @@ import { dashboardData, observations, analyticsData, loadInitialData, isLoading,
 import { EnergyRings } from "./EnergyRings";
 import { Observations } from "./Observations";
 import { Analytics } from "./Analytics";
+import { Timeline } from "../timeline/Timeline";
 import { LoadingScreen, WelcomeScreen, ErrorScreen } from "../shared/Loading";
 import { getDayWord } from "./utils";
 import { api } from "../../api/client";
@@ -57,6 +58,10 @@ export function EnergyDashboard() {
           {data ? <EnergyRings data={data} /> : (
             <div class="dashboard-empty-msg">Расскажи боту как ты себя чувствуешь — я начну отслеживать 🌱</div>
           )}
+          <details class="timeline-section">
+            <summary style={{padding: "12px 0", fontWeight: 500, cursor: "pointer"}}>📊 Динамика</summary>
+            <Timeline />
+          </details>
           <Observations observations={obs} />
           {analytics && <Analytics data={analytics} />}
           <button class="quick-checkin-btn" onClick={handleCheckin} disabled={checkinState.value !== "idle"}>

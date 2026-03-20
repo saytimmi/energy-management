@@ -2,7 +2,6 @@ import { currentRoute, initRouter } from "./router";
 import { initTelegram, syncTheme } from "./telegram";
 import { Hub } from "./components/hub/Hub";
 import { EnergyDashboard } from "./components/energy/EnergyDashboard";
-import { Timeline } from "./components/timeline/Timeline";
 import { Journal } from "./components/journal/Journal";
 import { BottomNav } from "./components/shared/BottomNav";
 import { useEffect } from "preact/hooks";
@@ -20,7 +19,7 @@ export function App() {
     <>
       {route === "hub" && <Hub />}
       {route === "energy" && <EnergyDashboard />}
-      {route === "timeline" && <Timeline />}
+      {route === "habits" && <div class="screen"><p style={{padding: "20px", textAlign: "center"}}>Привычки — скоро!</p></div>}
       {route === "journal" && <Journal />}
       <BottomNav />
     </>
