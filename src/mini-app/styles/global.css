@@ -485,3 +485,46 @@ body {
 .add-habit-btn { width: 100%; padding: 14px; background: var(--surface); border: 2px dashed var(--surface2, #ccc); border-radius: var(--radius); color: var(--text2, #888); font-size: 14px; cursor: pointer; text-align: center; }
 
 .habits-empty { text-align: center; padding: 40px 20px; opacity: 0.6; }
+
+/* Habit Create */
+.habit-create { padding: 16px; display: flex; flex-direction: column; min-height: 100vh; }
+.habit-create-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.habit-create-back { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; color: var(--text, inherit); }
+.habit-create-title { font-size: 18px; font-weight: 600; }
+.habit-create-body { flex: 1; overflow-y: auto; }
+.step-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
+.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bg-secondary, #ddd); }
+.step-dot.active { background: var(--accent, #4CAF50); }
+
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; }
+.form-input { width: 100%; padding: 12px; border: 1px solid var(--bg-secondary, #ddd); border-radius: 8px; font-size: 14px; background: var(--surface); color: var(--text, inherit); box-sizing: border-box; }
+.form-input:focus { outline: none; border-color: var(--accent, #4CAF50); }
+.form-input::placeholder { opacity: 0.5; }
+
+.icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.icon-btn { width: 44px; height: 44px; border-radius: 10px; border: 2px solid transparent; background: var(--bg-secondary, #f0f0f0); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.icon-btn.selected { border-color: var(--accent, #4CAF50); background: var(--surface); }
+
+.slot-buttons { display: flex; gap: 8px; }
+.slot-btn { flex: 1; padding: 10px; border-radius: 10px; border: 2px solid var(--bg-secondary, #ddd); background: var(--surface); text-align: center; cursor: pointer; font-size: 13px; color: var(--text, inherit); }
+.slot-btn.selected { border-color: var(--accent, #4CAF50); background: rgba(76, 175, 80, 0.1); }
+
+.type-cards { display: flex; gap: 12px; margin: 20px 0; }
+.type-card { flex: 1; padding: 24px 16px; border-radius: 14px; border: 2px solid var(--bg-secondary, #ddd); text-align: center; cursor: pointer; background: var(--surface); }
+.type-card.selected { border-color: var(--accent, #4CAF50); }
+.type-card-emoji { font-size: 36px; margin-bottom: 8px; }
+.type-card-label { font-size: 14px; font-weight: 600; }
+
+.meaning-hint { font-size: 12px; opacity: 0.5; margin-bottom: 16px; }
+
+.summary-card { background: var(--surface); border-radius: var(--radius); padding: 16px; }
+.summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--bg-secondary, rgba(0,0,0,0.05)); }
+.summary-label { font-size: 13px; opacity: 0.6; }
+.summary-value { font-size: 13px; font-weight: 500; }
+.summary-why { margin-top: 12px; }
+.summary-why-item { padding: 6px 0; font-size: 13px; }
+.summary-why-label { opacity: 0.6; }
+
+.create-next-btn { width: 100%; padding: 14px; background: var(--accent, #4CAF50); color: white; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; margin-top: auto; }
+.create-next-btn:disabled { opacity: 0.4; cursor: not-allowed; }
