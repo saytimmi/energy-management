@@ -19,6 +19,8 @@ model User {
   messages     Message[]
   sessions     Session[]
   observations Observation[]
+  habits       Habit[]
+  habitLogs    HabitLog[]
 }
 
 model EnergyLog {
@@ -87,4 +89,52 @@ model Observation {
   sessionId      Int?
   createdAt      DateTime @default(now())
   user           User     @relation(fields: [userId], references: [id])
+}
+
+model Habit {
+  id              Int        @id @default(autoincrement())
+  userId          Int
+  user            User       @relation(fields: [userId], references: [id])
+  name            String
+  icon            String
+  type            String     // "build" | "break"
+  routineSlot     String     // "morning" | "afternoon" | "evening"
+  sortOrder       Int        @default(0)
+  energyType      String?
+  frequency       String     @default("daily")
+  customDays      String?
+  triggerAction   String?
+  duration        Int?
+  whyToday        String?
+  whyMonth        String?
+  whyYear         String?
+  whyIdentity     String?
+  isItBeneficial  String?
+  breakTrigger    String?
+  replacement     String?
+  stage           String     @default("seed")
+  stageUpdatedAt  DateTime   @default(now())
+  streakCurrent   Int        @default(0)
+  streakBest      Int        @default(0)
+  consistency30d  Float      @default(0)
+  freezesUsedThisWeek Int    @default(0)
+  microActionId   String?
+  isActive        Boolean    @default(true)
+  logs            HabitLog[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model HabitLog {
+  id          Int      @id @default(autoincrement())
+  habitId     Int
+  habit       Habit    @relation(fields: [habitId], references: [id])
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  date        DateTime @db.Date
+  completedAt DateTime @default(now())
+  status      String   @default("completed")
+  note        String?
+
+  @@unique([habitId, date])
 }
