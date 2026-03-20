@@ -9,6 +9,7 @@ import {
   determineStage,
   shouldAutoFreeze,
 } from "./habit-streaks.js";
+import { sendMissedDayNudge } from "../handlers/habits.js";
 
 /**
  * Daily cron (midnight): recalculate consistency, check stage transitions,
@@ -99,8 +100,70 @@ export async function runDailyHabitCron(): Promise<void> {
     }
   }
 
+  // --- Missed-day nudges ---
+  let nudgesSent = 0;
+
+  // Re-fetch habits with user relation for telegramId
+  const habitsForNudge = await prisma.habit.findMany({
+    where: { isActive: true },
+    include: {
+      user: { select: { telegramId: true } },
+      logs: {
+        where: {
+          date: {
+            gte: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5),
+          },
+        },
+        select: { date: true },
+        orderBy: { date: "desc" },
+      },
+    },
+  });
+
+  for (const habit of habitsForNudge) {
+    // Determine missed-day threshold based on stage
+    const missedThreshold = habit.stage === "autopilot" ? 5 : 2;
+
+    // Count consecutive missed days from yesterday backwards
+    let missedDays = 0;
+    const checkDate = new Date(today);
+    checkDate.setDate(checkDate.getDate() - 1); // start from yesterday
+
+    for (let i = 0; i < missedThreshold; i++) {
+      const found = habit.logs.some(
+        (l) => l.date.toDateString() === checkDate.toDateString(),
+      );
+      if (!found) {
+        missedDays++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    if (missedDays >= missedThreshold) {
+      const chatId = Number(habit.user.telegramId);
+      try {
+        await sendMissedDayNudge(chatId, {
+          id: habit.id,
+          name: habit.name,
+          icon: habit.icon,
+          type: habit.type,
+          whyToday: habit.whyToday,
+          whyYear: habit.whyYear,
+          isItBeneficial: habit.isItBeneficial,
+          breakTrigger: habit.breakTrigger,
+          replacement: habit.replacement,
+        });
+        nudgesSent++;
+      } catch (err) {
+        console.error(`[habit-cron] Failed to nudge habit ${habit.id}:`, err);
+      }
+    }
+  }
+
   console.log(
-    `[habit-cron] Daily run done: ${updated} habits updated, ${frozen} auto-freezes applied`,
+    `[habit-cron] Daily run done: ${updated} habits updated, ${frozen} auto-freezes applied, ${nudgesSent} nudges sent`,
   );
 }
 

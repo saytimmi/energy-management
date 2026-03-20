@@ -10,6 +10,7 @@ import { chat } from "./services/ai.js";
 import { transcribeVoice } from "./services/voice.js";
 import { findOrCreateUser } from "./db.js";
 import { trackError } from "./services/monitor.js";
+import { handleHabitCallback } from "./handlers/habits.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
@@ -81,6 +82,9 @@ bot.callbackQuery("action:report", async (ctx) => {
   await ctx.answerCallbackQuery();
   await reportHandler(ctx);
 });
+
+// Inline keyboard callbacks (habit completion/skip)
+bot.callbackQuery(/^habit_(complete|skip):/, handleHabitCallback);
 
 // Inline keyboard callbacks (checkin flow)
 bot.on("callback_query:data", handleCheckinCallback);
