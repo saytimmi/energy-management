@@ -50,3 +50,14 @@ export async function createHabit(data: CreateHabitPayload): Promise<HabitData |
     return null;
   }
 }
+
+export async function updateHabit(id: number, data: Partial<CreateHabitPayload>): Promise<HabitData | null> {
+  try {
+    const habit = await api.updateHabit(id, data);
+    await loadHabits(); // refresh
+    return habit;
+  } catch (err) {
+    console.error("Failed to update habit:", err);
+    return null;
+  }
+}

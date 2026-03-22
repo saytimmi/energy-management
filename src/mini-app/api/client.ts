@@ -12,6 +12,15 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+async function patch<T>(path: string, body: unknown): Promise<T> {
+  const initData = getInitData();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (initData) headers["Authorization"] = `tma ${initData}`;
+  const res = await fetch(`${BASE}${path}`, { method: "PATCH", headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
+  return res.json();
+}
+
 async function del<T>(path: string): Promise<T> {
   const initData = getInitData();
   const headers: Record<string, string> = {};
@@ -47,4 +56,5 @@ export const api = {
   habitStats: (id: number) => request<HabitStats>(`/api/habits/${id}/stats`),
   habitsHeatmap: () => request<HeatmapDay[]>("/api/habits/heatmap"),
   habitCorrelation: (id: number) => request<HabitCorrelation>(`/api/habits/${id}/correlation`),
+  updateHabit: (id: number, data: Partial<CreateHabitPayload>) => patch<HabitData>(`/api/habits/${id}`, data),
 };

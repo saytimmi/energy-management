@@ -102,7 +102,13 @@ export function HabitsScreen() {
   if (showCreate.value) {
     return (
       <HabitCreate
-        onClose={() => { showCreate.value = false; }}
+        onClose={(createdHabit) => {
+          showCreate.value = false;
+          // After creation, open detail to fill meaning
+          if (createdHabit) {
+            selectedHabit.value = createdHabit;
+          }
+        }}
         microActionId={suggestedHabit.value}
       />
     );

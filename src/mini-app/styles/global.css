@@ -546,10 +546,22 @@ body {
 .create-submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* Habit Detail */
-.habit-detail { padding: 16px; }
+.habit-detail { padding: 16px; padding-bottom: calc(var(--nav-h, 60px) + 24px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .habit-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.habit-detail-back { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text, inherit); }
+.habit-detail-back { background: none; border: none; cursor: pointer; color: var(--text, inherit); padding: 6px; display: flex; align-items: center; min-width: 40px; min-height: 40px; border-radius: 10px; }
+.habit-detail-back:active { background: var(--surface2, rgba(0,0,0,0.05)); }
 .habit-detail-name { font-size: 18px; font-weight: 600; }
+
+/* Meaning edit */
+.meaning-edit { display: flex; flex-direction: column; gap: 12px; }
+.meaning-field { display: flex; flex-direction: column; gap: 4px; }
+.meaning-field-label { font-size: 12px; font-weight: 600; opacity: 0.5; }
+.meaning-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+.meaning-save-btn { flex: 1; padding: 12px; background: var(--accent, #4CAF50); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.meaning-save-btn:disabled { opacity: 0.4; }
+.meaning-cancel-btn { padding: 12px 16px; background: var(--surface2, rgba(128,128,128,0.1)); color: var(--text, inherit); border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
+.meaning-edit-btn { width: 100%; padding: 10px; margin-top: 12px; background: transparent; border: 1.5px solid var(--bg-secondary, rgba(128,128,128,0.2)); border-radius: 10px; color: var(--text, inherit); font-size: 14px; cursor: pointer; transition: border-color 0.15s; }
+.meaning-edit-btn:active { border-color: var(--accent, #4CAF50); }
 
 .stage-indicator { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center; }
 .stage-emoji { font-size: 32px; }

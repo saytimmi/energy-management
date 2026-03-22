@@ -41,7 +41,7 @@ const SLOTS = [
 ] as const;
 
 interface Props {
-  onClose: () => void;
+  onClose: (createdHabit?: import("../../api/types").HabitData) => void;
   microActionId?: string | null;
 }
 
@@ -74,7 +74,7 @@ export function HabitCreate({ onClose, microActionId }: Props) {
 
     if (result) {
       hapticSuccess();
-      onClose();
+      onClose(result);
     } else {
       setError("Не удалось создать. Попробуй ещё раз.");
     }
