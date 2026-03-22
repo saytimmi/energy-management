@@ -44,6 +44,7 @@ export interface HabitData {
   routineSlot: 'morning' | 'afternoon' | 'evening';
   duration: number | null;
   energyType: string | null;
+  lifeArea: string | null;
   stage: 'seed' | 'growth' | 'autopilot';
   streakCurrent: number;
   streakBest: number;
@@ -79,6 +80,7 @@ export interface CreateHabitPayload {
   routineSlot: string;
   duration?: number;
   energyType?: string;
+  lifeArea?: string;
   triggerAction?: string;
   whyToday?: string;
   whyMonth?: string;

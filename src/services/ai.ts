@@ -34,6 +34,7 @@ const TOOLS: Anthropic.Tool[] = [
         type: { type: "string", enum: ["build", "break"], description: "build = формировать новую, break = избавиться от старой" },
         routineSlot: { type: "string", enum: ["morning", "afternoon", "evening"], description: "Время дня для привычки" },
         energyType: { type: "string", enum: ["physical", "mental", "emotional", "spiritual"], description: "Тип энергии, на который влияет привычка" },
+        lifeArea: { type: "string", enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"], description: "Сфера жизни: здоровье, карьера, отношения, финансы, семья, развитие, отдых, среда" },
         whyToday: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: какая конкретная выгода сегодня?" },
         whyYear: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: что изменится через год?" },
         whyIdentity: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: кем станешь, когда это привычка?" },
@@ -60,6 +61,19 @@ const TOOLS: Anthropic.Tool[] = [
       type: "object" as const,
       properties: {},
       required: [],
+    },
+  },
+  {
+    name: "rate_life_area",
+    description: "Сохранить оценку сферы жизни (колесо баланса). Используй когда пользователь оценивает сферу жизни от 1 до 10. Сферы: здоровье, карьера, отношения, финансы, семья, развитие, отдых, среда.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        area: { type: "string", enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"], description: "Сфера жизни" },
+        score: { type: "number", description: "Оценка от 1 до 10" },
+        note: { type: "string", description: "Комментарий пользователя (если есть)" },
+      },
+      required: ["area", "score"],
     },
   },
 ];
@@ -167,6 +181,7 @@ async function executeTool(
         type: string;
         routineSlot: string;
         energyType?: string;
+        lifeArea?: string;
         whyToday?: string;
         whyYear?: string;
         whyIdentity?: string;
@@ -204,6 +219,7 @@ async function executeTool(
           type: input.type,
           routineSlot: input.routineSlot,
           energyType: input.energyType || null,
+          lifeArea: input.lifeArea || null,
           frequency: "daily",
           whyToday: input.whyToday || null,
           whyYear: input.whyYear || null,
@@ -248,6 +264,42 @@ async function executeTool(
 
       return {
         text: `Активные привычки (${habits.length}):\n${list}`,
+        actions: [],
+      };
+    }
+
+    case "rate_life_area": {
+      const input = toolInput as { area: string; score: number; note?: string };
+      const AREA_LABELS: Record<string, string> = {
+        health: "Здоровье", career: "Карьера", relationships: "Отношения",
+        finances: "Финансы", family: "Семья", growth: "Развитие",
+        recreation: "Отдых", environment: "Среда",
+      };
+
+      await prisma.balanceRating.create({
+        data: {
+          userId,
+          area: input.area,
+          score: Math.max(1, Math.min(10, Math.round(input.score))),
+          note: input.note || null,
+        },
+      });
+
+      // Get all latest ratings for context
+      const allAreas = ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"];
+      const latestRatings: string[] = [];
+      for (const area of allAreas) {
+        const latest = await prisma.balanceRating.findFirst({
+          where: { userId, area },
+          orderBy: { createdAt: "desc" },
+        });
+        if (latest) {
+          latestRatings.push(`${AREA_LABELS[area]}: ${latest.score}/10`);
+        }
+      }
+
+      return {
+        text: `Оценка записана: ${AREA_LABELS[input.area] || input.area} = ${input.score}/10.\n\nТекущий баланс:\n${latestRatings.join("\n") || "Только одна сфера оценена."}`,
         actions: [],
       };
     }
@@ -503,6 +555,33 @@ async function buildUserContext(userId: number): Promise<string> {
         const practices = getRecoveryPractices(lowest.key);
         const top3 = practices.slice(0, 3).map(p => p.name).join(", ");
         lines.push(`⚠️ ${lowest.type} низкая (${lowest.value}/10). Практики: ${top3}`);
+      }
+    }
+
+    // Life balance ratings
+    const AREA_LABELS: Record<string, string> = {
+      health: "Здоровье", career: "Карьера", relationships: "Отношения",
+      finances: "Финансы", family: "Семья", growth: "Развитие",
+      recreation: "Отдых", environment: "Среда",
+    };
+    const balanceAreas = ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"];
+    const balanceLines: string[] = [];
+    for (const area of balanceAreas) {
+      const latest = await prisma.balanceRating.findFirst({
+        where: { userId, area },
+        orderBy: { createdAt: "desc" },
+      });
+      if (latest) {
+        const age = Math.round((Date.now() - latest.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        balanceLines.push(`  ${AREA_LABELS[area]}: ${latest.score}/10 (${age}д назад)`);
+      }
+    }
+    if (balanceLines.length > 0) {
+      lines.push("\nБаланс жизни:");
+      lines.push(...balanceLines);
+      const rated = balanceLines.length;
+      if (rated < 8) {
+        lines.push(`  ⚠️ Оценено ${rated}/8 сфер. Предложи оценить остальные.`);
       }
     }
 

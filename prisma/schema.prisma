@@ -19,8 +19,9 @@ model User {
   messages     Message[]
   sessions     Session[]
   observations Observation[]
-  habits       Habit[]
-  habitLogs    HabitLog[]
+  habits         Habit[]
+  habitLogs      HabitLog[]
+  balanceRatings BalanceRating[]
 }
 
 model EnergyLog {
@@ -100,6 +101,7 @@ model Habit {
   type            String     // "build" | "break"
   routineSlot     String     // "morning" | "afternoon" | "evening"
   sortOrder       Int        @default(0)
+  lifeArea        String?    // "health" | "career" | "relationships" | "finances" | "family" | "growth" | "recreation" | "environment"
   energyType      String?
   frequency       String     @default("daily")
   customDays      String?
@@ -137,4 +139,14 @@ model HabitLog {
   note        String?
 
   @@unique([habitId, date])
+}
+
+model BalanceRating {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  area      String   // "health" | "career" | "relationships" | "finances" | "family" | "growth" | "recreation" | "environment"
+  score     Int      // 1-10
+  note      String?
+  createdAt DateTime @default(now())
 }

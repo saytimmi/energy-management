@@ -181,7 +181,7 @@ export function habitsRoute(router: Router): void {
     const userId = (req as any).userId as number;
 
     try {
-      const { name, icon, type, routineSlot, duration, energyType, triggerAction,
+      const { name, icon, type, routineSlot, duration, energyType, lifeArea, triggerAction,
         whyToday, whyMonth, whyYear, whyIdentity, isItBeneficial,
         breakTrigger, replacement, microActionId, frequency, customDays } = req.body;
 
@@ -221,6 +221,7 @@ export function habitsRoute(router: Router): void {
           sortOrder: (maxOrder?.sortOrder ?? -1) + 1,
           duration: duration ?? null,
           energyType: energyType ?? null,
+          lifeArea: lifeArea ?? null,
           triggerAction: triggerAction ?? null,
           whyToday: whyToday ?? null,
           whyMonth: whyMonth ?? null,
@@ -258,7 +259,7 @@ export function habitsRoute(router: Router): void {
 
       const allowedFields = [
         "name", "icon", "type", "routineSlot", "sortOrder", "duration",
-        "energyType", "triggerAction", "whyToday", "whyMonth", "whyYear",
+        "energyType", "lifeArea", "triggerAction", "whyToday", "whyMonth", "whyYear",
         "whyIdentity", "isItBeneficial", "breakTrigger", "replacement",
         "microActionId", "frequency", "customDays", "stage",
       ];

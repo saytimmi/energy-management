@@ -34,6 +34,17 @@ function pickIcon(name: string): string {
   return "✅";
 }
 
+const LIFE_AREAS = [
+  { id: "health", label: "Здоровье", icon: "❤️" },
+  { id: "career", label: "Карьера", icon: "💼" },
+  { id: "relationships", label: "Отношения", icon: "👫" },
+  { id: "finances", label: "Финансы", icon: "💰" },
+  { id: "family", label: "Семья", icon: "👨‍👩‍👧" },
+  { id: "growth", label: "Развитие", icon: "🧠" },
+  { id: "recreation", label: "Отдых", icon: "🎮" },
+  { id: "environment", label: "Среда", icon: "🏠" },
+] as const;
+
 const SLOTS = [
   { id: "morning", label: "Утро", icon: "☀️" },
   { id: "afternoon", label: "День", icon: "🌤" },
@@ -50,6 +61,7 @@ export function HabitCreate({ onClose, microActionId }: Props) {
   const [name, setName] = useState("");
   const [routineSlot, setRoutineSlot] = useState<string>("morning");
   const [type, setType] = useState<"build" | "break">("build");
+  const [lifeArea, setLifeArea] = useState<string>("health");
 
   // Meaning (REQUIRED)
   const [whyToday, setWhyToday] = useState("");
@@ -88,6 +100,7 @@ export function HabitCreate({ onClose, microActionId }: Props) {
       icon,
       type,
       routineSlot,
+      lifeArea,
       ...(microActionId ? { microActionId } : {}),
     };
 
@@ -187,6 +200,21 @@ export function HabitCreate({ onClose, microActionId }: Props) {
               >
                 Убрать
               </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Сфера жизни</label>
+            <div class="create-areas">
+              {LIFE_AREAS.map(a => (
+                <button
+                  key={a.id}
+                  class={`create-area-btn${lifeArea === a.id ? " active" : ""}`}
+                  onClick={() => { setLifeArea(a.id); haptic("light"); }}
+                >
+                  {a.icon} {a.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
