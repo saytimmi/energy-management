@@ -146,7 +146,7 @@ export function HabitsScreen() {
   const slotLimitReached = activeGrowing >= 3;
 
   return (
-    <div class="habits-screen" style={{ paddingBottom: "calc(var(--nav-h) + 20px)" }}>
+    <div class="habits-screen">
       {showConfetti.value && <Confetti />}
 
       {milestoneMessage.value && (

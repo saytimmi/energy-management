@@ -15,20 +15,23 @@ import { handleHabitCallback } from "./handlers/habits.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
-// Buffer messages per user — collect for 10 seconds, then respond once
+// Adaptive buffer: short delay for first message, longer for bursts
 const messageBuffers = new Map<number, { messages: string[]; timer: NodeJS.Timeout; firstName: string; lastName?: string; username?: string }>();
 
-const BUFFER_DELAY = 10_000; // 10 seconds
+const FIRST_MSG_DELAY = 3_000;  // 3 sec — single message, respond fast
+const BURST_MSG_DELAY = 8_000;  // 8 sec — user is typing a series, wait
 
 function bufferMessage(userId: number, text: string, firstName: string, lastName?: string, username?: string) {
   const existing = messageBuffers.get(userId);
 
   if (existing) {
+    // Additional message in burst — extend buffer
     existing.messages.push(text);
     clearTimeout(existing.timer);
-    existing.timer = setTimeout(() => flushBuffer(userId), BUFFER_DELAY);
+    existing.timer = setTimeout(() => flushBuffer(userId), BURST_MSG_DELAY);
   } else {
-    const timer = setTimeout(() => flushBuffer(userId), BUFFER_DELAY);
+    // First message — respond quickly
+    const timer = setTimeout(() => flushBuffer(userId), FIRST_MSG_DELAY);
     messageBuffers.set(userId, { messages: [text], timer, firstName, lastName, username });
   }
 }

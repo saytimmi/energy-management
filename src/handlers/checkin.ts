@@ -24,6 +24,14 @@ interface PendingCheckIn {
 
 const pendingCheckIns = new Map<number, PendingCheckIn>();
 
+// Common triggers for "why" buttons after checkin
+const LOW_ENERGY_TRIGGERS: Record<string, string[]> = {
+  physical: ["Плохой сон", "Нет движения", "Плохая еда", "Болезнь"],
+  mental: ["Долго за экраном", "Много задач", "Нет фокуса"],
+  emotional: ["Конфликт", "Одиночество", "Стресс"],
+  spiritual: ["Потеря смысла", "Рутина", "Нет прогресса"],
+};
+
 function buildRatingKeyboard(
   logType: string,
   energyType: string
@@ -54,7 +62,81 @@ export async function handleCheckinCallback(
   ctx: Context
 ): Promise<void> {
   const data = ctx.callbackQuery?.data;
-  if (!data || !data.startsWith("checkin:")) return;
+  if (!data) return;
+
+  // Handle "why" trigger buttons
+  if (data.startsWith("why:")) {
+    const parts = data.split(":");
+    if (parts.length !== 4) return;
+    const [, energyType, logIdStr, triggerIndex] = parts;
+    const logId = parseInt(logIdStr, 10);
+    const idx = parseInt(triggerIndex, 10);
+
+    const triggers = LOW_ENERGY_TRIGGERS[energyType];
+    if (!triggers || isNaN(idx) || idx >= triggers.length) return;
+
+    const trigger = triggers[idx];
+    const from = ctx.from;
+    if (!from) return;
+
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(from.id) },
+    });
+    if (!user) return;
+
+    // Save as observation
+    await prisma.observation.create({
+      data: {
+        userId: user.id,
+        energyType,
+        direction: "drop",
+        trigger,
+        context: `Причина низкой ${ENERGY_LABELS[energyType] || energyType} энергии`,
+      },
+    });
+
+    await ctx.answerCallbackQuery({ text: `Записал: ${trigger}` });
+
+    // Update message to show selected trigger
+    try {
+      const originalText = ctx.callbackQuery?.message?.text ?? "";
+      await ctx.editMessageText(originalText + `\n\n📝 Причина: ${trigger}`);
+    } catch {}
+    return;
+  }
+
+  // Handle undo button
+  if (data.startsWith("checkin_undo:")) {
+    const logId = parseInt(data.replace("checkin_undo:", ""), 10);
+    if (isNaN(logId)) return;
+
+    const from = ctx.from;
+    if (!from) return;
+
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(from.id) },
+    });
+    if (!user) return;
+
+    // Only delete if it belongs to this user
+    const log = await prisma.energyLog.findFirst({
+      where: { id: logId, userId: user.id },
+    });
+
+    if (log) {
+      await prisma.energyLog.delete({ where: { id: logId } });
+      await ctx.answerCallbackQuery({ text: "Запись отменена" });
+      try {
+        await ctx.editMessageText("↩️ Последняя запись энергии отменена.");
+      } catch {}
+    } else {
+      await ctx.answerCallbackQuery({ text: "Запись не найдена" });
+    }
+    return;
+  }
+
+  // Handle checkin flow
+  if (!data.startsWith("checkin:")) return;
 
   const parts = data.split(":");
   if (parts.length !== 4) return;
@@ -112,16 +194,36 @@ export async function handleCheckinCallback(
       orderBy: { createdAt: "desc" },
     });
 
-    await prisma.energyLog.create({
-      data: {
-        userId: user.id,
-        physical: pending.physical!,
-        mental: pending.mental!,
-        emotional: pending.emotional!,
-        spiritual: pending.spiritual!,
-        logType: pending.logType,
-      },
-    });
+    // Dedup: if checkin within last 5 minutes, update existing instead
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    let logId: number;
+
+    if (previousLog && previousLog.createdAt >= fiveMinAgo) {
+      // Update existing — user is correcting their checkin
+      await prisma.energyLog.update({
+        where: { id: previousLog.id },
+        data: {
+          physical: pending.physical!,
+          mental: pending.mental!,
+          emotional: pending.emotional!,
+          spiritual: pending.spiritual!,
+          logType: pending.logType,
+        },
+      });
+      logId = previousLog.id;
+    } else {
+      const newLog = await prisma.energyLog.create({
+        data: {
+          userId: user.id,
+          physical: pending.physical!,
+          mental: pending.mental!,
+          emotional: pending.emotional!,
+          spiritual: pending.spiritual!,
+          logType: pending.logType,
+        },
+      });
+      logId = newLog.id;
+    }
 
     pendingCheckIns.delete(telegramId);
 
@@ -142,14 +244,15 @@ export async function handleCheckinCallback(
 
     let followUp = `✅ Записал!\n\n${ENERGY_EMOJIS.physical} Физическая: ${pending.physical}\n${ENERGY_EMOJIS.mental} Ментальная: ${pending.mental}\n${ENERGY_EMOJIS.emotional} Эмоциональная: ${pending.emotional}\n${ENERGY_EMOJIS.spiritual} Духовная: ${pending.spiritual}`;
 
-    // Drop detection (preserved from original)
-    if (previousLog) {
+    // Drop detection
+    const compareLog = previousLog && previousLog.createdAt < fiveMinAgo ? previousLog : null;
+    if (compareLog) {
       const drops: string[] = [];
       const energyPairs: Array<{ label: string; current: number; prev: number }> = [
-        { label: "Физическая", current: pending.physical!, prev: previousLog.physical },
-        { label: "Ментальная", current: pending.mental!, prev: previousLog.mental },
-        { label: "Эмоциональная", current: pending.emotional!, prev: previousLog.emotional },
-        { label: "Духовная", current: pending.spiritual!, prev: previousLog.spiritual },
+        { label: "Физическая", current: pending.physical!, prev: compareLog.physical },
+        { label: "Ментальная", current: pending.mental!, prev: compareLog.mental },
+        { label: "Эмоциональная", current: pending.emotional!, prev: compareLog.emotional },
+        { label: "Духовная", current: pending.spiritual!, prev: compareLog.spiritual },
       ];
 
       for (const e of energyPairs) {
@@ -203,8 +306,29 @@ export async function handleCheckinCallback(
       followUp += `\n\n🧬 ${result.fact.text}`;
     }
 
-    // Only suggest habits when there's a pattern (3+ low readings for same energy type)
+    // Build keyboard
     const keyboard = new InlineKeyboard();
+
+    // "Why" trigger buttons for lowest energy types (<=4)
+    const lowEnergies: Array<{ type: string; value: number }> = [];
+    if (pending.physical! <= 4) lowEnergies.push({ type: "physical", value: pending.physical! });
+    if (pending.mental! <= 4) lowEnergies.push({ type: "mental", value: pending.mental! });
+    if (pending.emotional! <= 4) lowEnergies.push({ type: "emotional", value: pending.emotional! });
+    if (pending.spiritual! <= 4) lowEnergies.push({ type: "spiritual", value: pending.spiritual! });
+
+    // Show triggers for the lowest energy type only (keep it simple)
+    if (lowEnergies.length > 0) {
+      const lowest = lowEnergies.sort((a, b) => a.value - b.value)[0];
+      const triggers = LOW_ENERGY_TRIGGERS[lowest.type] || [];
+      followUp += `\n\nПочему ${ENERGY_TYPE_LABELS[lowest.type]?.toLowerCase() || lowest.type} низкая?`;
+      for (let i = 0; i < triggers.length; i++) {
+        keyboard.text(triggers[i], `why:${lowest.type}:${logId}:${i}`);
+        if (i % 2 === 1) keyboard.row();
+      }
+      if (triggers.length % 2 === 1) keyboard.row();
+    }
+
+    // Only suggest habits when there's a pattern (3+ low readings for same energy type)
     if (config.webappUrl && result.suggestIds.length > 0 && user) {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const recentLogs = await prisma.energyLog.findMany({
@@ -213,7 +337,6 @@ export async function handleCheckinCallback(
         take: 10,
       });
 
-      // Check if same energy type was low 3+ times recently
       const lowCounts: Record<string, number> = {};
       for (const log of recentLogs) {
         if (log.physical <= 4) lowCounts["physical"] = (lowCounts["physical"] || 0) + 1;
@@ -225,8 +348,12 @@ export async function handleCheckinCallback(
       const hasPattern = Object.values(lowCounts).some(count => count >= 3);
       if (hasPattern) {
         keyboard.webApp("📱 Добавить в привычки", `${config.webappUrl}#habits/suggest?ids=${result.suggestIds.join(",")}`);
+        keyboard.row();
       }
     }
+
+    // Undo button
+    keyboard.text("↩️ Отменить", `checkin_undo:${logId}`);
 
     await ctx.editMessageText(followUp, {
       reply_markup: keyboard,

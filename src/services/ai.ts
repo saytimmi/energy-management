@@ -517,6 +517,30 @@ async function buildUserContext(userId: number): Promise<string> {
       }
     }
 
+    // Yesterday's recommendations for follow-up
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterdayRecs = await prisma.observation.findMany({
+      where: {
+        userId,
+        recommendation: { not: null },
+        createdAt: { gte: yesterday, lt: today },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+    });
+
+    if (yesterdayRecs.length > 0) {
+      lines.push("\nВчерашние рекомендации (спроси помогло ли, КОРОТКО, 1 вопрос):");
+      for (const r of yesterdayRecs) {
+        lines.push(`  → ${r.recommendation} (${r.energyType}, trigger: ${r.trigger || "?"})`);
+      }
+    }
+
     // Recent sessions
     const sessions = await prisma.session.findMany({
       where: { userId, status: "completed", summary: { not: null } },
