@@ -183,27 +183,46 @@ Railway. Auto-deploy из main.
 | GET | /api/habits/today | Привычки на сегодня |
 | GET | /api/habits/heatmap | Тепловая карта за месяц |
 
-## v2 Roadmap (6 фаз)
+## Стратегия: глубина ядра, не ширина фич
 
-Полный спек: `docs/superpowers/specs/2026-03-18-energy-app-v2-design.md`
+Решение от 2026-03-22: вместо 6 отдельных систем — идеально работающий ежедневный цикл.
+Исходный спек: `docs/superpowers/specs/2026-03-18-energy-app-v2-design.md` (пересмотрен, фазы 2/4/5 отменены)
 
-| Фаза | Что | Статус |
-|------|-----|--------|
-| 1. Frontend Foundation | Preact + Vite, auth, hub dashboard | ✅ Done |
-| 2. Life Balance Wheel | 8 сфер жизни, SVG radar chart, микро-чекины | Planned |
-| 3. Habit Tracker + Knowledge Base | Привычки с meaning framework, 40 micro-actions, instant recs, streaks, lifecycle stages | ✅ Done |
-| 3.5. Bot Intelligence Overhaul | AI tool use, severity-based checkin, slot-to-slot comparison, habits UX redesign | ✅ Done (2026-03-22) |
-| 4. Smart Task Manager | AI-планирование, NLP quick-add, calendar | Planned |
-| 5. Achievement System | XP, уровни, progressive onboarding | Planned |
-| 6. AI Intelligence | UserInsight граф, рекомендации, дайджесты | Planned |
+### Завершено
+
+| Что | Когда |
+|-----|-------|
+| Frontend Foundation (Preact + Vite, auth, hub) | ✅ |
+| Habit Tracker + Knowledge Base (meaning framework, micro-actions, streaks, stages) | ✅ |
+| Bot Intelligence Overhaul (AI tool use, severity checkin, slot-to-slot, habits UX) | ✅ 2026-03-22 |
+| Life Balance через AI (lifeArea на привычках, rate_life_area tool, BalanceRating модель) | ✅ 2026-03-22 |
+
+### Приоритеты (что делать дальше)
+
+| # | Что | Почему |
+|---|-----|--------|
+| 1 | **Привычки РАБОТАЮТ** — проверить на телефоне, починить если Telegram кэширует старый UI | Базовый цикл не работает = всё остальное бесполезно |
+| 2 | **Weekly AI digest** — бот раз в неделю присылает анализ: тренды энергии, какие привычки помогают, что ломает | Замыкает feedback loop |
+| 3 | **Balance check через AI** — бот раз в 2 недели спрашивает оценку 8 сфер, предлагает привычки для просевших | Колесо баланса без отдельного UI |
+| 4 | **Визуал Mini App** — polish карточек, анимации, адаптация к разным экранам | UX refinement |
+
+### Отменено (не нужно)
+
+| Что | Причина |
+|-----|---------|
+| ~~SVG Balance Wheel экран~~ | Заменён на AI-опрос в чате + lifeArea на привычках |
+| ~~Task Manager~~ | Пользователь уже использует Google Calendar + Claude App |
+| ~~Achievement System (XP/уровни)~~ | Стрики + confetti уже есть. Геймификация = overkill |
+| ~~AI Intelligence как отдельная фаза~~ | AI улучшается итеративно, не отдельной системой |
 
 ## AI Bot Architecture (обновлено 2026-03-22)
 
 ### AI Tool Use
 Бот использует Anthropic function calling. AI может выполнять реальные действия:
-- `create_habit` — создаёт привычку в БД (name, icon, type, routineSlot)
+- `create_habit` — создаёт привычку в БД (name, icon, type, routineSlot, lifeArea + meaning fields)
 - `start_energy_checkin` — отправляет InlineKeyboard для оценки энергии
 - `get_user_habits` — возвращает список активных привычек
+- `rate_life_area` — сохраняет оценку сферы жизни (8 сфер × 1-10)
 
 **Важно:** AI НЕ должен говорить "создал/записал/зафиксировал" без вызова tool.
 
