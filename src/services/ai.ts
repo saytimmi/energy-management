@@ -598,20 +598,48 @@ async function buildUserContext(userId: number): Promise<string> {
       }
     }
 
-    // Recent observations (structured insights from past conversations)
+    // Recent observations + pattern analysis
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const observations = await prisma.observation.findMany({
-      where: { userId },
+      where: { userId, createdAt: { gte: thirtyDaysAgo } },
       orderBy: { createdAt: "desc" },
-      take: 10,
     });
 
     if (observations.length > 0) {
-      lines.push("\nИстория наблюдений:");
-      for (const o of observations) {
+      // Last 10 individual observations
+      lines.push("\nПоследние наблюдения:");
+      for (const o of observations.slice(0, 10)) {
         const emoji = { physical: "🏃", mental: "🧠", emotional: "💚", spiritual: "🔮" }[o.energyType] || "•";
         const date = o.createdAt.toLocaleDateString("ru");
         const trigger = o.trigger ? ` (${o.trigger})` : "";
         lines.push(`  ${date} ${emoji} ${o.energyType} ${o.direction}${trigger}`);
+      }
+
+      // Aggregate trigger patterns (what drops/rises energy most often)
+      const triggerFreq = new Map<string, { count: number; direction: string; types: Set<string> }>();
+      for (const o of observations) {
+        if (!o.trigger) continue;
+        const key = `${o.trigger}:${o.direction}`;
+        const existing = triggerFreq.get(key);
+        if (existing) {
+          existing.count++;
+          existing.types.add(o.energyType);
+        } else {
+          triggerFreq.set(key, { count: 1, direction: o.direction, types: new Set([o.energyType]) });
+        }
+      }
+
+      const patterns = [...triggerFreq.entries()]
+        .map(([k, v]) => ({ trigger: k.split(":")[0], ...v, types: [...v.types] }))
+        .filter(p => p.count >= 2)
+        .sort((a, b) => b.count - a.count);
+
+      if (patterns.length > 0) {
+        lines.push("\nПаттерны за месяц (повторяющиеся триггеры):");
+        for (const p of patterns.slice(0, 8)) {
+          const arrow = p.direction === "rise" ? "↑" : "↓";
+          lines.push(`  ${arrow} "${p.trigger}" — ${p.count}× (${p.types.join(", ")})`);
+        }
       }
     }
 
