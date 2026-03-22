@@ -2,6 +2,7 @@ import cron, { type ScheduledTask } from "node-cron";
 import { config } from "../config.js";
 import { sendCheckInToAll } from "./checkin-sender.js";
 import { runDailyHabitCron, runWeeklyHabitReset } from "./habit-cron.js";
+import { sendWeeklyDigest } from "./weekly-digest.js";
 
 const tasks: ScheduledTask[] = [];
 
@@ -39,6 +40,13 @@ export function startScheduler(): void {
   }, { timezone: "Asia/Shanghai" });
   tasks.push(habitWeekly);
   console.log("Weekly habit reset scheduled: 0 0 * * 1 (Asia/Shanghai)");
+
+  // Weekly energy digest — Sunday 20:00
+  const weeklyDigest = cron.schedule("0 20 * * 0", () => {
+    sendWeeklyDigest().catch(err => console.error("Weekly digest failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(weeklyDigest);
+  console.log("Weekly digest scheduled: 0 20 * * 0 (Asia/Shanghai)");
 }
 
 export function stopScheduler(): void {

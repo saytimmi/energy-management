@@ -3,6 +3,7 @@ import { config } from "./config.js";
 import { startHandler } from "./handlers/start.js";
 import { helpHandler } from "./handlers/help.js";
 import { handleCheckinCallback, sendCheckInMessage, isAwaitingCustomReason, handleCustomReasonText } from "./handlers/checkin.js";
+import { handleDigestCallback } from "./services/weekly-digest.js";
 import { reportHandler } from "./handlers/report.js";
 import { kaizenHandler } from "./handlers/kaizen.js";
 import { energyHandler } from "./handlers/energy.js";
@@ -117,6 +118,11 @@ bot.callbackQuery("action:report", async (ctx) => {
 
 // Inline keyboard callbacks (habit completion/skip)
 bot.callbackQuery(/^habit_(complete|skip):/, handleHabitCallback);
+
+// Inline keyboard callbacks (weekly digest habit suggestions)
+bot.callbackQuery(/^digest_habit/, async (ctx) => {
+  await handleDigestCallback(ctx, ctx.callbackQuery.data);
+});
 
 // Inline keyboard callbacks (checkin flow)
 bot.on("callback_query:data", handleCheckinCallback);
