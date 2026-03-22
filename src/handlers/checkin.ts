@@ -203,10 +203,29 @@ export async function handleCheckinCallback(
       followUp += `\n\n🧬 ${result.fact.text}`;
     }
 
-    // Build inline keyboard with webapp button
+    // Only suggest habits when there's a pattern (3+ low readings for same energy type)
     const keyboard = new InlineKeyboard();
-    if (config.webappUrl && result.suggestIds.length > 0) {
-      keyboard.webApp("📱 Добавить в привычки", `${config.webappUrl}#habits/suggest?ids=${result.suggestIds.join(",")}`);
+    if (config.webappUrl && result.suggestIds.length > 0 && user) {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recentLogs = await prisma.energyLog.findMany({
+        where: { userId: user.id, createdAt: { gte: thirtyDaysAgo } },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+
+      // Check if same energy type was low 3+ times recently
+      const lowCounts: Record<string, number> = {};
+      for (const log of recentLogs) {
+        if (log.physical <= 4) lowCounts["physical"] = (lowCounts["physical"] || 0) + 1;
+        if (log.mental <= 4) lowCounts["mental"] = (lowCounts["mental"] || 0) + 1;
+        if (log.emotional <= 4) lowCounts["emotional"] = (lowCounts["emotional"] || 0) + 1;
+        if (log.spiritual <= 4) lowCounts["spiritual"] = (lowCounts["spiritual"] || 0) + 1;
+      }
+
+      const hasPattern = Object.values(lowCounts).some(count => count >= 3);
+      if (hasPattern) {
+        keyboard.webApp("📱 Добавить в привычки", `${config.webappUrl}#habits/suggest?ids=${result.suggestIds.join(",")}`);
+      }
     }
 
     await ctx.editMessageText(followUp, {

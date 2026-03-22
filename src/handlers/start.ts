@@ -45,12 +45,12 @@ export async function startHandler(ctx: CommandContext<Context>) {
   });
 
   if (todayMessages) {
-    const reply = await chat(
+    const result = await chat(
       BigInt(from.id),
       "Привет, я снова тут",
       from.first_name,
     );
-    await ctx.reply(reply, {
+    await ctx.reply(result.text, {
       reply_markup: getMainKeyboard(),
     });
     return;
@@ -69,12 +69,12 @@ export async function startHandler(ctx: CommandContext<Context>) {
     });
   } else {
     // Returning user — warm AI greeting
-    const greeting = await chat(
+    const result = await chat(
       BigInt(from.id),
       "Привет! Я только что нажал /start. Я возвращаюсь — посмотри в историю. Поприветствуй коротко и тепло.",
       from.first_name,
     );
-    await ctx.reply(greeting, {
+    await ctx.reply(result.text, {
       reply_markup: getMainKeyboard(),
     });
   }

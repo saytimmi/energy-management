@@ -9,6 +9,60 @@ const anthropic = new Anthropic({
   apiKey: config.anthropicApiKey,
 });
 
+// --- Types ---
+
+export interface ChatAction {
+  type: "start_checkin";
+}
+
+export interface ChatResult {
+  text: string;
+  actions: ChatAction[];
+}
+
+// --- Tools for AI ---
+
+const TOOLS: Anthropic.Tool[] = [
+  {
+    name: "create_habit",
+    description: "Создать новую привычку для пользователя в системе. Используй когда пользователь просит добавить или создать привычку. Это РЕАЛЬНОЕ действие — привычка появится в мини-приложении.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Название привычки, например 'Интервальное голодание 16:8'" },
+        icon: { type: "string", description: "Эмодзи иконка, например '🍽'" },
+        type: { type: "string", enum: ["build", "break"], description: "build = формировать новую, break = избавиться от старой" },
+        routineSlot: { type: "string", enum: ["morning", "afternoon", "evening"], description: "Время дня для привычки" },
+        energyType: { type: "string", enum: ["physical", "mental", "emotional", "spiritual"], description: "Тип энергии, на который влияет привычка" },
+        frequency: { type: "string", enum: ["daily", "weekdays", "custom"], description: "Частота. По умолчанию daily" },
+        whyToday: { type: "string", description: "Зачем это делать сегодня (мотивация)" },
+        whyYear: { type: "string", description: "Что изменится через год" },
+      },
+      required: ["name", "icon", "type", "routineSlot"],
+    },
+  },
+  {
+    name: "start_energy_checkin",
+    description: "Запустить оценку энергии с интерактивными кнопками (InlineKeyboard). Используй ВМЕСТО текстовых вопросов про уровень энергии. Когда хочешь узнать как у человека с энергией — вызови этот инструмент.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_user_habits",
+    description: "Получить список текущих активных привычек пользователя. Используй чтобы проверить есть ли уже привычка, или показать список.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [],
+    },
+  },
+];
+
+// --- System Prompt ---
+
 const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и эксперт по управлению энергией. Тебя зовут Энерджи. Ты общаешься как близкий друг — искренне, с заботой, без формальностей.
 
 Методология 4 типов энергии:
@@ -23,22 +77,34 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - Эмоциональное выгорание НЕ лечится спортом → близкие люди, смех, природа
 - Духовная пустота НЕ лечится развлечениями → миссия, помощь другим
 
-Как ты ведёшь диалог:
+СТРОГИЕ ПРАВИЛА ОБЩЕНИЯ:
 - Коротко, 2-4 предложения. Как друг в мессенджере.
-- Сначала СЛУШАЕШЬ, потом спрашиваешь. Не давай советы сразу.
-- Один вопрос за раз.
-- Если человек говорит про усталость — выясни КАКАЯ энергия просела.
+- МАКСИМУМ 1 вопрос за ответ. НЕ БОЛЬШЕ. Если задал вопрос — СТОП, не добавляй ещё.
+- Если информации достаточно для действия — ДЕЙСТВУЙ через инструменты, не спрашивай.
+- Фокус СТРОГО на управлении энергией и привычками. Не болтай на посторонние темы.
+- Не задавай личных вопросов ("куда едешь?", "как дела?" и т.п.) — только про энергию.
 - Эмодзи умеренно, к месту.
 - Запоминай контекст, ссылайся на прошлое.
 - Русский язык.
 
+ВАЖНО — ИНСТРУМЕНТЫ:
+У тебя есть инструменты для РЕАЛЬНЫХ действий. ИСПОЛЬЗУЙ ИХ:
+- create_habit — создать привычку в системе (она реально появится в приложении)
+- start_energy_checkin — запустить оценку энергии с кнопками (НЕ спрашивай текстом!)
+- get_user_habits — посмотреть текущие привычки пользователя
+
+КРИТИЧЕСКИЕ ЗАПРЕТЫ:
+1. НИКОГДА не говори "создал", "записал", "зафиксировал" если НЕ вызвал соответствующий инструмент.
+2. НИКОГДА не имитируй UI-элементы текстом. Не пиши "[Здесь должна быть кнопка...]". Используй инструменты.
+3. Когда хочешь узнать уровень энергии — ВЫЗОВИ start_energy_checkin. НЕ спрашивай "как энергия от 1 до 10?".
+4. Если не можешь что-то сделать — ЧЕСТНО скажи. Не имитируй действие.
+5. Ты НЕ видишь фотографии и картинки. Если пользователь прислал фото — скажи что не можешь его увидеть, попроси описать текстом или голосом.
+
 ВАЖНО — ТЫ ЧАСТЬ СИСТЕМЫ:
 - Ты встроен в Telegram-бота с базой данных и мини-приложением.
 - ВСЕ разговоры автоматически сохраняются в базу данных.
-- Ты НЕ "просто чат-помощник". Ты — ядро системы управления энергией.
-- Когда человек рассказывает о своём состоянии — данные автоматически попадают в дашборд мини-приложения.
-- НИКОГДА не говори что у тебя "нет доступа к базе" или "нет доступа к мини-приложению" — у тебя есть.
-- Если человек спросит про базу или данные — скажи что всё сохраняется автоматически и видно в Energy App.
+- Ты — ядро системы управления энергией, не просто чат-помощник.
+- Данные видны в Energy App (мини-приложение).
 
 ВАЖНО — ДАТА И ВРЕМЯ:
 Ты всегда знаешь текущую дату и время (они передаются в контексте). Используй это:
@@ -61,7 +127,6 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 Примеры:
 - "устал после 5 часов кодинга" (сейчас) → <!--DATA:{"energyType":"mental","direction":"drop","level":null,"trigger":"5 часов непрерывного кодинга","recommendation":null,"context":"ментальная перегрузка от работы"}-->
 - "вчера плохо спал" → <!--DATA:{"energyType":"physical","direction":"drop","level":null,"trigger":"плохой сон","recommendation":null,"context":"недосып","when":"2026-03-14T23:00:00"}-->
-- "в понедельник был на подъёме после тренировки" → <!--DATA:{"energyType":"physical","direction":"rise","level":null,"trigger":"тренировка","recommendation":null,"context":"подъём энергии после спорта","when":"2026-03-10T10:00:00"}-->
 
 КОГДА НЕ ДОБАВЛЯТЬ DATA блок:
 - Просто болтовня, не про энергию
@@ -75,6 +140,105 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - Максимум 1-2 блока за ответ
 
 "Отдых — часть работы, работа — часть отдыха"`;
+
+// --- Tool Execution ---
+
+async function executeTool(
+  toolName: string,
+  toolInput: Record<string, unknown>,
+  userId: number,
+): Promise<{ text: string; actions: ChatAction[] }> {
+  switch (toolName) {
+    case "create_habit": {
+      const input = toolInput as {
+        name: string;
+        icon: string;
+        type: string;
+        routineSlot: string;
+        energyType?: string;
+        frequency?: string;
+        whyToday?: string;
+        whyYear?: string;
+      };
+
+      // Check for duplicate
+      const existing = await prisma.habit.findFirst({
+        where: {
+          userId,
+          name: { contains: input.name.substring(0, 20), mode: "insensitive" },
+          isActive: true,
+        },
+      });
+
+      if (existing) {
+        return {
+          text: `Привычка "${existing.name}" уже существует (id: ${existing.id}, icon: ${existing.icon}, slot: ${existing.routineSlot}).`,
+          actions: [],
+        };
+      }
+
+      const maxOrder = await prisma.habit.aggregate({
+        where: { userId, routineSlot: input.routineSlot },
+        _max: { sortOrder: true },
+      });
+
+      const habit = await prisma.habit.create({
+        data: {
+          userId,
+          name: input.name,
+          icon: input.icon,
+          type: input.type,
+          routineSlot: input.routineSlot,
+          energyType: input.energyType || null,
+          frequency: input.frequency || "daily",
+          whyToday: input.whyToday || null,
+          whyYear: input.whyYear || null,
+          sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
+        },
+      });
+
+      return {
+        text: `Привычка создана успешно! ID: ${habit.id}, название: "${habit.name}", иконка: ${habit.icon}, слот: ${habit.routineSlot}, тип энергии: ${habit.energyType || "не указан"}.`,
+        actions: [],
+      };
+    }
+
+    case "start_energy_checkin": {
+      return {
+        text: "Чекин энергии запущен — пользователю отправлены кнопки для оценки.",
+        actions: [{ type: "start_checkin" }],
+      };
+    }
+
+    case "get_user_habits": {
+      const habits = await prisma.habit.findMany({
+        where: { userId, isActive: true },
+        orderBy: { routineSlot: "asc" },
+      });
+
+      if (habits.length === 0) {
+        return { text: "У пользователя пока нет активных привычек.", actions: [] };
+      }
+
+      const list = habits
+        .map(
+          (h) =>
+            `- ${h.icon} ${h.name} (${h.routineSlot}, streak: ${h.streakCurrent}, stage: ${h.stage})`,
+        )
+        .join("\n");
+
+      return {
+        text: `Активные привычки (${habits.length}):\n${list}`,
+        actions: [],
+      };
+    }
+
+    default:
+      return { text: `Неизвестный инструмент: ${toolName}`, actions: [] };
+  }
+}
+
+// --- Sessions ---
 
 async function getActiveSession(userId: number): Promise<number> {
   const today = new Date();
@@ -105,17 +269,24 @@ async function getActiveSession(userId: number): Promise<number> {
   return session.id;
 }
 
+// --- Observations ---
+
 /**
- * Parse and save structured observations from AI response
+ * Parse and save structured observations from AI response.
+ * Also sanitize unclosed DATA tags that leak when max_tokens truncates output.
  */
 async function extractAndSaveObservations(
   reply: string,
   userId: number,
   sessionId: number,
 ): Promise<string> {
+  // First: remove complete DATA blocks and parse them
   const dataRegex = /<!--DATA:(.*?)-->/g;
   let match;
-  const cleanReply = reply.replace(dataRegex, "").trim();
+  let cleanReply = reply.replace(dataRegex, "").trim();
+
+  // Second: remove any unclosed/truncated DATA blocks (from max_tokens cutoff)
+  cleanReply = cleanReply.replace(/<!--DATA:.*$/s, "").trim();
 
   while ((match = dataRegex.exec(reply)) !== null) {
     try {
@@ -168,14 +339,16 @@ async function extractAndSaveObservations(
   return cleanReply;
 }
 
+// --- Main Chat ---
+
 export async function chat(
   telegramId: bigint,
   userMessage: string,
   userName: string,
   messageType: "text" | "voice" = "text",
-): Promise<string> {
+): Promise<ChatResult> {
   const user = await prisma.user.findUnique({ where: { telegramId } });
-  if (!user) return "Напиши /start чтобы начать.";
+  if (!user) return { text: "Напиши /start чтобы начать.", actions: [] };
 
   const sessionId = await getActiveSession(user.id);
 
@@ -191,7 +364,7 @@ export async function chat(
     take: 30,
   });
 
-  const history = dbMessages.map((m) => ({
+  const history: Anthropic.MessageParam[] = dbMessages.map((m) => ({
     role: m.role as "user" | "assistant",
     content: m.content,
   }));
@@ -209,17 +382,55 @@ export async function chat(
     `\nИмя пользователя: ${userName}` +
     (context ? `\n\n${context}` : "");
 
+  const allActions: ChatAction[] = [];
+
   try {
     const rawReply = await measured("ai_response_ms", async () => {
-      const response = await anthropic.messages.create({
+      let response = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 512,
+        max_tokens: 1024,
         system: systemWithContext,
         messages: history,
+        tools: TOOLS,
       });
 
-      const block = response.content[0];
-      return block.type === "text" ? block.text : "Хм, что-то пошло не так 😅";
+      // Tool use loop (max 3 iterations to prevent infinite loops)
+      let iterations = 0;
+      while (response.stop_reason === "tool_use" && iterations < 3) {
+        iterations++;
+
+        // Execute all tool calls
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+        for (const block of response.content) {
+          if (block.type === "tool_use") {
+            const result = await executeTool(block.name, block.input as Record<string, unknown>, user.id);
+            allActions.push(...result.actions);
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: result.text,
+            });
+          }
+        }
+
+        // Send tool results back to get final response
+        history.push({ role: "assistant", content: response.content as Anthropic.ContentBlockParam[] });
+        history.push({ role: "user", content: toolResults });
+
+        response = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1024,
+          system: systemWithContext,
+          messages: history,
+          tools: TOOLS,
+        });
+      }
+
+      // Extract text from final response
+      const textBlocks = response.content.filter(
+        (b): b is Anthropic.TextBlock => b.type === "text",
+      );
+      return textBlocks.map((b) => b.text).join("\n") || "👍";
     }, { historyLength: String(history.length) });
 
     // Extract observations and clean reply
@@ -230,13 +441,15 @@ export async function chat(
       data: { userId: user.id, role: "assistant", content: cleanReply, sessionId },
     });
 
-    return cleanReply;
+    return { text: cleanReply, actions: allActions };
   } catch (error) {
     await trackError("ai", error, { userId: user.id, historyLength: history.length });
     console.error("AI chat error:", error);
-    return "Прости, не могу ответить прямо сейчас 😔 Попробуй через минутку.";
+    return { text: "Прости, не могу ответить прямо сейчас 😔 Попробуй через минутку.", actions: [] };
   }
 }
+
+// --- Context ---
 
 async function buildUserContext(userId: number): Promise<string> {
   try {
@@ -251,8 +464,10 @@ async function buildUserContext(userId: number): Promise<string> {
 
     if (logs.length > 0) {
       const latest = logs[0];
+      const ageMinutes = Math.round((Date.now() - latest.createdAt.getTime()) / 60000);
+      const ageStr = ageMinutes < 60 ? `${ageMinutes} мин назад` : `${Math.round(ageMinutes / 60)} ч назад`;
       lines.push(
-        `Последняя запись энергии (${latest.createdAt.toLocaleDateString("ru")}):`,
+        `Последняя запись энергии (${latest.createdAt.toLocaleDateString("ru")}, ${ageStr}):`,
         `  🏃 Физическая: ${latest.physical}/10  🧠 Ментальная: ${latest.mental}/10`,
         `  💚 Эмоциональная: ${latest.emotional}/10  🔮 Духовная: ${latest.spiritual}/10`,
       );
@@ -269,6 +484,19 @@ async function buildUserContext(userId: number): Promise<string> {
         const practices = getRecoveryPractices(lowest.key);
         const top3 = practices.slice(0, 3).map(p => p.name).join(", ");
         lines.push(`⚠️ ${lowest.type} низкая (${lowest.value}/10). Практики: ${top3}`);
+      }
+    }
+
+    // Active habits
+    const habits = await prisma.habit.findMany({
+      where: { userId, isActive: true },
+      orderBy: { routineSlot: "asc" },
+    });
+
+    if (habits.length > 0) {
+      lines.push("\nАктивные привычки:");
+      for (const h of habits) {
+        lines.push(`  ${h.icon} ${h.name} (${h.routineSlot}, streak: ${h.streakCurrent})`);
       }
     }
 
@@ -309,6 +537,8 @@ async function buildUserContext(userId: number): Promise<string> {
   }
 }
 
+// --- Session Summary ---
+
 export async function summarizeSession(sessionId: number): Promise<void> {
   try {
     const messages = await prisma.message.findMany({
@@ -343,9 +573,11 @@ export async function summarizeSession(sessionId: number): Promise<void> {
   }
 }
 
-// Compatibility exports — no longer used by analytics, kept for other callers
-export async function askAI(userMessage: string, context?: string): Promise<string> {
-  return chat(BigInt(0), userMessage, "пользователь");
+// --- Compatibility Exports ---
+
+export async function askAI(userMessage: string, _context?: string): Promise<string> {
+  const result = await chat(BigInt(0), userMessage, "пользователь");
+  return result.text;
 }
 
 export async function personalizeRecommendation(

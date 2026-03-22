@@ -7,6 +7,7 @@ import { reportHandler } from "./handlers/report.js";
 import { kaizenHandler } from "./handlers/kaizen.js";
 import { energyHandler } from "./handlers/energy.js";
 import { chat } from "./services/ai.js";
+import type { ChatAction } from "./services/ai.js";
 import { transcribeVoice } from "./services/voice.js";
 import { findOrCreateUser } from "./db.js";
 import { trackError } from "./services/monitor.js";
@@ -37,31 +38,59 @@ async function flushBuffer(userId: number) {
   if (!buf) return;
   messageBuffers.delete(userId);
 
-  const combined = buf.messages.join("\n");
-  const telegramId = BigInt(userId);
-
-  await findOrCreateUser(telegramId, buf.firstName, buf.lastName, buf.username);
-
-  // Show "typing..." indicator
   try {
-    await bot.api.sendChatAction(userId, "typing");
-  } catch {}
+    const combined = buf.messages.join("\n");
+    const telegramId = BigInt(userId);
 
-  const reply = await chat(telegramId, combined, buf.firstName);
+    await findOrCreateUser(telegramId, buf.firstName, buf.lastName, buf.username);
 
-  // Small delay to make typing feel natural
-  await new Promise(r => setTimeout(r, 1500));
+    // Show "typing..." indicator
+    try {
+      await bot.api.sendChatAction(userId, "typing");
+    } catch {}
 
-  try {
-    await bot.api.sendChatAction(userId, "typing");
-  } catch {}
+    const result = await chat(telegramId, combined, buf.firstName);
 
-  await new Promise(r => setTimeout(r, 1000));
+    // Small delay to make typing feel natural
+    await new Promise(r => setTimeout(r, 1500));
 
-  try {
-    await bot.api.sendMessage(userId, reply);
+    try {
+      await bot.api.sendChatAction(userId, "typing");
+    } catch {}
+
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Send text reply
+    try {
+      await bot.api.sendMessage(userId, result.text);
+    } catch (err) {
+      console.error("Failed to send buffered reply:", err);
+    }
+
+    // Handle actions (e.g., start checkin with InlineKeyboard)
+    await handleChatActions(userId, result.actions);
   } catch (err) {
-    console.error("Failed to send buffered reply:", err);
+    // Catch-all: always respond to user, never leave them hanging
+    await trackError("bot", err, { handler: "flushBuffer", userId });
+    console.error("flushBuffer error:", err);
+    try {
+      await bot.api.sendMessage(userId, "Прости, произошла ошибка 😔 Попробуй ещё раз через минутку.");
+    } catch {}
+  }
+}
+
+/**
+ * Handle actions returned by AI chat (e.g., start checkin flow)
+ */
+async function handleChatActions(userId: number, actions: ChatAction[]) {
+  for (const action of actions) {
+    try {
+      if (action.type === "start_checkin") {
+        await sendCheckInMessage(userId, "manual");
+      }
+    } catch (err) {
+      console.error("Failed to handle chat action:", action.type, err);
+    }
   }
 }
 
@@ -88,6 +117,14 @@ bot.callbackQuery(/^habit_(complete|skip):/, handleHabitCallback);
 
 // Inline keyboard callbacks (checkin flow)
 bot.on("callback_query:data", handleCheckinCallback);
+
+// Photo messages — bot can't see images, inform user
+bot.on("message:photo", async (ctx) => {
+  const from = ctx.from;
+  if (!from) return;
+
+  await ctx.reply("Пока не умею смотреть фото 📷 Опиши текстом или отправь голосовое — я пойму!");
+});
 
 // Voice messages — transcribe, then buffer as text
 bot.on("message:voice", async (ctx) => {
