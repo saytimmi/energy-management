@@ -31,6 +31,24 @@ interface PendingCheckIn {
 
 const pendingCheckIns = new Map<number, PendingCheckIn>();
 
+// --- Multi-select why state ---
+interface PendingWhySelection {
+  energyType: string;
+  logId: number;
+  severityCode: string;
+  selected: Set<number>; // indices of selected preset triggers
+  customReasons: string[]; // free-text reasons
+  direction: string;
+  messageText: string; // original message text (before trigger info)
+  chatId: number;
+  messageId: number;
+}
+
+const pendingWhySelections = new Map<number, PendingWhySelection>(); // telegramId -> selection
+
+// Users awaiting custom reason text input
+const awaitingCustomReason = new Set<number>(); // telegramId
+
 // --- Severity System ---
 
 type Severity = "critical" | "moderate" | "mild" | "stable" | "improved";
@@ -99,6 +117,18 @@ export async function handleCheckinCallback(ctx: Context): Promise<void> {
   // Handle "why" trigger buttons (drop or rise)
   if (data.startsWith("why:")) {
     await handleWhyCallback(ctx, data);
+    return;
+  }
+
+  // Handle "why done" — finalize multi-select
+  if (data.startsWith("why_done:")) {
+    await handleWhyDoneCallback(ctx);
+    return;
+  }
+
+  // Handle "why custom" — prompt for free text
+  if (data.startsWith("why_custom:")) {
+    await handleWhyCustomCallback(ctx);
     return;
   }
 
@@ -335,42 +365,20 @@ async function processCompletedCheckin(
     }
   }
 
-  // --- Build keyboard ---
+  // --- Build keyboard with multi-select why triggers ---
   const keyboard = new InlineKeyboard();
+  let whyTarget: { type: string; severityCode: string; question: string } | null = null;
 
-  // Trigger buttons based on severity
   if (criticals.length > 0) {
-    // Critical: show triggers for the worst drop
     const worst = criticals.sort((a, b) => b.drop - a.drop)[0];
-    const triggers = CRITICAL_TRIGGERS[worst.type] || [];
-    followUp += `\n\nЧто произошло с ${ENERGY_LABELS[worst.type]?.toLowerCase()}?`;
-    for (let i = 0; i < triggers.length; i++) {
-      keyboard.text(triggers[i], `why:${worst.type}:${logId}:c:${i}`);
-      if (i % 2 === 1) keyboard.row();
-    }
-    if (triggers.length % 2 === 1) keyboard.row();
+    whyTarget = { type: worst.type, severityCode: "c", question: `Что произошло с ${ENERGY_LABELS[worst.type]?.toLowerCase()}?` };
   } else if (moderates.length > 0) {
-    // Moderate: show triggers for the biggest drop
     const worst = moderates.sort((a, b) => b.drop - a.drop)[0];
-    const triggers = MODERATE_TRIGGERS[worst.type] || [];
-    followUp += `\n\nПочему ${ENERGY_LABELS[worst.type]?.toLowerCase()} просела?`;
-    for (let i = 0; i < triggers.length; i++) {
-      keyboard.text(triggers[i], `why:${worst.type}:${logId}:m:${i}`);
-      if (i % 2 === 1) keyboard.row();
-    }
-    if (triggers.length % 2 === 1) keyboard.row();
+    whyTarget = { type: worst.type, severityCode: "m", question: `Почему ${ENERGY_LABELS[worst.type]?.toLowerCase()} просела?` };
   } else if (improved.length > 0) {
-    // Improved: show positive triggers
     const best = improved.sort((a, b) => a.drop - b.drop)[0];
-    const triggers = IMPROVED_TRIGGERS[best.type] || [];
-    followUp += `\n\nЧто помогло ${ENERGY_LABELS[best.type]?.toLowerCase()}?`;
-    for (let i = 0; i < triggers.length; i++) {
-      keyboard.text(triggers[i], `why:${best.type}:${logId}:i:${i}`);
-      if (i % 2 === 1) keyboard.row();
-    }
-    if (triggers.length % 2 === 1) keyboard.row();
+    whyTarget = { type: best.type, severityCode: "i", question: `Что помогло ${ENERGY_LABELS[best.type]?.toLowerCase()}?` };
   } else {
-    // No comparison or mild — check absolute lows
     const lowEnergies = [
       { type: "physical", value: pending.physical! },
       { type: "mental", value: pending.mental! },
@@ -380,14 +388,41 @@ async function processCompletedCheckin(
 
     if (lowEnergies.length > 0) {
       const lowest = lowEnergies.sort((a, b) => a.value - b.value)[0];
-      const triggers = MODERATE_TRIGGERS[lowest.type] || [];
-      followUp += `\n\nПочему ${ENERGY_LABELS[lowest.type]?.toLowerCase()} низкая?`;
-      for (let i = 0; i < triggers.length; i++) {
-        keyboard.text(triggers[i], `why:${lowest.type}:${logId}:m:${i}`);
-        if (i % 2 === 1) keyboard.row();
-      }
-      if (triggers.length % 2 === 1) keyboard.row();
+      whyTarget = { type: lowest.type, severityCode: "m", question: `Почему ${ENERGY_LABELS[lowest.type]?.toLowerCase()} низкая?` };
     }
+  }
+
+  if (whyTarget) {
+    followUp += `\n\n${whyTarget.question} (можно выбрать несколько)`;
+
+    // Pre-create pending selection for this user
+    const selection: PendingWhySelection = {
+      energyType: whyTarget.type,
+      logId,
+      severityCode: whyTarget.severityCode,
+      selected: new Set(),
+      customReasons: [],
+      direction: whyTarget.severityCode === "i" ? "rise" : "drop",
+      messageText: followUp, // will be updated after message is sent
+      chatId: 0, // will be set after edit
+      messageId: 0, // will be set after edit
+    };
+    pendingWhySelections.set(telegramId, selection);
+
+    // Build trigger buttons on main keyboard
+    const triggerMap: Record<string, Record<string, string[]>> = {
+      c: CRITICAL_TRIGGERS, m: MODERATE_TRIGGERS, i: IMPROVED_TRIGGERS,
+    };
+    const triggers = triggerMap[whyTarget.severityCode]?.[whyTarget.type] || [];
+    for (let i = 0; i < triggers.length; i++) {
+      keyboard.text(triggers[i], `why:${whyTarget.type}:${logId}:${whyTarget.severityCode}:${i}`);
+      if (i % 2 === 1) keyboard.row();
+    }
+    if (triggers.length % 2 === 1) keyboard.row();
+    keyboard.text("✍️ Свой вариант", `why_custom:${logId}`);
+    keyboard.row();
+    keyboard.text("✅ Готово", `why_done:${logId}`);
+    keyboard.row();
   }
 
   // Pattern-based habit suggestion
@@ -421,16 +456,55 @@ async function processCompletedCheckin(
   // Undo button
   keyboard.text("↩️ Отменить", `checkin_undo:${logId}`);
 
-  await ctx.editMessageText(followUp, { reply_markup: keyboard });
+  const sentMsg = await ctx.editMessageText(followUp, { reply_markup: keyboard });
+
+  // Update pending selection with message info for keyboard updates
+  const pendingSel = pendingWhySelections.get(telegramId);
+  if (pendingSel && sentMsg && typeof sentMsg === "object" && "message_id" in sentMsg) {
+    pendingSel.chatId = (sentMsg as any).chat?.id ?? ctx.chat?.id ?? telegramId;
+    pendingSel.messageId = (sentMsg as any).message_id;
+    pendingSel.messageText = followUp;
+  }
 }
 
-// --- Why Callback ---
+// --- Why Callback (multi-select toggle) ---
+
+function buildWhyKeyboard(selection: PendingWhySelection): InlineKeyboard {
+  const triggerMap: Record<string, Record<string, string[]>> = {
+    c: CRITICAL_TRIGGERS,
+    m: MODERATE_TRIGGERS,
+    i: IMPROVED_TRIGGERS,
+  };
+
+  const triggers = triggerMap[selection.severityCode]?.[selection.energyType] || [];
+  const keyboard = new InlineKeyboard();
+
+  for (let i = 0; i < triggers.length; i++) {
+    const isSelected = selection.selected.has(i);
+    const label = isSelected ? `✅ ${triggers[i]}` : triggers[i];
+    keyboard.text(label, `why:${selection.energyType}:${selection.logId}:${selection.severityCode}:${i}`);
+    if (i % 2 === 1) keyboard.row();
+  }
+  if (triggers.length % 2 === 1) keyboard.row();
+
+  // Custom text button
+  keyboard.text("✍️ Свой вариант", `why_custom:${selection.logId}`);
+  keyboard.row();
+
+  // Done button (show count if any selected)
+  const totalSelected = selection.selected.size + selection.customReasons.length;
+  const doneLabel = totalSelected > 0 ? `✅ Готово (${totalSelected})` : "✅ Готово";
+  keyboard.text(doneLabel, `why_done:${selection.logId}`);
+
+  return keyboard;
+}
 
 async function handleWhyCallback(ctx: Context, data: string): Promise<void> {
   // Format: why:<energyType>:<logId>:<severity>:<index>
   const parts = data.split(":");
   if (parts.length !== 5) return;
   const [, energyType, logIdStr, severityCode, indexStr] = parts;
+  const logId = parseInt(logIdStr, 10);
   const idx = parseInt(indexStr, 10);
 
   const triggerMap: Record<string, Record<string, string[]>> = {
@@ -442,35 +516,177 @@ async function handleWhyCallback(ctx: Context, data: string): Promise<void> {
   const triggers = triggerMap[severityCode]?.[energyType];
   if (!triggers || isNaN(idx) || idx >= triggers.length) return;
 
-  const trigger = triggers[idx];
-  const direction = severityCode === "i" ? "rise" : "drop";
-
   const from = ctx.from;
   if (!from) return;
+
+  const direction = severityCode === "i" ? "rise" : "drop";
+
+  // Get or create pending selection
+  let selection = pendingWhySelections.get(from.id);
+  if (!selection) {
+    selection = {
+      energyType,
+      logId,
+      severityCode,
+      selected: new Set(),
+      customReasons: [],
+      direction,
+      messageText: ctx.callbackQuery?.message?.text ?? "",
+      chatId: ctx.chat?.id ?? from.id,
+      messageId: ctx.callbackQuery?.message?.message_id ?? 0,
+    };
+    pendingWhySelections.set(from.id, selection);
+  }
+
+  // Toggle selection
+  if (selection.selected.has(idx)) {
+    selection.selected.delete(idx);
+  } else {
+    selection.selected.add(idx);
+  }
+
+  await ctx.answerCallbackQuery({
+    text: selection.selected.has(idx) ? `✅ ${triggers[idx]}` : `Убрал: ${triggers[idx]}`,
+  });
+
+  // Update keyboard
+  try {
+    await ctx.editMessageReplyMarkup({
+      reply_markup: buildWhyKeyboard(selection),
+    });
+  } catch {}
+}
+
+// --- Why Done Callback (save all selected) ---
+
+async function handleWhyDoneCallback(ctx: Context): Promise<void> {
+  const from = ctx.from;
+  if (!from) return;
+
+  const selection = pendingWhySelections.get(from.id);
+  if (!selection) {
+    await ctx.answerCallbackQuery({ text: "Нет активного выбора" });
+    return;
+  }
 
   const user = await prisma.user.findUnique({
     where: { telegramId: BigInt(from.id) },
   });
   if (!user) return;
 
-  await prisma.observation.create({
-    data: {
-      userId: user.id,
-      energyType,
-      direction,
-      trigger,
-      context: direction === "rise"
-        ? `Причина роста ${ENERGY_LABELS[energyType] || energyType} энергии`
-        : `Причина падения ${ENERGY_LABELS[energyType] || energyType} энергии`,
-    },
-  });
+  const triggerMap: Record<string, Record<string, string[]>> = {
+    c: CRITICAL_TRIGGERS,
+    m: MODERATE_TRIGGERS,
+    i: IMPROVED_TRIGGERS,
+  };
 
-  await ctx.answerCallbackQuery({ text: `Записал: ${trigger}` });
+  const triggers = triggerMap[selection.severityCode]?.[selection.energyType] || [];
+  const allReasons: string[] = [];
 
+  // Collect preset triggers
+  for (const idx of selection.selected) {
+    if (triggers[idx]) allReasons.push(triggers[idx]);
+  }
+
+  // Collect custom reasons
+  allReasons.push(...selection.customReasons);
+
+  if (allReasons.length === 0) {
+    await ctx.answerCallbackQuery({ text: "Выбери хотя бы одну причину или нажми ✍️" });
+    return;
+  }
+
+  // Save each reason as separate observation (for granular analytics)
+  const contextBase = selection.direction === "rise"
+    ? `Причина роста ${ENERGY_LABELS[selection.energyType] || selection.energyType} энергии`
+    : `Причина падения ${ENERGY_LABELS[selection.energyType] || selection.energyType} энергии`;
+
+  for (const reason of allReasons) {
+    await prisma.observation.create({
+      data: {
+        userId: user.id,
+        energyType: selection.energyType,
+        direction: selection.direction,
+        trigger: reason,
+        context: contextBase,
+        energyLogId: selection.logId,
+      },
+    });
+  }
+
+  await ctx.answerCallbackQuery({ text: `Записал ${allReasons.length} причин` });
+
+  // Update message with selected reasons
   try {
-    const originalText = ctx.callbackQuery?.message?.text ?? "";
-    const emoji = direction === "rise" ? "📈" : "📝";
-    await ctx.editMessageText(originalText + `\n\n${emoji} ${direction === "rise" ? "Помогло" : "Причина"}: ${trigger}`);
+    const emoji = selection.direction === "rise" ? "📈" : "📝";
+    const label = selection.direction === "rise" ? "Помогло" : "Причины";
+    const reasonsList = allReasons.map(r => `• ${r}`).join("\n");
+    await ctx.editMessageText(
+      selection.messageText + `\n\n${emoji} ${label}:\n${reasonsList}`,
+    );
+  } catch {}
+
+  // Cleanup
+  pendingWhySelections.delete(from.id);
+  awaitingCustomReason.delete(from.id);
+}
+
+// --- Why Custom Callback (prompt for text) ---
+
+async function handleWhyCustomCallback(ctx: Context): Promise<void> {
+  const from = ctx.from;
+  if (!from) return;
+
+  const selection = pendingWhySelections.get(from.id);
+  if (!selection) {
+    // Create selection from callback data if needed
+    await ctx.answerCallbackQuery({ text: "Нет активного выбора" });
+    return;
+  }
+
+  awaitingCustomReason.add(from.id);
+
+  await ctx.answerCallbackQuery({ text: "Напиши причину текстом" });
+
+  const prompt = selection.direction === "rise"
+    ? "Напиши что помогло (одним сообщением):"
+    : "Напиши причину (одним сообщением):";
+
+  await bot.api.sendMessage(selection.chatId, prompt, {
+    reply_markup: { force_reply: true, selective: true },
+  });
+}
+
+// --- Handle custom reason text input ---
+
+export function isAwaitingCustomReason(telegramId: number): boolean {
+  return awaitingCustomReason.has(telegramId);
+}
+
+export async function handleCustomReasonText(ctx: Context): Promise<void> {
+  const from = ctx.from;
+  if (!from) return;
+
+  const text = ctx.message?.text?.trim();
+  if (!text) return;
+
+  const selection = pendingWhySelections.get(from.id);
+  if (!selection) {
+    awaitingCustomReason.delete(from.id);
+    return;
+  }
+
+  // Add custom reason
+  selection.customReasons.push(text);
+  awaitingCustomReason.delete(from.id);
+
+  await ctx.reply(`✅ Добавил: "${text}"\nМожешь выбрать ещё причины или нажать Готово.`);
+
+  // Update the original message keyboard to reflect new count
+  try {
+    await bot.api.editMessageReplyMarkup(selection.chatId, selection.messageId, {
+      reply_markup: buildWhyKeyboard(selection),
+    });
   } catch {}
 }
 

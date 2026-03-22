@@ -2,7 +2,7 @@ import { Bot } from "grammy";
 import { config } from "./config.js";
 import { startHandler } from "./handlers/start.js";
 import { helpHandler } from "./handlers/help.js";
-import { handleCheckinCallback, sendCheckInMessage } from "./handlers/checkin.js";
+import { handleCheckinCallback, sendCheckInMessage, isAwaitingCustomReason, handleCustomReasonText } from "./handlers/checkin.js";
 import { reportHandler } from "./handlers/report.js";
 import { kaizenHandler } from "./handlers/kaizen.js";
 import { energyHandler } from "./handlers/energy.js";
@@ -158,10 +158,16 @@ bot.on("message:voice", async (ctx) => {
   }
 });
 
-// Text messages — buffer and respond after 10s pause
+// Text messages — check for custom reason input first, then buffer for AI
 bot.on("message:text", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
+
+  // Handle custom reason text for multi-select why flow
+  if (isAwaitingCustomReason(from.id)) {
+    await handleCustomReasonText(ctx);
+    return;
+  }
 
   bufferMessage(from.id, ctx.message.text, from.first_name, from.last_name ?? undefined, from.username ?? undefined);
 });
