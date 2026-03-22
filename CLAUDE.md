@@ -47,9 +47,9 @@ src/
     checkin-trigger.ts  → GET /api/checkin-trigger — запуск чекина
     kaizen.ts           → GET /api/kaizen — диагностика (без auth)
   handlers/             → Telegram bot команды
-    start.ts, help.ts, energy.ts, report.ts, kaizen.ts, checkin.ts
+    start.ts, help.ts, energy.ts, report.ts, kaizen.ts, checkin.ts, habits.ts
   services/             → Бизнес-логика
-    ai.ts               → Claude API интеграция
+    ai.ts               → Claude API + Tool Use (create_habit, start_checkin, get_habits)
     voice.ts            → Gemini транскрипция
     scheduler.ts        → node-cron расписание
     checkin-sender.ts   → Отправка чекинов по расписанию
@@ -90,9 +90,9 @@ src/
         utils.ts            → Хелперы (getTimeAgo, getDayWord, getNoteWord)
       habits/
         HabitsScreen.tsx    → Главный экран привычек
-        HabitCard.tsx       → Карточка привычки (one-tap completion)
-        HabitCreate.tsx     → Wizard создания с meaning framework
-        HabitDetail.tsx     → Детальный вид (стадия, heatmap, зачем)
+        HabitCard.tsx       → Карточка привычки (ring-based, one-tap completion)
+        HabitCreate.tsx     → Создание на 1 экране (auto-icon, без wizard)
+        HabitDetail.tsx     → Детальный вид (стадия, heatmap, editable meaning framework)
         RoutineGroup.tsx    → Группа утро/день/вечер
         DayProgress.tsx     → Прогресс-бар дня + стрик
         WeekHeatmap.tsx     → Мини-тепловая карта недели
@@ -192,9 +192,43 @@ Railway. Auto-deploy из main.
 | 1. Frontend Foundation | Preact + Vite, auth, hub dashboard | ✅ Done |
 | 2. Life Balance Wheel | 8 сфер жизни, SVG radar chart, микро-чекины | Planned |
 | 3. Habit Tracker + Knowledge Base | Привычки с meaning framework, 40 micro-actions, instant recs, streaks, lifecycle stages | ✅ Done |
+| 3.5. Bot Intelligence Overhaul | AI tool use, severity-based checkin, slot-to-slot comparison, habits UX redesign | ✅ Done (2026-03-22) |
 | 4. Smart Task Manager | AI-планирование, NLP quick-add, calendar | Planned |
 | 5. Achievement System | XP, уровни, progressive onboarding | Planned |
 | 6. AI Intelligence | UserInsight граф, рекомендации, дайджесты | Planned |
+
+## AI Bot Architecture (обновлено 2026-03-22)
+
+### AI Tool Use
+Бот использует Anthropic function calling. AI может выполнять реальные действия:
+- `create_habit` — создаёт привычку в БД (name, icon, type, routineSlot)
+- `start_energy_checkin` — отправляет InlineKeyboard для оценки энергии
+- `get_user_habits` — возвращает список активных привычек
+
+**Важно:** AI НЕ должен говорить "создал/записал/зафиксировал" без вызова tool.
+
+### Severity-based Checkin Response
+После чекина система анализирует изменения **slot-to-slot** (утро с утром, вечер с вечером):
+- **Critical** (drop ≥4 или level ≤3 с drop) → 🚨 расширенные причины + 3-4 рекомендации
+- **Moderate** (drop 2-3) → 📉 базовые причины + 1-2 рекомендации
+- **Improved** (rise ≥2) → 📈 "Что помогло?" + позитивные причины → сохраняет как rise observation
+- **Stable** → 👍
+
+Вечерний чекин дополнительно показывает intraday delta (утро → вечер).
+
+### Message Buffer
+Адаптивный: 3 сек для первого сообщения, 8 сек для серии.
+
+### System Prompt Rules
+- Max 1 вопрос за ответ
+- Фокус строго на энергии, без болтовни
+- Не имитировать UI текстом — использовать tools
+- max_tokens: 1024
+- Незакрытые `<!--DATA:` блоки автоматически удаляются
+
+### Habit Creation UX
+1 экран: название → auto-icon (по ключевым словам) → время → тип → создать.
+После создания автоматически открывается Detail для заполнения meaning framework (необязательно).
 
 ## Kaizen Agent Protocol
 
