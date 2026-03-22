@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import { createHabit } from "../../store/habits";
 import { haptic, hapticSuccess } from "../../telegram";
-import type { CreateHabitPayload } from "../../api/types";
+import type { CreateHabitPayload, HabitData } from "../../api/types";
 
 // Auto-pick icon based on habit name keywords
 const ICON_MAP: Array<[string[], string]> = [
@@ -11,7 +11,7 @@ const ICON_MAP: Array<[string[], string]> = [
   [["вод", "воду", "пить", "water"], "💧"],
   [["сон", "спать", "лечь", "sleep", "подъём", "встать"], "😴"],
   [["прогулк", "гулять", "ходьб", "walk", "шаг"], "🚶"],
-  [["еда", "питан", "есть", "голодан", "диет", "food"], "🍽️"],
+  [["еда", "питан", "есть", "голодан", "диет", "food", "интервал"], "🍽️"],
   [["журнал", "дневник", "запис", "journal", "write"], "📝"],
   [["музык", "music", "играть", "guitar", "piano"], "🎵"],
   [["кодинг", "код", "программ", "code", "dev"], "💻"],
@@ -21,7 +21,7 @@ const ICON_MAP: Array<[string[], string]> = [
   [["телефон", "экран", "screen", "social", "phone"], "📵"],
   [["благодар", "gratitude", "спасибо"], "🙏"],
   [["планир", "план", "plan", "цел"], "🎯"],
-  [["vitamins", "витамин", "таблет", "лекарств"], "💊"],
+  [["витамин", "таблет", "лекарств"], "💊"],
   [["душ", "ванн", "shower", "умыть"], "🚿"],
   [["уборк", "clean", "порядок"], "✨"],
 ];
@@ -41,22 +41,44 @@ const SLOTS = [
 ] as const;
 
 interface Props {
-  onClose: (createdHabit?: import("../../api/types").HabitData) => void;
+  onClose: (createdHabit?: HabitData) => void;
   microActionId?: string | null;
 }
 
 export function HabitCreate({ onClose, microActionId }: Props) {
+  const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [routineSlot, setRoutineSlot] = useState<string>("morning");
   const [type, setType] = useState<"build" | "break">("build");
+
+  // Meaning (REQUIRED)
+  const [whyToday, setWhyToday] = useState("");
+  const [whyYear, setWhyYear] = useState("");
+  const [whyIdentity, setWhyIdentity] = useState("");
+
+  // Break meaning (REQUIRED for break)
+  const [isItBeneficial, setIsItBeneficial] = useState("");
+  const [breakTrigger, setBreakTrigger] = useState("");
+  const [replacement, setReplacement] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const icon = pickIcon(name);
-  const canSubmit = name.trim().length > 0 && !submitting;
+
+  function canProceedStep1(): boolean {
+    return name.trim().length > 0;
+  }
+
+  function canProceedStep2(): boolean {
+    if (type === "build") {
+      return whyToday.trim().length > 0 && whyYear.trim().length > 0 && whyIdentity.trim().length > 0;
+    }
+    return isItBeneficial.trim().length > 0 && breakTrigger.trim().length > 0 && replacement.trim().length > 0;
+  }
 
   async function handleSubmit() {
-    if (!canSubmit) return;
+    if (!canProceedStep2() || submitting) return;
     setSubmitting(true);
     setError("");
     haptic("medium");
@@ -69,6 +91,16 @@ export function HabitCreate({ onClose, microActionId }: Props) {
       ...(microActionId ? { microActionId } : {}),
     };
 
+    if (type === "build") {
+      payload.whyToday = whyToday.trim();
+      payload.whyYear = whyYear.trim();
+      payload.whyIdentity = whyIdentity.trim();
+    } else {
+      payload.isItBeneficial = isItBeneficial.trim();
+      payload.breakTrigger = breakTrigger.trim();
+      payload.replacement = replacement.trim();
+    }
+
     const result = await createHabit(payload);
     setSubmitting(false);
 
@@ -76,7 +108,7 @@ export function HabitCreate({ onClose, microActionId }: Props) {
       hapticSuccess();
       onClose(result);
     } else {
-      setError("Не удалось создать. Попробуй ещё раз.");
+      setError("Не удалось создать. Проверь соединение.");
     }
   }
 
@@ -84,79 +116,179 @@ export function HabitCreate({ onClose, microActionId }: Props) {
     <div class="habit-create">
       {/* Header */}
       <div class="habit-create-header">
-        <button class="habit-create-back" onClick={() => { haptic("light"); onClose(); }}>
+        <button class="habit-create-back" onClick={() => {
+          haptic("light");
+          if (step === 2) setStep(1);
+          else onClose();
+        }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <span class="habit-create-title">Новая привычка</span>
+        <span class="habit-create-title">
+          {step === 1 ? "Новая привычка" : "Зачем тебе это?"}
+        </span>
       </div>
 
-      <div class="habit-create-body">
-        {/* Name with live icon preview */}
-        <div class="form-group">
-          <label class="form-label">Что за привычка?</label>
-          <div class="create-name-row">
-            <span class="create-icon-preview">{icon}</span>
+      {/* Step indicator */}
+      <div class="step-dots">
+        <div class={`step-dot${step >= 1 ? " active" : ""}`} />
+        <div class={`step-dot${step >= 2 ? " active" : ""}`} />
+      </div>
+
+      {/* Step 1: What */}
+      {step === 1 && (
+        <div class="habit-create-body">
+          <div class="form-group">
+            <label class="form-label">Что за привычка?</label>
+            <div class="create-name-row">
+              <span class="create-icon-preview">{icon}</span>
+              <input
+                class="form-input create-name-input"
+                type="text"
+                value={name}
+                onInput={(e) => setName((e.target as HTMLInputElement).value)}
+                placeholder="Медитация, Отжимания, Чтение..."
+                maxLength={50}
+                autoFocus
+              />
+            </div>
+            <p class="form-hint">Иконка подберётся автоматически</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Когда</label>
+            <div class="create-slot-row">
+              {SLOTS.map(s => (
+                <button
+                  key={s.id}
+                  class={`create-slot-btn${routineSlot === s.id ? " active" : ""}`}
+                  onClick={() => { setRoutineSlot(s.id); haptic("light"); }}
+                >
+                  <span class="create-slot-icon">{s.icon}</span>
+                  <span class="create-slot-label">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Тип</label>
+            <div class="create-type-toggle">
+              <button
+                class={`create-type-btn${type === "build" ? " active" : ""}`}
+                onClick={() => { setType("build"); haptic("light"); }}
+              >
+                Внедрить
+              </button>
+              <button
+                class={`create-type-btn break${type === "break" ? " active" : ""}`}
+                onClick={() => { setType("break"); haptic("light"); }}
+              >
+                Убрать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: WHY (REQUIRED) */}
+      {step === 2 && type === "build" && (
+        <div class="habit-create-body">
+          <p class="meaning-intro">
+            Привычка без смысла не выживет. Ответь честно — это поможет не бросить в трудный день.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Какая выгода сегодня?</label>
             <input
-              class="form-input create-name-input"
+              class="form-input"
               type="text"
-              value={name}
-              onInput={(e) => setName((e.target as HTMLInputElement).value)}
-              placeholder="Медитация, Отжимания, Чтение..."
-              maxLength={50}
+              value={whyToday}
+              onInput={(e) => setWhyToday((e.target as HTMLInputElement).value)}
+              placeholder="Что конкретно ты получаешь?"
               autoFocus
             />
           </div>
-          <p class="form-hint">Иконка подберётся автоматически</p>
-        </div>
 
-        {/* Time of day */}
-        <div class="form-group">
-          <label class="form-label">Когда</label>
-          <div class="create-slot-row">
-            {SLOTS.map(s => (
-              <button
-                key={s.id}
-                class={`create-slot-btn${routineSlot === s.id ? " active" : ""}`}
-                onClick={() => { setRoutineSlot(s.id); haptic("light"); }}
-              >
-                <span class="create-slot-icon">{s.icon}</span>
-                <span class="create-slot-label">{s.label}</span>
-              </button>
-            ))}
+          <div class="form-group">
+            <label class="form-label">Что изменится через год?</label>
+            <input
+              class="form-input"
+              type="text"
+              value={whyYear}
+              onInput={(e) => setWhyYear((e.target as HTMLInputElement).value)}
+              placeholder="Каким станет результат через 365 дней?"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Кем ты станешь?</label>
+            <input
+              class="form-input"
+              type="text"
+              value={whyIdentity}
+              onInput={(e) => setWhyIdentity((e.target as HTMLInputElement).value)}
+              placeholder="Какой ты, когда это часть тебя?"
+            />
           </div>
         </div>
+      )}
 
-        {/* Type toggle */}
-        <div class="form-group">
-          <label class="form-label">Тип</label>
-          <div class="create-type-toggle">
-            <button
-              class={`create-type-btn${type === "build" ? " active" : ""}`}
-              onClick={() => { setType("build"); haptic("light"); }}
-            >
-              Внедрить
-            </button>
-            <button
-              class={`create-type-btn break${type === "break" ? " active" : ""}`}
-              onClick={() => { setType("break"); haptic("light"); }}
-            >
-              Убрать
-            </button>
+      {step === 2 && type === "break" && (
+        <div class="habit-create-body">
+          <p class="meaning-intro">
+            Будь честен с собой. Понимание триггера — первый шаг к свободе.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Выгодно ли это организму?</label>
+            <input
+              class="form-input"
+              type="text"
+              value={isItBeneficial}
+              onInput={(e) => setIsItBeneficial((e.target as HTMLInputElement).value)}
+              placeholder="Честно — что это даёт и забирает?"
+              autoFocus
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Что запускает привычку?</label>
+            <input
+              class="form-input"
+              type="text"
+              value={breakTrigger}
+              onInput={(e) => setBreakTrigger((e.target as HTMLInputElement).value)}
+              placeholder="Какая ситуация, эмоция, время?"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Что сделаешь вместо?</label>
+            <input
+              class="form-input"
+              type="text"
+              value={replacement}
+              onInput={(e) => setReplacement((e.target as HTMLInputElement).value)}
+              placeholder="Какое действие заменит в момент триггера?"
+            />
           </div>
         </div>
+      )}
 
-        {error && <p class="create-error">{error}</p>}
-      </div>
+      {error && <p class="create-error">{error}</p>}
 
-      {/* Submit */}
+      {/* Bottom button */}
       <button
         class="create-submit-btn"
-        disabled={!canSubmit}
-        onClick={handleSubmit}
+        disabled={step === 1 ? !canProceedStep1() : (!canProceedStep2() || submitting)}
+        onClick={() => {
+          if (step === 1) { haptic("light"); setStep(2); }
+          else handleSubmit();
+        }}
       >
-        {submitting ? "Создаю..." : `Начать ${icon}`}
+        {step === 1 ? "Далее →" : submitting ? "Создаю..." : `Начать ${icon}`}
       </button>
     </div>
   );

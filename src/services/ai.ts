@@ -34,9 +34,12 @@ const TOOLS: Anthropic.Tool[] = [
         type: { type: "string", enum: ["build", "break"], description: "build = формировать новую, break = избавиться от старой" },
         routineSlot: { type: "string", enum: ["morning", "afternoon", "evening"], description: "Время дня для привычки" },
         energyType: { type: "string", enum: ["physical", "mental", "emotional", "spiritual"], description: "Тип энергии, на который влияет привычка" },
-        frequency: { type: "string", enum: ["daily", "weekdays", "custom"], description: "Частота. По умолчанию daily" },
-        whyToday: { type: "string", description: "Зачем это делать сегодня (мотивация)" },
-        whyYear: { type: "string", description: "Что изменится через год" },
+        whyToday: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: какая конкретная выгода сегодня?" },
+        whyYear: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: что изменится через год?" },
+        whyIdentity: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: кем станешь, когда это привычка?" },
+        isItBeneficial: { type: "string", description: "ОБЯЗАТЕЛЬНО для break: выгодно ли это организму?" },
+        breakTrigger: { type: "string", description: "ОБЯЗАТЕЛЬНО для break: что триггерит эту привычку?" },
+        replacement: { type: "string", description: "ОБЯЗАТЕЛЬНО для break: что делать вместо?" },
       },
       required: ["name", "icon", "type", "routineSlot"],
     },
@@ -92,6 +95,14 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - create_habit — создать привычку в системе (она реально появится в приложении)
 - start_energy_checkin — запустить оценку энергии с кнопками (НЕ спрашивай текстом!)
 - get_user_habits — посмотреть текущие привычки пользователя
+
+СОЗДАНИЕ ПРИВЫЧКИ — ОБЯЗАТЕЛЬНЫЙ ФИЛЬТР СМЫСЛА:
+Каждая привычка ОБЯЗАНА пройти через призму "зачем". НЕ создавай привычку без meaning.
+- Для build: СПРОСИ "какая выгода сегодня?", "что изменится через год?", "кем станешь?" ПЕРЕД вызовом create_habit.
+- Для break: СПРОСИ "выгодно ли организму?", "что триггерит?", "что вместо?" ПЕРЕД вызовом create_habit.
+- Передавай ответы в create_habit (whyToday, whyYear, whyIdentity для build; isItBeneficial, breakTrigger, replacement для break).
+- Если пользователь дал название + смысл в одном сообщении — создавай сразу.
+- Если только название — задай ОДИН вопрос про смысл, потом создай.
 
 КРИТИЧЕСКИЕ ЗАПРЕТЫ:
 1. НИКОГДА не говори "создал", "записал", "зафиксировал" если НЕ вызвал соответствующий инструмент.
@@ -156,9 +167,12 @@ async function executeTool(
         type: string;
         routineSlot: string;
         energyType?: string;
-        frequency?: string;
         whyToday?: string;
         whyYear?: string;
+        whyIdentity?: string;
+        isItBeneficial?: string;
+        breakTrigger?: string;
+        replacement?: string;
       };
 
       // Check for duplicate
@@ -190,15 +204,20 @@ async function executeTool(
           type: input.type,
           routineSlot: input.routineSlot,
           energyType: input.energyType || null,
-          frequency: input.frequency || "daily",
+          frequency: "daily",
           whyToday: input.whyToday || null,
           whyYear: input.whyYear || null,
+          whyIdentity: input.whyIdentity || null,
+          isItBeneficial: input.isItBeneficial || null,
+          breakTrigger: input.breakTrigger || null,
+          replacement: input.replacement || null,
           sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
         },
       });
 
+      const meaningFilled = input.whyToday || input.isItBeneficial;
       return {
-        text: `Привычка создана успешно! ID: ${habit.id}, название: "${habit.name}", иконка: ${habit.icon}, слот: ${habit.routineSlot}, тип энергии: ${habit.energyType || "не указан"}.`,
+        text: `Привычка создана! ID: ${habit.id}, "${habit.name}" ${habit.icon}, ${habit.routineSlot}.${meaningFilled ? " Смысл заполнен." : " ВНИМАНИЕ: смысл не заполнен — попроси пользователя ответить на вопросы 'зачем'."}`,
         actions: [],
       };
     }
