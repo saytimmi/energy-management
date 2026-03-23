@@ -59,7 +59,7 @@ export function EnergyDashboard() {
             <div class="dashboard-empty-msg">Расскажи боту как ты себя чувствуешь — я начну отслеживать 🌱</div>
           )}
           <details class="timeline-section">
-            <summary style={{padding: "12px 0", fontWeight: 500, cursor: "pointer"}}>📊 Динамика</summary>
+            <summary>📊 Динамика</summary>
             <Timeline />
           </details>
           <Observations observations={obs} />

@@ -9,7 +9,7 @@ import { kaizenHandler } from "./handlers/kaizen.js";
 import { energyHandler } from "./handlers/energy.js";
 import { chat } from "./services/ai.js";
 import type { ChatAction } from "./services/ai.js";
-import { transcribeVoice } from "./services/voice.js";
+import { transcribeVoice, downloadTelegramFile } from "./services/voice.js";
 import { findOrCreateUser } from "./db.js";
 import { trackError } from "./services/monitor.js";
 import { handleHabitCallback } from "./handlers/habits.js";
@@ -17,23 +17,22 @@ import { handleHabitCallback } from "./handlers/habits.js";
 export const bot = new Bot(config.telegramBotToken);
 
 // Adaptive buffer: short delay for first message, longer for bursts
-const messageBuffers = new Map<number, { messages: string[]; timer: NodeJS.Timeout; firstName: string; lastName?: string; username?: string }>();
+const messageBuffers = new Map<number, { messages: string[]; timer: NodeJS.Timeout; firstName: string; lastName?: string; username?: string; hasVoice?: boolean }>();
 
 const FIRST_MSG_DELAY = 3_000;  // 3 sec — single message, respond fast
 const BURST_MSG_DELAY = 8_000;  // 8 sec — user is typing a series, wait
 
-function bufferMessage(userId: number, text: string, firstName: string, lastName?: string, username?: string) {
+function bufferMessage(userId: number, text: string, firstName: string, lastName?: string, username?: string, isVoice?: boolean) {
   const existing = messageBuffers.get(userId);
 
   if (existing) {
-    // Additional message in burst — extend buffer
     existing.messages.push(text);
+    if (isVoice) existing.hasVoice = true;
     clearTimeout(existing.timer);
     existing.timer = setTimeout(() => flushBuffer(userId), BURST_MSG_DELAY);
   } else {
-    // First message — respond quickly
     const timer = setTimeout(() => flushBuffer(userId), FIRST_MSG_DELAY);
-    messageBuffers.set(userId, { messages: [text], timer, firstName, lastName, username });
+    messageBuffers.set(userId, { messages: [text], timer, firstName, lastName, username, hasVoice: isVoice });
   }
 }
 
@@ -53,7 +52,7 @@ async function flushBuffer(userId: number) {
       await bot.api.sendChatAction(userId, "typing");
     } catch {}
 
-    const result = await chat(telegramId, combined, buf.firstName);
+    const result = await chat(telegramId, combined, buf.firstName, buf.hasVoice ? "voice" : "text");
 
     // Small delay to make typing feel natural
     await new Promise(r => setTimeout(r, 1500));
@@ -135,32 +134,44 @@ bot.on("message:photo", async (ctx) => {
   await ctx.reply("Пока не умею смотреть фото 📷 Опиши текстом или отправь голосовое — я пойму!");
 });
 
-// Voice messages — transcribe, then buffer as text
+// Voice messages — transcribe via Groq Whisper, then buffer as text
 bot.on("message:voice", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
 
-  // Show typing while transcribing (can take up to 20s with retries)
   try { await ctx.api.sendChatAction(ctx.chat.id, "typing"); } catch {}
 
   try {
     const file = await ctx.getFile();
     const url = `https://api.telegram.org/file/bot${config.telegramBotToken}/${file.file_path}`;
-    const response = await fetch(url);
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const buffer = await downloadTelegramFile(url);
 
-    const text = await transcribeVoice(buffer);
+    // Keep typing indicator alive during transcription
+    const typingInterval = setInterval(async () => {
+      try { await ctx.api.sendChatAction(ctx.chat.id, "typing"); } catch {}
+    }, 4000);
 
-    if (!text) {
-      await ctx.reply("Не удалось расшифровать голосовое 😔\nНапиши текстом — я на связи!");
+    const result = await transcribeVoice(buffer);
+    clearInterval(typingInterval);
+
+    if (!result.ok) {
+      const errorMessages: Record<string, string> = {
+        disabled: "Голосовые сообщения временно недоступны 😔 Напиши текстом!",
+        too_large: "Голосовое слишком длинное 😅 Попробуй покороче или напиши текстом.",
+        empty: "Не расслышал — тишина или шум 🤔 Попробуй записать ещё раз.",
+        rate_limit: "Слишком много голосовых подряд ⏳ Подожди минутку или напиши текстом.",
+        timeout: "Расшифровка заняла слишком долго 😔 Попробуй ещё раз или напиши текстом.",
+        api_error: "Не удалось расшифровать голосовое 😔 Напиши текстом — я на связи!",
+      };
+      await ctx.reply(errorMessages[result.reason] || errorMessages.api_error);
       return;
     }
 
-    bufferMessage(from.id, text, from.first_name, from.last_name ?? undefined, from.username ?? undefined);
+    bufferMessage(from.id, result.text, from.first_name, from.last_name ?? undefined, from.username ?? undefined, true);
   } catch (error) {
     await trackError("bot", error, { handler: "voice", userId: from.id });
     console.error("Voice handler error:", error);
-    await ctx.reply("Не смог обработать голосовое 😔 Попробуй текстом.");
+    await ctx.reply("Не удалось обработать голосовое 😔 Попробуй текстом.");
   }
 });
 

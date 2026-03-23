@@ -23,7 +23,7 @@ export function DayProgress({ completed, total, streak, consistency }: DayProgre
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-        <div class="progress-bar-track" style={{ flex: 1 }}>
+        <div class="progress-bar-track" style={{ flex: 1 }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
           <div class="progress-bar-fill" style={{ width: `${pct}%` }} />
         </div>
         <span style={{ fontSize: "13px", fontWeight: 500, whiteSpace: "nowrap" }}>

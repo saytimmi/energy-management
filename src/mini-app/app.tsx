@@ -16,6 +16,10 @@ export function App() {
 
   const route = currentRoute.value;
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [route]);
+
   return (
     <>
       {route === "hub" && <Hub />}

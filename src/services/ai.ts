@@ -448,9 +448,14 @@ export async function chat(
   const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
   const isoNow = now.toLocaleString("sv-SE", { timeZone: TZ }).replace(" ", "T") + "+08:00";
 
+  const voiceNote = messageType === "voice"
+    ? "\nПоследнее сообщение — расшифровка голосового (Whisper). Могут быть неточности в именах, терминах. Если смысл неясен — переспроси."
+    : "";
+
   const systemWithContext = SYSTEM_PROMPT +
     `\n\nТекущая дата и время: ${dateStr}, ${timeStr} (${isoNow})` +
     `\nИмя пользователя: ${userName}` +
+    voiceNote +
     (context ? `\n\n${context}` : "");
 
   const allActions: ChatAction[] = [];

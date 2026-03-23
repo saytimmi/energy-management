@@ -25,7 +25,7 @@ export function BottomNav() {
           onClick={() => { hapticSelection(); navigate(item.route); }}
         >
           <div class="nav-icon-wrap">
-            <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" dangerouslySetInnerHTML={{ __html: item.icon }} />
+            <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label={item.label} dangerouslySetInnerHTML={{ __html: item.icon }} />
           </div>
           <span class="nav-label">{item.label}</span>
         </button>
