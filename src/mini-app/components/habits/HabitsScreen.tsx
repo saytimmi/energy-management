@@ -147,9 +147,7 @@ export function HabitsScreen() {
     ? Math.round(allHabits.reduce((sum, h) => sum + h.consistency30d, 0) / allHabits.length)
     : 0;
 
-  // Slot limit: count seed + growth habits
-  const activeGrowing = allHabits.filter(h => h.stage === "seed" || h.stage === "growth").length;
-  const slotLimitReached = activeGrowing >= 3;
+  // No slot limit — user can create as many habits as they want
 
   return (
     <div class="habits-screen">
@@ -192,15 +190,9 @@ export function HabitsScreen() {
         </div>
       )}
 
-      {slotLimitReached ? (
-        <button class="add-habit-btn" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
-          3 привычки растут. Доведи до автопилота 🌳 или архивируй
-        </button>
-      ) : (
-        <button class="add-habit-btn" onClick={() => { showCreate.value = true; }}>
-          + Добавить привычку
-        </button>
-      )}
+      <button class="add-habit-btn" onClick={() => { showCreate.value = true; }}>
+        + Добавить привычку
+      </button>
     </div>
   );
 }

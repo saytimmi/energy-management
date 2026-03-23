@@ -35,7 +35,7 @@ export function EnergyDashboard() {
     try {
       await api.triggerCheckin();
       checkinState.value = "sent";
-      setTimeout(() => { checkinState.value = "idle"; }, 3000);
+      setTimeout(() => { checkinState.value = "idle"; }, 30000);
     } catch { checkinState.value = "idle"; }
   };
 

@@ -1,19 +1,43 @@
 :root {
-  --bg: #0d0d0f;
-  --surface: #1a1a1f;
-  --surface2: #242429;
+  /* Background — slight blue tint for premium feel */
+  --bg: #0c0d12;
+  --surface: rgba(22, 23, 30, 0.85);
+  --surface-solid: #16171e;
+  --surface2: #1e1f28;
+  --surface-border: rgba(255, 255, 255, 0.06);
+  --surface-glow: rgba(255, 255, 255, 0.03);
+
+  /* Text — warm off-white, better secondary contrast */
   --text: #f0ede8;
-  --text2: #8a8690;
+  --text2: #9a96a0;
+  --text3: #6b6774;
+
+  /* Accent */
   --accent: #c8ff73;
+  --accent-glow: rgba(200, 255, 115, 0.15);
+  --accent-soft: rgba(200, 255, 115, 0.08);
+
+  /* Energy type colors */
   --physical: #5be07a;
+  --physical-glow: rgba(91, 224, 122, 0.2);
   --mental: #5ba8ff;
+  --mental-glow: rgba(91, 168, 255, 0.2);
   --emotional: #ff8c5b;
+  --emotional-glow: rgba(255, 140, 91, 0.2);
   --spiritual: #c77dff;
+  --spiritual-glow: rgba(199, 125, 255, 0.2);
+
+  /* Layout */
   --radius: 20px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
   --nav-h: 72px;
+  --glass-blur: blur(20px);
+
+  /* Telegram theme mapping */
   --tg-bg: var(--bg);
   --tg-text: var(--text);
   --tg-hint: var(--text2);
   --tg-button: var(--accent);
-  --tg-surface: var(--surface);
+  --tg-surface: var(--surface-solid);
 }

@@ -24,12 +24,16 @@ export function Journal() {
 
   if (journalLoading.value) return <section class="view"><div class="journal-loading"><div class="pulse-ring small" /><p>Загружаю дневник...</p></div></section>;
   if (journalError.value) return <section class="view"><div class="journal-empty-state"><div class="journal-empty-icon">😔</div><p>Не удалось загрузить дневник</p></div></section>;
-  if (entries.value.length === 0) return <section class="view"><div class="journal-empty-state"><div class="journal-empty-icon">📝</div><p>Твой дневник энергии пока пуст. Каждый разговор с ботом добавит запись сюда</p></div></section>;
+  if (entries.value.length === 0) return <section class="view"><div class="journal-empty-state"><div class="journal-empty-icon">📝</div><p>Дневник пуст — расскажи боту как себя чувствуешь</p></div></section>;
 
   const todayKey = new Date().toISOString().split("T")[0];
   const yesterdayKey = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+  // Filter: only observations with actual content (trigger or context)
+  const meaningful = entries.value.filter(o => (o.trigger && o.trigger.trim()) || (o.context && o.context.trim()));
+
   const grouped: Record<string, Observation[]> = {};
-  for (const o of entries.value) { const key = o.createdAt.split("T")[0]; (grouped[key] ??= []).push(o); }
+  for (const o of meaningful) { const key = o.createdAt.split("T")[0]; (grouped[key] ??= []).push(o); }
   for (const key of Object.keys(grouped)) { grouped[key].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); }
   const days = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a));
 
