@@ -317,14 +317,6 @@ export async function createHabitFromSuggestion(
 // Store suggestions temporarily for callback resolution
 const pendingDigestSuggestions = new Map<number, HabitSuggestion[]>();
 
-export function getPendingDigestSuggestions(telegramId: number): HabitSuggestion[] | undefined {
-  return pendingDigestSuggestions.get(telegramId);
-}
-
-export function clearPendingDigestSuggestions(telegramId: number): void {
-  pendingDigestSuggestions.delete(telegramId);
-}
-
 export async function handleDigestCallback(ctx: any, data: string): Promise<void> {
   // Format: digest_habit:<index> or digest_habit_all
   const from = ctx.from;
