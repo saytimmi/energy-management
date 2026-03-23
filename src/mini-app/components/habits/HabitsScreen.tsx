@@ -7,11 +7,9 @@ import { RoutineGroup } from "./RoutineGroup";
 import { HabitCreate } from "./HabitCreate";
 import { HabitDetail } from "./HabitDetail";
 import { MilestoneToast } from "./MilestoneToast";
-import { CorrelationCard } from "./CorrelationCard";
-import { navigate } from "../../router";
+import { haptic } from "../../telegram";
 import type { HabitData } from "../../api/types";
 
-// Store suggest param from bot deep link for Task 12
 export const suggestedHabit = signal<string | null>(null);
 const showCreate = signal(false);
 const selectedHabit = signal<HabitData | null>(null);
@@ -21,29 +19,26 @@ const showConfetti = signal(false);
 function parseSuggestParam() {
   const params = new URLSearchParams(window.location.search);
   const suggest = params.get("suggest");
-  if (suggest) {
-    suggestedHabit.value = suggest;
-  }
+  if (suggest) suggestedHabit.value = suggest;
 }
 
 const CONFETTI_COLORS = [
-  "#4CAF50", "#8BC34A", "#FFC107", "#FF9800",
-  "#03A9F4", "#9C27B0", "#E91E63", "#F44336",
+  "#c8ff73", "#5be07a", "#5ba8ff", "#c77dff",
+  "#ff8c5b", "#FFC107", "#03A9F4", "#E91E63",
 ];
 
 function Confetti() {
-  const pieces = Array.from({ length: 14 }, (_, i) => i);
   return (
     <div class="confetti-container">
-      {pieces.map((i) => (
+      {Array.from({ length: 16 }, (_, i) => (
         <div
           key={i}
           class="confetti-piece"
           style={{
-            left: `${10 + (i / 14) * 80}%`,
+            left: `${8 + (i / 16) * 84}%`,
             background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-            animationDelay: `${(i % 5) * 0.1}s`,
-            animationDuration: `${1.2 + (i % 4) * 0.1}s`,
+            animationDelay: `${(i % 5) * 0.08}s`,
+            animationDuration: `${1.1 + (i % 4) * 0.12}s`,
           }}
         />
       ))}
@@ -59,7 +54,6 @@ function getMilestoneMessage(streak: number): string | null {
 }
 
 function handleHabitCompleted(completedHabit: HabitData) {
-  // After loadHabits() the store is refreshed — check streak from data
   const data = habitsData.value;
   if (!data) return;
 
@@ -67,7 +61,6 @@ function handleHabitCompleted(completedHabit: HabitData) {
   const fresh = allHabits.find(h => h.id === completedHabit.id);
   const streak = fresh ? fresh.streakCurrent : completedHabit.streakCurrent;
 
-  // Milestone check
   const msg = getMilestoneMessage(streak);
   if (msg) {
     milestoneMessage.value = msg;
@@ -76,7 +69,6 @@ function handleHabitCompleted(completedHabit: HabitData) {
     return;
   }
 
-  // All-done confetti (no milestone)
   const allDone = allHabits.length > 0 && allHabits.every(h => h.completedToday);
   if (allDone) {
     showConfetti.value = true;
@@ -94,7 +86,7 @@ export function HabitsScreen() {
     return (
       <HabitDetail
         habit={selectedHabit.value}
-        onBack={() => { selectedHabit.value = null; }}
+        onBack={() => { selectedHabit.value = null; loadHabits(); }}
       />
     );
   }
@@ -104,9 +96,8 @@ export function HabitsScreen() {
       <HabitCreate
         onClose={(createdHabit) => {
           showCreate.value = false;
-          // After creation, open detail to fill meaning
           if (createdHabit) {
-            selectedHabit.value = createdHabit;
+            loadHabits();
           }
         }}
         microActionId={suggestedHabit.value}
@@ -130,7 +121,7 @@ export function HabitsScreen() {
           <div class="welcome-icon">😔</div>
           <h1>Не удалось загрузить</h1>
           <p>Проверь соединение и попробуй снова</p>
-          <button class="retry-btn" onClick={() => loadHabits()}>🔄 Повторить</button>
+          <button class="retry-btn" onClick={() => loadHabits()}>Повторить</button>
         </div>
       </div>
     );
@@ -140,14 +131,11 @@ export function HabitsScreen() {
   const progress = todayProgress.value;
   const isEmpty = !data || (data.morning.length === 0 && data.afternoon.length === 0 && data.evening.length === 0);
 
-  // Compute overall streak and consistency from all habits
   const allHabits = data ? [...data.morning, ...data.afternoon, ...data.evening] : [];
   const maxStreak = allHabits.reduce((max, h) => Math.max(max, h.streakCurrent), 0);
   const avgConsistency = allHabits.length > 0
     ? Math.round(allHabits.reduce((sum, h) => sum + h.consistency30d, 0) / allHabits.length)
     : 0;
-
-  // No slot limit — user can create as many habits as they want
 
   return (
     <div class="habits-screen">
@@ -170,9 +158,10 @@ export function HabitsScreen() {
       <WeekHeatmap />
 
       {isEmpty ? (
-        <div class="habits-empty">
-          <p style={{ fontSize: "32px", marginBottom: "12px" }}>🌱</p>
-          <p>Ещё нет привычек. Создай первую!</p>
+        <div class="habits-empty-state">
+          <div class="habits-empty-icon">🌱</div>
+          <h3>Начни с одной привычки</h3>
+          <p>Тап на + внизу. Бот поможет выбрать, что подходит именно тебе.</p>
         </div>
       ) : (
         <>
@@ -182,16 +171,11 @@ export function HabitsScreen() {
         </>
       )}
 
-      {!isEmpty && allHabits.length > 0 && (
-        <div style={{ marginTop: "8px" }}>
-          {allHabits.map((h) => (
-            <CorrelationCard key={h.id} habitId={h.id} />
-          ))}
-        </div>
-      )}
-
-      <button class="add-habit-btn" onClick={() => { showCreate.value = true; }}>
-        + Добавить привычку
+      {/* FAB — floating add button */}
+      <button class="habit-fab" onClick={() => { haptic("medium"); showCreate.value = true; }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
       </button>
     </div>
   );
