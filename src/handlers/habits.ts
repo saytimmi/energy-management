@@ -217,7 +217,7 @@ export async function sendMissedDayNudge(
     if (habit.whyYear) {
       lines.push(`Через год: "${habit.whyYear}"`);
     }
-    lines.push("\nОдин шаг сегодня?");
+    lines.push("");  // empty line for spacing
     message = lines.join("\n");
   } else {
     // For break habits: show trigger awareness

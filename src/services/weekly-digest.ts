@@ -246,7 +246,7 @@ function formatDigestMessage(insight: WeeklyInsight): string {
     lines.push("\n*🔻 Что роняет энергию:*");
     for (const p of insight.topDropTriggers) {
       const types = p.energyTypes.map(t => ENERGY_LABELS[t] || t).join(", ");
-      lines.push(`• *${p.trigger}* — ${p.count}× (${types})`);
+      lines.push(`— *${p.trigger}* — ${p.count}× (${types})`);
       // Show unique details (specific situations)
       if (p.details.length > 0) {
         const unique = [...new Set(p.details)].slice(0, 3);
@@ -261,7 +261,7 @@ function formatDigestMessage(insight: WeeklyInsight): string {
   if (insight.topRiseTriggers.length > 0) {
     lines.push("\n*🔺 Что поднимает:*");
     for (const p of insight.topRiseTriggers) {
-      lines.push(`• *${p.trigger}* — ${p.count}×`);
+      lines.push(`— *${p.trigger}* — ${p.count}×`);
       if (p.details.length > 0) {
         const unique = [...new Set(p.details)].slice(0, 3);
         for (const d of unique) {

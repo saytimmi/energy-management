@@ -364,7 +364,7 @@ async function processCompletedCheckin(
       for (const [type, actions] of grouped) {
         const limited = actions.slice(0, maxRecs);
         for (const action of limited) {
-          followUp += `\n  • ${action.name} (${action.duration} мин)`;
+          followUp += `\n  → ${action.name}, ${action.duration} мин`;
         }
       }
     }
@@ -627,7 +627,7 @@ async function handleWhyDoneCallback(ctx: Context): Promise<void> {
   // Update message with selected reasons
   const emoji = selection.direction === "rise" ? "📈" : "📝";
   const label = selection.direction === "rise" ? "Помогло" : "Причины";
-  const reasonsList = allReasons.map(r => `• ${r}`).join("\n");
+  const reasonsList = allReasons.map(r => `— ${r}`).join("\n");
   try {
     await ctx.editMessageText(
       selection.messageText + `\n\n${emoji} ${label}:\n${reasonsList}`,
