@@ -1,13 +1,13 @@
 # Energy Management App
 
-Telegram бот + Mini App для управления жизненной энергией и балансом. AI-powered life coach.
+Telegram бот + Mini App для управления жизненной энергией. AI-powered life coach.
 
 ## Что это
 
 Персональный AI коуч в Telegram. Четыре слоя:
 1. **Мониторинг** — ежедневная оценка 4 типов энергии (физ/мент/эмоц/дух)
-2. **Стратегия** — колесо баланса жизни (8 сфер) показывает где перекос
-3. **Тактика** — привычки и задачи = конкретные ежедневные действия
+2. **Стратегия** — колесо баланса жизни (8 сфер) через AI-опрос в чате
+3. **Тактика** — привычки (мгновенные + длительные) = конкретные ежедневные действия
 4. **AI Coach** — связывает всё, адаптируется, учится
 
 Бот = быстрые действия + push. Mini App = визуал + управление.
@@ -18,14 +18,14 @@ Telegram бот + Mini App для управления жизненной эне
 - TypeScript, Node.js, Express (port 8080)
 - grammy — Telegram Bot API
 - Prisma + PostgreSQL (Neon, на Railway)
-- Anthropic Claude API — AI чат
+- Anthropic Claude API — AI чат с Tool Use
 - Gemini — транскрипция голосовых
 
 **Frontend (Mini App):**
 - Preact 10 (3KB) + @preact/signals
 - Vite 5 — сборка + HMR
 - Chart.js 4 — графики энергии
-- CSS Modules (vanilla CSS с переменными)
+- Glass Dark Premium дизайн (glassmorphism, CSS variables)
 - Telegram Mini App SDK — тема, haptic, initData
 
 ## Архитектура
@@ -44,17 +44,17 @@ src/
     history.ts          → GET /api/history — история по дням
     analytics.ts        → GET /api/analytics — AI паттерны
     observations.ts     → GET /api/observations — наблюдения
-    checkin-trigger.ts  → GET /api/checkin-trigger — запуск чекина
+    checkin-trigger.ts  → GET /api/checkin-trigger — запуск чекина (dedup 30с)
     kaizen.ts           → GET /api/kaizen — диагностика (без auth)
   handlers/             → Telegram bot команды
     start.ts, help.ts, energy.ts, report.ts, kaizen.ts, checkin.ts, habits.ts
   services/             → Бизнес-логика
-    ai.ts               → Claude API + Tool Use (create_habit, start_checkin, get_habits)
+    ai.ts               → Claude API + Tool Use + анти-GPT system prompt
     voice.ts            → Gemini транскрипция
     scheduler.ts        → node-cron расписание
     checkin-sender.ts   → Отправка чекинов по расписанию
+    weekly-digest.ts    → Еженедельный AI-анализ паттернов
     diagnostics.ts      → Health checks
-    recommendations.ts  → AI рекомендации (legacy, не используется в post-checkin)
     instant-recommendations.ts → Мгновенные рекомендации из knowledge base
     habit-streaks.ts    → Расчёт streaks, consistency, stage transitions
     habit-cron.ts       → Ежедневный/еженедельный cron для привычек
@@ -72,8 +72,7 @@ src/
     telegram.ts         → Telegram SDK wrapper (тема, haptic, initData, BackButton)
     store/
       energy.ts         → Signals: dashboardData, observations, analyticsData
-      habits.ts         → Signals: habitsData, todayProgress + actions
-      index.ts          → Re-exports
+      habits.ts         → Signals: habitsData, todayProgress, startDurationHabit, toggleComplete
     api/
       client.ts         → Fetch wrapper с Authorization: tma <initData>
       types.ts          → TypeScript типы для API responses
@@ -84,189 +83,184 @@ src/
         HabitsCard.tsx  → Виджет привычек (прогресс, стрик, consistency)
       energy/
         EnergyDashboard.tsx → Полный экран энергии (кольца + динамика + наблюдения + аналитика)
-        EnergyRings.tsx     → SVG кольца с анимацией
+        EnergyRings.tsx     → SVG кольца с ambient glow анимацией
         Observations.tsx    → Список наблюдений
         Analytics.tsx       → AI паттерны
         utils.ts            → Хелперы (getTimeAgo, getDayWord, getNoteWord)
       habits/
-        HabitsScreen.tsx    → Главный экран привычек
-        HabitCard.tsx       → Карточка привычки (ring-based, one-tap completion)
-        HabitCreate.tsx     → Создание на 1 экране (auto-icon, без wizard)
-        HabitDetail.tsx     → Детальный вид (стадия, heatmap, editable meaning framework)
+        HabitsScreen.tsx    → Главный экран: прогресс, heatmap, routine groups, FAB
+        HabitCard.tsx       → Карточка: gradient icon, time sheet, duration timer, long-press→detail
+        HabitCreate.tsx     → 2-step wizard: (1) имя+время+тип+сфера (2) meaning framework (ОБЯЗАТЕЛЬНО)
+        HabitDetail.tsx     → Детальный вид (стадия, heatmap, editable meaning, correlation)
         RoutineGroup.tsx    → Группа утро/день/вечер
         DayProgress.tsx     → Прогресс-бар дня + стрик
         WeekHeatmap.tsx     → Мини-тепловая карта недели
         StageIndicator.tsx  → 🌱→🌿→🌳 визуал стадий
-        CorrelationCard.tsx → Корреляция привычка ↔ энергия
+        CorrelationCard.tsx → Корреляция привычка ↔ энергия (в HabitDetail, НЕ на главном)
         MilestoneToast.tsx  → Тост-уведомления (день 7/21/60)
       timeline/
-        Timeline.tsx    → Chart.js график энергии (теперь внутри EnergyDashboard)
+        Timeline.tsx    → Chart.js график энергии (внутри EnergyDashboard)
       journal/
-        Journal.tsx     → Единый дневник (энергия + привычки + наблюдения)
+        Journal.tsx     → Дневник (фильтрует только записи с trigger/context)
       shared/
         Card.tsx        → Переиспользуемая карточка
         BottomNav.tsx   → Нижняя навигация (4 таба)
         Loading.tsx     → Loading/Welcome/Error экраны
     styles/
-      variables.css     → Design tokens (цвета, размеры, Telegram тема)
-      global.css        → Все стили (импорт variables.css)
+      variables.css     → Design tokens: Glass Dark Premium (glassmorphism, glow, тёплый тёмный фон)
+      global.css        → Все стили
 prisma/
-  schema.prisma         → Модели: User, EnergyLog, Message, Session, Observation, ErrorLog, Metric
+  schema.prisma         → Модели: User, EnergyLog, Message, Session, Observation, Habit, HabitLog, BalanceRating, ErrorLog, Metric
+docs/
+  superpowers/specs/    → Спецификации дизайна (исторические, для контекста)
 ```
+
+## Привычки — два типа
+
+### Мгновенные (по умолчанию)
+Холодный душ, медитация, зарядка — тап на карточку → time sheet "Во сколько?" → подтверждение.
+
+### Длительные (isDuration: true)
+Интервальное голодание, без телефона — три состояния:
+1. **Не начата** → кнопка "Начать" (синяя) → записывает startedAt
+2. **В процессе** → пульсирующая точка + elapsed таймер + кнопка "Готово"
+3. **Завершена** → зелёная галочка
+
+При создании: toggle "На время" + пресеты длительности (15м, 30м, 1ч, 2ч, 8ч, 16ч).
+
+### Meaning Framework (ОБЯЗАТЕЛЬНО при создании)
+Step 2 wizard — 3 вопроса для build ("Какая выгода сегодня?", "Что изменится через год?", "Кем ты станешь?") или 3 для break ("Выгодно ли организму?", "Что триггерит?", "Что вместо?"). Это ключевая фича — НЕ убирать.
 
 ## Навигация Mini App
 
-Hub-and-spoke: главный экран с виджетами → тап на карточку → детальный вид → назад.
+Hub-and-spoke: главный экран → тап на карточку → детальный вид → назад.
 
 | Роут | Компонент | Что показывает |
 |------|-----------|----------------|
-| `#hub` | Hub | Виджеты-карточки: энергия, привычки (+ будущие: баланс, задачи) |
-| `#energy` | EnergyDashboard | Кольца энергии, динамика (collapsible), наблюдения, AI паттерны, кнопка чекина |
-| `#habits` | HabitsScreen | Привычки: прогресс, routine groups, one-tap completion, meaning framework |
-| `#journal` | Journal | Единый дневник (энергия + привычки + наблюдения) |
+| `#hub` | Hub | Виджеты: энергия, привычки |
+| `#energy` | EnergyDashboard | Кольца, динамика, наблюдения, AI паттерны, кнопка чекина |
+| `#habits` | HabitsScreen | Привычки: прогресс, routine groups, FAB кнопка "+" |
+| `#journal` | Journal | Дневник (только записи с trigger/context) |
 
 Bottom nav: Главная → Энергия → Привычки → Дневник
-
-`#timeline` → redirect на `#energy` (backwards compat)
 
 ## Аутентификация
 
 **Mini App → API:** `Authorization: tma <Telegram.WebApp.initData>`
-- Сервер валидирует HMAC-SHA256 через bot token
-- Извлекает telegramId → ищет User → прикрепляет userId к req
-- Fallback: `?telegramId=` query param (legacy, для старых ссылок из бота)
+- HMAC-SHA256 валидация через bot token
+- telegramId → User → userId на req
 
-**Middleware:** `src/middleware/telegram-auth.ts` — применён ко всем API кроме /api/kaizen
+**Middleware:** `src/middleware/telegram-auth.ts` — все API кроме /api/kaizen
 
-## Build Pipeline
+## Build & Deploy
 
 ```bash
 npm run build    # prisma generate && tsc && vite build
-npm run dev      # concurrently: tsx watch (backend) + vite dev (frontend, port 5173, proxy /api → 8080)
-npm test         # vitest run (41 тест)
+npm run dev      # concurrently: tsx watch + vite dev (5173, proxy /api → 8080)
+npm test         # vitest run
 ```
 
-- `tsc` компилирует backend → `dist/`
-- `vite build` компилирует frontend → `dist/client/`
-- Express раздаёт `dist/client/` как статику
-- `tsconfig.json` excludes `src/mini-app/` (Vite обрабатывает)
-- `tsconfig.app.json` — frontend-only конфиг (JSX, Preact)
-
-## Deploy
-
-Railway. Auto-deploy из main.
-- Build: `npm run build` (в railway.toml)
-- Start: `npx prisma generate && node dist/index.js`
-- Port: 8080 (0.0.0.0)
-- DB: PostgreSQL (Neon)
+Railway auto-deploy из main. Port 8080.
 
 ## API Endpoints
-
-Все (кроме kaizen) требуют Telegram initData auth.
 
 | Метод | Путь | Описание |
 |-------|------|----------|
 | GET | /api/dashboard | Последние 4 энергии + streak |
-| GET | /api/history?period=week\|month | Средние значения по дням |
+| GET | /api/history?period=week\|month | Средние по дням |
 | GET | /api/analytics | AI-анализ паттернов |
-| GET | /api/observations | Наблюдения (триггеры, направления) |
-| GET | /api/checkin-trigger | Запуск чекина через бота |
+| GET | /api/observations | Наблюдения (trigger, direction) |
+| GET | /api/checkin-trigger | Запуск чекина (dedup 30с) |
 | GET | /api/kaizen | Диагностика (без auth) |
-| GET | /api/habits | Привычки юзера (grouped by routineSlot) |
-| POST | /api/habits | Создать привычку (с meaning framework) |
+| GET | /api/habits | Привычки (grouped by routineSlot, с inProgress/startedAt) |
+| POST | /api/habits | Создать привычку (isDuration, meaning fields) |
 | PATCH | /api/habits/:id | Обновить привычку |
-| DELETE | /api/habits/:id | Soft delete привычки |
-| POST | /api/habits/:id/complete | Отметить выполнение |
+| DELETE | /api/habits/:id | Soft delete |
+| POST | /api/habits/:id/start | Начать длительную привычку |
+| POST | /api/habits/:id/complete | Завершить (instant или duration) |
 | DELETE | /api/habits/:id/complete | Отменить выполнение |
 | GET | /api/habits/:id/stats | Стрик, consistency, heatmap |
 | GET | /api/habits/:id/correlation | Корреляция привычка ↔ энергия |
-| GET | /api/habits/today | Привычки на сегодня |
 | GET | /api/habits/heatmap | Тепловая карта за месяц |
 
-## Стратегия: глубина ядра, не ширина фич
+## AI Bot Architecture
 
-Решение от 2026-03-22: вместо 6 отдельных систем — идеально работающий ежедневный цикл.
-Исходный спек: `docs/superpowers/specs/2026-03-18-energy-app-v2-design.md` (пересмотрен, фазы 2/4/5 отменены)
+### Tool Use
+- `create_habit` — создаёт привычку в БД
+- `start_energy_checkin` — InlineKeyboard для оценки энергии
+- `get_user_habits` — список активных привычек
+- `rate_life_area` — оценка сферы жизни (8 сфер × 1-10)
 
-### Завершено
+**AI НЕ должен:** говорить "создал/записал" без вызова tool, имитировать UI текстом, делать предположения о религии/культуре.
+
+### Анти-GPT стиль (критично)
+System prompt содержит строгие правила:
+- Не начинать с "Отлично!", "Замечательно!" — звучит как робот
+- Не использовать маркированные списки в обычном разговоре
+- Писать как человек в телеграме: "слушай", "ну смотри", "короче"
+- Max 1 вопрос за ответ, 2-4 предложения
+- Тон: заботливый друг, не коуч/терапевт/ассистент
+
+### Severity-based Checkin
+Slot-to-slot сравнение (утро с утром):
+- **Critical** (drop ≥4 или level ≤3 с drop) → причины + 3-4 рекомендации
+- **Moderate** (drop 2-3) → причины + 1-2 рекомендации
+- **Improved** (rise ≥2) → "Что помогло?" + rise observation
+- **Stable** → 👍
+
+### Checkin dedup
+- Сервер: 30с cooldown per user (in-memory Map)
+- Клиент: 30с cooldown на кнопке
+
+## Дизайн: Glass Dark Premium
+
+Тёма вдохновлена Bearable, Streaks, Apple Fitness:
+- Тёплый тёмный фон `#0c0d12` (blue tint, не чисто чёрный)
+- Glassmorphism: `backdrop-filter: blur(20px)` + `border: 1px solid rgba(255,255,255,0.06)`
+- Ambient glow за энергетическими кольцами (цвет типа энергии)
+- Gradient icon containers для привычек (цвет по lifeArea)
+- Accent: `#c8ff73` (lime green) с glow shadow на CTA кнопках
+- FAB кнопка для добавления привычки
+- Bottom sheet с анимацией для time picker
+
+## Что завершено
 
 | Что | Когда |
 |-----|-------|
-| Frontend Foundation (Preact + Vite, auth, hub) | ✅ |
-| Habit Tracker + Knowledge Base (meaning framework, micro-actions, streaks, stages) | ✅ |
-| Bot Intelligence Overhaul (AI tool use, severity checkin, slot-to-slot, habits UX) | ✅ 2026-03-22 |
-| Life Balance через AI (lifeArea на привычках, rate_life_area tool, BalanceRating модель) | ✅ 2026-03-22 |
+| Frontend Foundation (Preact + Vite, auth, hub) | 2026-03-18 |
+| Habit Tracker + Knowledge Base | 2026-03-19 |
+| Bot Intelligence (AI tool use, severity checkin) | 2026-03-22 |
+| Life Balance через AI (lifeArea, rate_life_area) | 2026-03-22 |
+| Weekly AI Digest (паттерны + авто-привычки) | 2026-03-22 |
+| Glass Dark Premium редизайн Mini App | 2026-03-23 |
+| Багфиксы: кнопка создания, чекин dedup, scroll, антиGPT, дневник | 2026-03-23 |
+| Редизайн привычек: gradient cards, FAB, tap-to-complete | 2026-03-23 |
+| Длительные привычки: Начать → таймер → Завершить | 2026-03-23 |
+| Time sheet при выполнении мгновенных привычек | 2026-03-23 |
 
-### Приоритеты (что делать дальше)
-
-| # | Что | Почему |
-|---|-----|--------|
-| 1 | **Привычки РАБОТАЮТ** — проверить на телефоне, починить если Telegram кэширует старый UI | Базовый цикл не работает = всё остальное бесполезно |
-| 2 | **Weekly AI digest** — бот раз в неделю присылает анализ: тренды энергии, какие привычки помогают, что ломает | Замыкает feedback loop |
-| 3 | **Balance check через AI** — бот раз в 2 недели спрашивает оценку 8 сфер, предлагает привычки для просевших | Колесо баланса без отдельного UI |
-| 4 | **Визуал Mini App** — polish карточек, анимации, адаптация к разным экранам | UX refinement |
-
-### Отменено (не нужно)
+## Что НЕ нужно (отменено)
 
 | Что | Причина |
 |-----|---------|
-| ~~SVG Balance Wheel экран~~ | Заменён на AI-опрос в чате + lifeArea на привычках |
-| ~~Task Manager~~ | Пользователь уже использует Google Calendar + Claude App |
-| ~~Achievement System (XP/уровни)~~ | Стрики + confetti уже есть. Геймификация = overkill |
-| ~~AI Intelligence как отдельная фаза~~ | AI улучшается итеративно, не отдельной системой |
+| SVG Balance Wheel экран | AI-опрос в чате + lifeArea на привычках |
+| Task Manager | Пользователь использует Google Calendar + Claude App |
+| Achievement System (XP/уровни) | Стрики + confetti достаточно |
+| AI Intelligence как отдельная фаза | AI улучшается итеративно |
 
-## AI Bot Architecture (обновлено 2026-03-22)
+## Приоритеты (что дальше)
 
-### AI Tool Use
-Бот использует Anthropic function calling. AI может выполнять реальные действия:
-- `create_habit` — создаёт привычку в БД (name, icon, type, routineSlot, lifeArea + meaning fields)
-- `start_energy_checkin` — отправляет InlineKeyboard для оценки энергии
-- `get_user_habits` — возвращает список активных привычек
-- `rate_life_area` — сохраняет оценку сферы жизни (8 сфер × 1-10)
+| # | Что | Почему |
+|---|-----|--------|
+| 1 | **Balance check через AI** — бот раз в 2 недели спрашивает оценку 8 сфер | Колесо баланса без отдельного UI |
+| 2 | **Визуал polish** — skeleton loading, number count-up анимации, transitions между табами | Premium feel |
+| 3 | **Тестирование на реальных пользователях** — собрать фидбек, итерировать | Product-market fit |
 
-**Важно:** AI НЕ должен говорить "создал/записал/зафиксировал" без вызова tool.
+## Kaizen Protocol
 
-### Severity-based Checkin Response
-После чекина система анализирует изменения **slot-to-slot** (утро с утром, вечер с вечером):
-- **Critical** (drop ≥4 или level ≤3 с drop) → 🚨 расширенные причины + 3-4 рекомендации
-- **Moderate** (drop 2-3) → 📉 базовые причины + 1-2 рекомендации
-- **Improved** (rise ≥2) → 📈 "Что помогло?" + позитивные причины → сохраняет как rise observation
-- **Stable** → 👍
-
-Вечерний чекин дополнительно показывает intraday delta (утро → вечер).
-
-### Message Buffer
-Адаптивный: 3 сек для первого сообщения, 8 сек для серии.
-
-### System Prompt Rules
-- Max 1 вопрос за ответ
-- Фокус строго на энергии, без болтовни
-- Не имитировать UI текстом — использовать tools
-- max_tokens: 1024
-- Незакрытые `<!--DATA:` блоки автоматически удаляются
-
-### Habit Creation UX
-1 экран: название → auto-icon (по ключевым словам) → время → тип → создать.
-После создания автоматически открывается Detail для заполнения meaning framework (необязательно).
-
-## Kaizen Agent Protocol
-
-При запуске в режиме непрерывного улучшения:
-
-### 1. Диагностика
 ```bash
 curl -s https://energy-management-production.up.railway.app/api/kaizen | jq .
 npm run build
 npm test
 ```
 
-### 2. Анализ
-- **Ошибки**: `recentErrors` в /api/kaizen
-- **Перформанс**: AI response > 5s или voice > 3s → оптимизировать
-- **Usage**: неиспользуемые фичи → упростить UX
-
-### 3. Правила
-- Коммитить каждое улучшение отдельно
-- НЕ ломать существующий функционал
-- НЕ менять API контракты без необходимости
-- Тестировать билд после каждого изменения
+Правила: коммитить каждое улучшение отдельно, не ломать функционал, тестировать билд.
