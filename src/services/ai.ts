@@ -606,17 +606,18 @@ async function buildUserContext(userId: number): Promise<string> {
     });
 
     if (observations.length > 0) {
-      // Last 10 individual observations
+      // Last 10 individual observations with details
       lines.push("\nПоследние наблюдения:");
       for (const o of observations.slice(0, 10)) {
         const emoji = { physical: "🏃", mental: "🧠", emotional: "💚", spiritual: "🔮" }[o.energyType] || "•";
         const date = o.createdAt.toLocaleDateString("ru");
         const trigger = o.trigger ? ` (${o.trigger})` : "";
-        lines.push(`  ${date} ${emoji} ${o.energyType} ${o.direction}${trigger}`);
+        const detail = o.context ? ` — ${o.context}` : "";
+        lines.push(`  ${date} ${emoji} ${o.energyType} ${o.direction}${trigger}${detail}`);
       }
 
-      // Aggregate trigger patterns (what drops/rises energy most often)
-      const triggerFreq = new Map<string, { count: number; direction: string; types: Set<string> }>();
+      // Aggregate trigger patterns with details
+      const triggerFreq = new Map<string, { count: number; direction: string; types: Set<string>; details: string[] }>();
       for (const o of observations) {
         if (!o.trigger) continue;
         const key = `${o.trigger}:${o.direction}`;
@@ -624,8 +625,9 @@ async function buildUserContext(userId: number): Promise<string> {
         if (existing) {
           existing.count++;
           existing.types.add(o.energyType);
+          if (o.context) existing.details.push(o.context);
         } else {
-          triggerFreq.set(key, { count: 1, direction: o.direction, types: new Set([o.energyType]) });
+          triggerFreq.set(key, { count: 1, direction: o.direction, types: new Set([o.energyType]), details: o.context ? [o.context] : [] });
         }
       }
 
@@ -639,6 +641,11 @@ async function buildUserContext(userId: number): Promise<string> {
         for (const p of patterns.slice(0, 8)) {
           const arrow = p.direction === "rise" ? "↑" : "↓";
           lines.push(`  ${arrow} "${p.trigger}" — ${p.count}× (${p.types.join(", ")})`);
+          // Show specific situations for context
+          const uniqueDetails = [...new Set(p.details)].slice(0, 3);
+          for (const d of uniqueDetails) {
+            lines.push(`      → ${d}`);
+          }
         }
       }
     }

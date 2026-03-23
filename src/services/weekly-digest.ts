@@ -16,7 +16,7 @@ interface TriggerPattern {
   count: number;
   energyTypes: string[];
   direction: string;
-  avgDrop?: number; // average energy level when this trigger appeared
+  details: string[]; // specific user-described situations
 }
 
 interface WeeklyInsight {
@@ -101,8 +101,8 @@ async function analyzeWeeklyPatterns(userId: number): Promise<WeeklyInsight | nu
 
   if (thisWeekLogs.length < 2) return null; // Not enough data
 
-  // --- Count trigger frequencies ---
-  const triggerCounts = new Map<string, { count: number; energyTypes: Set<string>; direction: string }>();
+  // --- Count trigger frequencies + collect details ---
+  const triggerCounts = new Map<string, { count: number; energyTypes: Set<string>; direction: string; details: string[] }>();
 
   for (const obs of observations) {
     if (!obs.trigger) continue;
@@ -111,11 +111,13 @@ async function analyzeWeeklyPatterns(userId: number): Promise<WeeklyInsight | nu
     if (existing) {
       existing.count++;
       existing.energyTypes.add(obs.energyType);
+      if (obs.context) existing.details.push(obs.context);
     } else {
       triggerCounts.set(key, {
         count: 1,
         energyTypes: new Set([obs.energyType]),
         direction: obs.direction,
+        details: obs.context ? [obs.context] : [],
       });
     }
   }
@@ -131,6 +133,7 @@ async function analyzeWeeklyPatterns(userId: number): Promise<WeeklyInsight | nu
       count: data.count,
       energyTypes: [...data.energyTypes],
       direction: data.direction,
+      details: data.details,
     };
 
     if (data.direction === "rise") {
@@ -238,20 +241,33 @@ function formatDigestMessage(insight: WeeklyInsight): string {
     lines.push(`\n📅 Лучший день: ${insight.bestDay} | Худший: ${insight.worstDay}`);
   }
 
-  // Drop patterns
+  // Drop patterns with details
   if (insight.topDropTriggers.length > 0) {
     lines.push("\n*🔻 Что роняет энергию:*");
     for (const p of insight.topDropTriggers) {
       const types = p.energyTypes.map(t => ENERGY_LABELS[t] || t).join(", ");
-      lines.push(`• ${p.trigger} — ${p.count}× (${types})`);
+      lines.push(`• *${p.trigger}* — ${p.count}× (${types})`);
+      // Show unique details (specific situations)
+      if (p.details.length > 0) {
+        const unique = [...new Set(p.details)].slice(0, 3);
+        for (const d of unique) {
+          lines.push(`   ↳ _${d}_`);
+        }
+      }
     }
   }
 
-  // Rise patterns
+  // Rise patterns with details
   if (insight.topRiseTriggers.length > 0) {
     lines.push("\n*🔺 Что поднимает:*");
     for (const p of insight.topRiseTriggers) {
-      lines.push(`• ${p.trigger} — ${p.count}×`);
+      lines.push(`• *${p.trigger}* — ${p.count}×`);
+      if (p.details.length > 0) {
+        const unique = [...new Set(p.details)].slice(0, 3);
+        for (const d of unique) {
+          lines.push(`   ↳ _${d}_`);
+        }
+      }
     }
   }
 

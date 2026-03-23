@@ -2,7 +2,7 @@ import { Bot } from "grammy";
 import { config } from "./config.js";
 import { startHandler } from "./handlers/start.js";
 import { helpHandler } from "./handlers/help.js";
-import { handleCheckinCallback, sendCheckInMessage, isAwaitingCustomReason, handleCustomReasonText } from "./handlers/checkin.js";
+import { handleCheckinCallback, sendCheckInMessage, isAwaitingTextInput, handleTextInput } from "./handlers/checkin.js";
 import { handleDigestCallback } from "./services/weekly-digest.js";
 import { reportHandler } from "./handlers/report.js";
 import { kaizenHandler } from "./handlers/kaizen.js";
@@ -169,9 +169,9 @@ bot.on("message:text", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
 
-  // Handle custom reason text for multi-select why flow
-  if (isAwaitingCustomReason(from.id)) {
-    await handleCustomReasonText(ctx);
+  // Handle text input for checkin flow (custom reason or detail)
+  if (isAwaitingTextInput(from.id)) {
+    await handleTextInput(ctx);
     return;
   }
 

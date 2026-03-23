@@ -49,6 +49,15 @@ const pendingWhySelections = new Map<number, PendingWhySelection>(); // telegram
 // Users awaiting custom reason text input
 const awaitingCustomReason = new Set<number>(); // telegramId
 
+// Users awaiting detail text after selecting triggers
+interface PendingDetail {
+  userId: number;
+  observationIds: number[]; // saved observation IDs to update with detail
+  triggers: string[]; // what was selected (for prompt)
+  chatId: number;
+}
+const awaitingDetail = new Map<number, PendingDetail>(); // telegramId -> detail
+
 // --- Severity System ---
 
 type Severity = "critical" | "moderate" | "mild" | "stable" | "improved";
@@ -596,39 +605,56 @@ async function handleWhyDoneCallback(ctx: Context): Promise<void> {
     return;
   }
 
-  // Save each reason as separate observation (for granular analytics)
-  const contextBase = selection.direction === "rise"
-    ? `Причина роста ${ENERGY_LABELS[selection.energyType] || selection.energyType} энергии`
-    : `Причина падения ${ENERGY_LABELS[selection.energyType] || selection.energyType} энергии`;
+  // Save each reason as separate observation (context will be filled after detail)
+  const savedIds: number[] = [];
 
   for (const reason of allReasons) {
-    await prisma.observation.create({
+    const obs = await prisma.observation.create({
       data: {
         userId: user.id,
         energyType: selection.energyType,
         direction: selection.direction,
         trigger: reason,
-        context: contextBase,
+        context: null, // will be filled with user's detail
         energyLogId: selection.logId,
       },
     });
+    savedIds.push(obs.id);
   }
 
   await ctx.answerCallbackQuery({ text: `Записал ${allReasons.length} причин` });
 
   // Update message with selected reasons
+  const emoji = selection.direction === "rise" ? "📈" : "📝";
+  const label = selection.direction === "rise" ? "Помогло" : "Причины";
+  const reasonsList = allReasons.map(r => `• ${r}`).join("\n");
   try {
-    const emoji = selection.direction === "rise" ? "📈" : "📝";
-    const label = selection.direction === "rise" ? "Помогло" : "Причины";
-    const reasonsList = allReasons.map(r => `• ${r}`).join("\n");
     await ctx.editMessageText(
       selection.messageText + `\n\n${emoji} ${label}:\n${reasonsList}`,
     );
   } catch {}
 
-  // Cleanup
+  const chatId = selection.chatId || ctx.chat?.id || from.id;
+
+  // Cleanup selection state
   pendingWhySelections.delete(from.id);
   awaitingCustomReason.delete(from.id);
+
+  // Ask for details — what exactly happened
+  awaitingDetail.set(from.id, {
+    userId: user.id,
+    observationIds: savedIds,
+    triggers: allReasons,
+    chatId,
+  });
+
+  const detailPrompt = selection.direction === "rise"
+    ? `Что конкретно помогло? Опиши ситуацию коротко — это поможет найти паттерны.\n\nНапример: "пробежка в парке 30 мин утром" или "позвонил другу, поговорили час"\n\nИли отправь /skip чтобы пропустить.`
+    : `Что конкретно произошло? Опиши ситуацию — это поможет найти паттерны.\n\nНапример: "созвон с клиентом, давил по срокам" или "не мог уснуть, листал телефон до 2 ночи"\n\nИли отправь /skip чтобы пропустить.`;
+
+  await bot.api.sendMessage(chatId, detailPrompt, {
+    reply_markup: { force_reply: true, selective: true },
+  });
 }
 
 // --- Why Custom Callback (prompt for text) ---
@@ -657,28 +683,42 @@ async function handleWhyCustomCallback(ctx: Context): Promise<void> {
   });
 }
 
-// --- Handle custom reason text input ---
+// --- Handle text input (custom reason or detail) ---
 
-export function isAwaitingCustomReason(telegramId: number): boolean {
-  return awaitingCustomReason.has(telegramId);
+export function isAwaitingTextInput(telegramId: number): boolean {
+  return awaitingCustomReason.has(telegramId) || awaitingDetail.has(telegramId);
 }
 
-export async function handleCustomReasonText(ctx: Context): Promise<void> {
+export async function handleTextInput(ctx: Context): Promise<void> {
   const from = ctx.from;
   if (!from) return;
 
   const text = ctx.message?.text?.trim();
   if (!text) return;
 
-  const selection = pendingWhySelections.get(from.id);
+  // Check if awaiting detail (post-trigger description)
+  if (awaitingDetail.has(from.id)) {
+    await handleDetailText(ctx, from.id, text);
+    return;
+  }
+
+  // Check if awaiting custom reason (during multi-select)
+  if (awaitingCustomReason.has(from.id)) {
+    await handleCustomReasonText(ctx, from.id, text);
+    return;
+  }
+}
+
+async function handleCustomReasonText(ctx: Context, telegramId: number, text: string): Promise<void> {
+  const selection = pendingWhySelections.get(telegramId);
   if (!selection) {
-    awaitingCustomReason.delete(from.id);
+    awaitingCustomReason.delete(telegramId);
     return;
   }
 
   // Add custom reason
   selection.customReasons.push(text);
-  awaitingCustomReason.delete(from.id);
+  awaitingCustomReason.delete(telegramId);
 
   await ctx.reply(`✅ Добавил: "${text}"\nМожешь выбрать ещё причины или нажать Готово.`);
 
@@ -688,6 +728,29 @@ export async function handleCustomReasonText(ctx: Context): Promise<void> {
       reply_markup: buildWhyKeyboard(selection),
     });
   } catch {}
+}
+
+async function handleDetailText(ctx: Context, telegramId: number, text: string): Promise<void> {
+  const detail = awaitingDetail.get(telegramId);
+  if (!detail) return;
+
+  awaitingDetail.delete(telegramId);
+
+  // /skip — leave context empty
+  if (text === "/skip") {
+    await ctx.reply("👍 Пропущено.");
+    return;
+  }
+
+  // Update all observations with the detail context
+  for (const obsId of detail.observationIds) {
+    await prisma.observation.update({
+      where: { id: obsId },
+      data: { context: text },
+    });
+  }
+
+  await ctx.reply(`📝 Записал: "${text}"\n\nБуду анализировать паттерны в недельном дайджесте.`);
 }
 
 // --- Undo Callback ---
