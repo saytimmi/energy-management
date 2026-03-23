@@ -7,7 +7,7 @@ Telegram бот + Mini App для управления жизненной эне
 ```bash
 npm install
 cp .env.example .env  # заполнить переменные
-npm run dev            # backend (8080) + frontend (5173)
+npm run dev            # backend + frontend (5173, proxy → 8080)
 ```
 
 ## Документация

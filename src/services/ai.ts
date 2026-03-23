@@ -518,7 +518,12 @@ export async function chat(
       const textBlocks = response.content.filter(
         (b): b is Anthropic.TextBlock => b.type === "text",
       );
-      return textBlocks.map((b) => b.text).join("\n") || "👍";
+      const text = textBlocks.map((b) => b.text).join("\n");
+      if (!text && allActions.length > 0) {
+        // AI used tools but didn't produce text — don't send empty/emoji reply
+        return "";
+      }
+      return text || "👍";
     }, { historyLength: String(history.length) });
 
     // Extract observations and clean reply

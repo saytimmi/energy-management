@@ -60,6 +60,17 @@ export async function createHabit(data: CreateHabitPayload): Promise<HabitData |
   }
 }
 
+export async function deleteHabit(id: number): Promise<boolean> {
+  try {
+    await api.deleteHabit(id);
+    await loadHabits();
+    return true;
+  } catch (err) {
+    console.error("Failed to delete habit:", err);
+    return false;
+  }
+}
+
 export async function updateHabit(id: number, data: Partial<CreateHabitPayload>): Promise<HabitData | null> {
   try {
     const habit = await api.updateHabit(id, data);

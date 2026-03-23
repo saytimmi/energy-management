@@ -63,11 +63,13 @@ async function flushBuffer(userId: number) {
 
     await new Promise(r => setTimeout(r, 1000));
 
-    // Send text reply
-    try {
-      await bot.api.sendMessage(userId, result.text);
-    } catch (err) {
-      console.error("Failed to send buffered reply:", err);
+    // Send text reply (skip if empty — e.g. tool-only response with no text)
+    if (result.text.trim()) {
+      try {
+        await bot.api.sendMessage(userId, result.text);
+      } catch (err) {
+        console.error("Failed to send buffered reply:", err);
+      }
     }
 
     // Handle actions (e.g., start checkin with InlineKeyboard)

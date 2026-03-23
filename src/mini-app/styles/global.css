@@ -909,6 +909,28 @@ body {
 }
 .meaning-edit-btn:active { border-color: var(--accent); }
 
+/* Habit delete */
+.habit-delete-section { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--surface2); }
+.habit-delete-btn {
+  width: 100%; padding: 12px; background: transparent;
+  border: 1.5px solid rgba(255, 80, 80, 0.3); border-radius: var(--radius-xs);
+  color: #ff5050; font-size: 14px; font-family: inherit; cursor: pointer;
+  transition: all 0.15s;
+}
+.habit-delete-btn:active { background: rgba(255, 80, 80, 0.1); border-color: #ff5050; }
+.habit-delete-confirm-text { text-align: center; font-size: 15px; margin-bottom: 12px; color: var(--text2); }
+.habit-delete-confirm-actions { display: flex; gap: 10px; }
+.habit-delete-confirm-yes {
+  flex: 1; padding: 12px; background: #ff5050; color: #fff;
+  border: none; border-radius: var(--radius-xs); font-size: 14px; font-family: inherit; cursor: pointer;
+}
+.habit-delete-confirm-yes:disabled { opacity: 0.5; }
+.habit-delete-confirm-no {
+  flex: 1; padding: 12px; background: var(--surface);
+  border: 1px solid var(--surface2); border-radius: var(--radius-xs);
+  color: var(--text2); font-size: 14px; font-family: inherit; cursor: pointer;
+}
+
 .stage-indicator {
   background: var(--surface);
   backdrop-filter: var(--glass-blur);

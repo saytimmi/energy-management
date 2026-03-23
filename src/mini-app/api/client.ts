@@ -58,4 +58,5 @@ export const api = {
   habitsHeatmap: () => request<HeatmapDay[]>("/api/habits/heatmap"),
   habitCorrelation: (id: number) => request<HabitCorrelation>(`/api/habits/${id}/correlation`),
   updateHabit: (id: number, data: Partial<CreateHabitPayload>) => patch<HabitData>(`/api/habits/${id}`, data),
+  deleteHabit: (id: number) => del<{ ok: boolean }>(`/api/habits/${id}`),
 };

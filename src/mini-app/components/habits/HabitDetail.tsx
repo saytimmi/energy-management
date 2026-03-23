@@ -3,7 +3,7 @@ import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import type { HabitData, HabitStats } from "../../api/types";
 import { api } from "../../api/client";
-import { updateHabit, loadHabits } from "../../store/habits";
+import { updateHabit, deleteHabit, loadHabits } from "../../store/habits";
 import { haptic, hapticSuccess } from "../../telegram";
 import { StageIndicator } from "./StageIndicator";
 import { CorrelationCard } from "./CorrelationCard";
@@ -19,6 +19,8 @@ const statsLoading = signal(true);
 export function HabitDetail({ habit, onBack }: HabitDetailProps) {
   const [editingWhy, setEditingWhy] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Meaning fields (build)
   const [whyToday, setWhyToday] = useState(habit.whyToday || "");
@@ -221,6 +223,43 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
       )}
 
       <CorrelationCard habitId={habit.id} />
+
+      {/* Delete */}
+      <div class="habit-delete-section">
+        {confirmDelete ? (
+          <div class="habit-delete-confirm">
+            <div class="habit-delete-confirm-text">Удалить «{habit.name}»?</div>
+            <div class="habit-delete-confirm-actions">
+              <button
+                class="habit-delete-confirm-yes"
+                onClick={async () => {
+                  setDeleting(true);
+                  haptic("heavy");
+                  const ok = await deleteHabit(habit.id);
+                  setDeleting(false);
+                  if (ok) onBack();
+                }}
+                disabled={deleting}
+              >
+                {deleting ? "Удаляю..." : "Да, удалить"}
+              </button>
+              <button
+                class="habit-delete-confirm-no"
+                onClick={() => { setConfirmDelete(false); haptic("light"); }}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            class="habit-delete-btn"
+            onClick={() => { setConfirmDelete(true); haptic("medium"); }}
+          >
+            Удалить привычку
+          </button>
+        )}
+      </div>
     </div>
   );
 }
