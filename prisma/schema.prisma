@@ -107,7 +107,8 @@ model Habit {
   frequency       String     @default("daily")
   customDays      String?
   triggerAction   String?
-  duration        Int?
+  duration        Int?       // target duration in minutes (for duration-based habits)
+  isDuration      Boolean    @default(false)  // true = duration habit (start→finish)
   whyToday        String?
   whyMonth        String?
   whyYear         String?
@@ -129,14 +130,15 @@ model Habit {
 }
 
 model HabitLog {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   habitId     Int
-  habit       Habit    @relation(fields: [habitId], references: [id])
+  habit       Habit     @relation(fields: [habitId], references: [id])
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  date        DateTime @db.Date
-  completedAt DateTime @default(now())
-  status      String   @default("completed")
+  user        User      @relation(fields: [userId], references: [id])
+  date        DateTime  @db.Date
+  startedAt   DateTime?                      // when duration habit was started
+  completedAt DateTime  @default(now())
+  status      String    @default("completed") // "started" | "completed"
   note        String?
 
   @@unique([habitId, date])

@@ -687,6 +687,93 @@ body {
 }
 .time-sheet-confirm:active { transform: scale(0.97); }
 
+/* ── Duration Habit States ── */
+.habit-card-v2.in-progress {
+  border-color: rgba(91, 168, 255, 0.2);
+}
+
+.habit-pulse-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--mental);
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px rgba(91,168,255,0.4); transform: scale(1); }
+  50% { box-shadow: 0 0 12px rgba(91,168,255,0.7); transform: scale(1.15); }
+}
+
+.habit-timer-pill {
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 8px;
+  background: rgba(91, 168, 255, 0.15); color: var(--mental);
+  font-variant-numeric: tabular-nums;
+}
+.habit-duration-pill {
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 500;
+  padding: 2px 7px; border-radius: 8px;
+  background: var(--surface2); color: var(--text2);
+}
+
+.habit-start-btn, .habit-finish-btn {
+  flex-shrink: 0; border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  cursor: pointer; padding: 8px 14px;
+  transition: all 0.15s;
+}
+.habit-start-btn {
+  background: rgba(91, 168, 255, 0.15); color: var(--mental);
+}
+.habit-start-btn:active { transform: scale(0.95); }
+.habit-finish-btn {
+  background: var(--accent); color: var(--bg);
+}
+.habit-finish-btn:active { transform: scale(0.95); }
+
+/* ── Duration Toggle (HabitCreate) ── */
+.create-duration-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; cursor: pointer;
+  background: var(--surface-solid); border: 1.5px solid var(--surface2);
+  border-radius: 14px; transition: border-color 0.2s;
+  -webkit-user-select: none; user-select: none;
+}
+.duration-toggle-info { display: flex; flex-direction: column; gap: 2px; }
+.duration-toggle-label { font-size: 15px; font-weight: 500; }
+.duration-toggle-hint { font-size: 12px; color: var(--text3); }
+
+.duration-toggle-switch {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: var(--surface2); position: relative;
+  transition: background 0.2s; flex-shrink: 0;
+}
+.duration-toggle-switch.on { background: var(--accent); }
+.duration-toggle-knob {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: white; position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.duration-toggle-switch.on .duration-toggle-knob {
+  transform: translateX(18px);
+}
+
+.create-duration-presets {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px;
+}
+.duration-preset {
+  padding: 8px 14px; border-radius: 10px;
+  background: var(--surface-solid); border: 1.5px solid var(--surface2);
+  color: var(--text2); font-size: 13px; font-weight: 600;
+  font-family: inherit; cursor: pointer; transition: all 0.15s;
+}
+.duration-preset.active {
+  border-color: var(--accent); background: var(--accent-soft); color: var(--text);
+}
+
 /* ── Habit Create ── */
 .habit-create {
   padding: 20px;

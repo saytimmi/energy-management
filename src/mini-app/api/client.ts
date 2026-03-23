@@ -51,6 +51,7 @@ export const api = {
   triggerCheckin: () => request<{ ok: boolean }>("/api/checkin-trigger"),
   habits: () => request<HabitsGrouped>("/api/habits"),
   createHabit: (data: CreateHabitPayload) => post<HabitData>("/api/habits", data),
+  startHabit: (id: number) => post<{ ok: boolean }>(`/api/habits/${id}/start`, {}),
   completeHabit: (id: number, note?: string) => post<{ ok: boolean }>(`/api/habits/${id}/complete`, note ? { note } : {}),
   uncompleteHabit: (id: number) => del<{ ok: boolean }>(`/api/habits/${id}/complete`),
   habitStats: (id: number) => request<HabitStats>(`/api/habits/${id}/stats`),

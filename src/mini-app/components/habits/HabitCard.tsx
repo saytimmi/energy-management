@@ -1,6 +1,6 @@
-import { useState, useRef } from "preact/hooks";
+import { useState, useRef, useEffect } from "preact/hooks";
 import type { HabitData } from "../../api/types";
-import { toggleComplete } from "../../store/habits";
+import { toggleComplete, startDurationHabit } from "../../store/habits";
 import { haptic } from "../../telegram";
 
 interface HabitCardProps {
@@ -9,7 +9,6 @@ interface HabitCardProps {
   onCompleted?: (habit: HabitData) => void;
 }
 
-// Gradient colors based on life area
 const AREA_GRADIENTS: Record<string, string> = {
   health:        "linear-gradient(135deg, rgba(91,224,122,0.2), rgba(91,224,122,0.08))",
   career:        "linear-gradient(135deg, rgba(91,168,255,0.2), rgba(91,168,255,0.08))",
@@ -23,25 +22,62 @@ const AREA_GRADIENTS: Record<string, string> = {
 
 const DEFAULT_GRADIENT = "linear-gradient(135deg, rgba(200,255,115,0.12), rgba(200,255,115,0.04))";
 const DONE_GRADIENT = "linear-gradient(135deg, rgba(200,255,115,0.25), rgba(200,255,115,0.1))";
+const PROGRESS_GRADIENT = "linear-gradient(135deg, rgba(91,168,255,0.25), rgba(91,168,255,0.1))";
 
 function nowTimeStr(): string {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+function formatElapsed(startedAt: string): string {
+  const start = new Date(startedAt).getTime();
+  const now = Date.now();
+  const diffMin = Math.floor((now - start) / 60000);
+  if (diffMin < 60) return `${diffMin}м`;
+  const h = Math.floor(diffMin / 60);
+  const m = diffMin % 60;
+  return m > 0 ? `${h}ч ${m}м` : `${h}ч`;
+}
+
 export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) {
   const done = habit.completedToday;
+  const inProgress = habit.inProgress;
+  const isDuration = habit.isDuration;
   const [completing, setCompleting] = useState(false);
   const [showTimeSheet, setShowTimeSheet] = useState(false);
   const [selectedTime, setSelectedTime] = useState(nowTimeStr);
+  const [elapsed, setElapsed] = useState("");
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
+
+  // Update elapsed timer for in-progress duration habits
+  useEffect(() => {
+    if (!inProgress || !habit.startedAt) return;
+    setElapsed(formatElapsed(habit.startedAt));
+    const interval = setInterval(() => {
+      setElapsed(formatElapsed(habit.startedAt!));
+    }, 30000); // update every 30s
+    return () => clearInterval(interval);
+  }, [inProgress, habit.startedAt]);
 
   async function confirmComplete() {
     setShowTimeSheet(false);
     setCompleting(true);
     haptic("medium");
     await toggleComplete(habit, `в ${selectedTime}`);
+    setCompleting(false);
+    if (onCompleted) onCompleted(habit);
+  }
+
+  async function handleStartDuration() {
+    haptic("medium");
+    await startDurationHabit(habit);
+  }
+
+  async function handleCompleteDuration() {
+    haptic("medium");
+    setCompleting(true);
+    await toggleComplete(habit);
     setCompleting(false);
     if (onCompleted) onCompleted(habit);
   }
@@ -54,11 +90,22 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
   function handleTap() {
     if (done) {
       handleUncomplete();
-    } else {
-      haptic("light");
-      setSelectedTime(nowTimeStr());
-      setShowTimeSheet(true);
+      return;
     }
+
+    if (isDuration) {
+      if (inProgress) {
+        handleCompleteDuration();
+      } else {
+        handleStartDuration();
+      }
+      return;
+    }
+
+    // Instant habit — show time sheet
+    haptic("light");
+    setSelectedTime(nowTimeStr());
+    setShowTimeSheet(true);
   }
 
   function onTouchStart() {
@@ -89,23 +136,37 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
     }
   }
 
-  const iconGradient = done ? DONE_GRADIENT : (AREA_GRADIENTS[habit.lifeArea ?? ""] ?? DEFAULT_GRADIENT);
+  const iconGradient = done
+    ? DONE_GRADIENT
+    : inProgress
+      ? PROGRESS_GRADIENT
+      : (AREA_GRADIENTS[habit.lifeArea ?? ""] ?? DEFAULT_GRADIENT);
+
+  // Status label for duration habits
+  let statusLabel: string | null = null;
+  if (isDuration && inProgress && elapsed) {
+    statusLabel = elapsed;
+  } else if (isDuration && !done && !inProgress) {
+    statusLabel = habit.duration ? `${habit.duration}м` : "На время";
+  }
 
   return (
     <>
       <div
-        class={`habit-card-v2${done ? " completed" : ""} ${completing ? "completing-card" : ""}`}
+        class={`habit-card-v2${done ? " completed" : ""}${inProgress ? " in-progress" : ""} ${completing ? "completing-card" : ""}`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onTouchMove={onTouchMove}
         onMouseUp={() => { if (!didLongPress.current) handleTap(); }}
       >
-        {/* Icon with gradient background */}
+        {/* Icon */}
         <div class="habit-icon-wrap" style={{ background: iconGradient }}>
           {done ? (
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <path d="M5 11l4.5 4.5 8-9.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
+          ) : inProgress ? (
+            <div class="habit-pulse-dot" />
           ) : (
             <span class="habit-icon-emoji">{habit.icon}</span>
           )}
@@ -117,6 +178,12 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
             {habit.name}
           </span>
           <div class="habit-card-meta">
+            {inProgress && statusLabel && (
+              <span class="habit-timer-pill">{statusLabel}</span>
+            )}
+            {!inProgress && isDuration && !done && statusLabel && (
+              <span class="habit-duration-pill">{statusLabel}</span>
+            )}
             {habit.streakCurrent > 0 && (
               <span class="habit-streak-pill">
                 <span class="streak-fire">🔥</span> {habit.streakCurrent}д
@@ -127,24 +194,31 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
           </div>
         </div>
 
-        {/* Detail arrow */}
-        <button
-          class="habit-detail-arrow"
-          onClick={(e) => {
-            e.stopPropagation();
-            haptic("light");
-            if (onOpenDetail) onOpenDetail(habit);
-          }}
-          onTouchEnd={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M7 13l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
+        {/* Action / Detail */}
+        {isDuration && !done && !inProgress ? (
+          <button class="habit-start-btn" onClick={(e) => { e.stopPropagation(); handleStartDuration(); }}
+            onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+            Начать
+          </button>
+        ) : isDuration && inProgress ? (
+          <button class="habit-finish-btn" onClick={(e) => { e.stopPropagation(); handleCompleteDuration(); }}
+            onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+            Готово
+          </button>
+        ) : (
+          <button
+            class="habit-detail-arrow"
+            onClick={(e) => { e.stopPropagation(); haptic("light"); if (onOpenDetail) onOpenDetail(habit); }}
+            onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M7 13l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        )}
       </div>
 
-      {/* Time confirmation sheet */}
+      {/* Time confirmation sheet (instant habits only) */}
       {showTimeSheet && (
         <div class="time-sheet-overlay" onClick={() => setShowTimeSheet(false)}>
           <div class="time-sheet" onClick={(e) => e.stopPropagation()}>
@@ -162,12 +236,8 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
               />
             </div>
             <div class="time-sheet-actions">
-              <button class="time-sheet-cancel" onClick={() => setShowTimeSheet(false)}>
-                Отмена
-              </button>
-              <button class="time-sheet-confirm" onClick={confirmComplete}>
-                Выполнено
-              </button>
+              <button class="time-sheet-cancel" onClick={() => setShowTimeSheet(false)}>Отмена</button>
+              <button class="time-sheet-confirm" onClick={confirmComplete}>Выполнено</button>
             </div>
           </div>
         </div>

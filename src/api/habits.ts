@@ -157,9 +157,12 @@ export function habitsRoute(router: Router): void {
 
       for (const h of habits) {
         const slot = h.routineSlot as string;
+        const todayLog = h.logs[0] ?? null;
         const entry = {
           ...h,
-          completedToday: h.logs.length > 0,
+          completedToday: todayLog?.status === "completed",
+          inProgress: todayLog?.status === "started",
+          startedAt: todayLog?.startedAt ?? null,
           logs: undefined,
         };
         if (grouped[slot]) {
@@ -181,7 +184,7 @@ export function habitsRoute(router: Router): void {
     const userId = (req as any).userId as number;
 
     try {
-      const { name, icon, type, routineSlot, duration, energyType, lifeArea, triggerAction,
+      const { name, icon, type, routineSlot, duration, isDuration, energyType, lifeArea, triggerAction,
         whyToday, whyMonth, whyYear, whyIdentity, isItBeneficial,
         breakTrigger, replacement, microActionId, frequency, customDays } = req.body;
 
@@ -220,6 +223,7 @@ export function habitsRoute(router: Router): void {
           routineSlot,
           sortOrder: (maxOrder?.sortOrder ?? -1) + 1,
           duration: duration ?? null,
+          isDuration: isDuration ?? false,
           energyType: energyType ?? null,
           lifeArea: lifeArea ?? null,
           triggerAction: triggerAction ?? null,
@@ -311,8 +315,8 @@ export function habitsRoute(router: Router): void {
     }
   });
 
-  // POST /api/habits/:id/complete — log completion
-  router.post("/habits/:id/complete", async (req: Request, res: Response) => {
+  // POST /api/habits/:id/start — start a duration-based habit
+  router.post("/habits/:id/start", async (req: Request, res: Response) => {
     const userId = (req as any).userId as number;
     const habitId = parseInt(req.params.id as string, 10);
 
@@ -324,9 +328,7 @@ export function habitsRoute(router: Router): void {
       }
 
       const today = todayDateOnly();
-      const status = req.body?.status || "completed";
 
-      // Upsert — if already completed today, return existing
       const existing = await prisma.habitLog.findUnique({
         where: { habitId_date: { habitId, date: today } },
       });
@@ -341,12 +343,74 @@ export function habitsRoute(router: Router): void {
           habitId,
           userId,
           date: today,
-          status,
+          status: "started",
+          startedAt: new Date(),
+        },
+      });
+
+      res.status(201).json(log);
+    } catch (err) {
+      console.error("Habits start API error:", err);
+      res.status(500).json({ error: "internal_error" });
+    }
+  });
+
+  // POST /api/habits/:id/complete — log completion
+  router.post("/habits/:id/complete", async (req: Request, res: Response) => {
+    const userId = (req as any).userId as number;
+    const habitId = parseInt(req.params.id as string, 10);
+
+    try {
+      const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+      if (!habit || habit.userId !== userId) {
+        res.status(404).json({ error: "Привычка не найдена" });
+        return;
+      }
+
+      const today = todayDateOnly();
+
+      // Check if there's an in-progress log (duration habit)
+      const existing = await prisma.habitLog.findUnique({
+        where: { habitId_date: { habitId, date: today } },
+      });
+
+      if (existing && existing.status === "completed") {
+        res.json(existing);
+        return;
+      }
+
+      if (existing && existing.status === "started") {
+        // Complete the in-progress duration habit
+        const updated = await prisma.habitLog.update({
+          where: { id: existing.id },
+          data: {
+            status: "completed",
+            completedAt: new Date(),
+            note: req.body?.note ?? existing.note,
+          },
+        });
+
+        const { streakCurrent, streakBest } = await recalculateStreak(habitId);
+        await prisma.habit.update({
+          where: { id: habitId },
+          data: { streakCurrent, streakBest },
+        });
+
+        res.json({ ...updated, streakCurrent, streakBest });
+        return;
+      }
+
+      // Normal (instant) habit — create completed log
+      const log = await prisma.habitLog.create({
+        data: {
+          habitId,
+          userId,
+          date: today,
+          status: "completed",
           note: req.body?.note ?? null,
         },
       });
 
-      // Recalculate streak
       const { streakCurrent, streakBest } = await recalculateStreak(habitId);
       await prisma.habit.update({
         where: { id: habitId },

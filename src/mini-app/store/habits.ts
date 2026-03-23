@@ -27,6 +27,15 @@ export async function loadHabits(): Promise<void> {
   }
 }
 
+export async function startDurationHabit(habit: HabitData): Promise<void> {
+  try {
+    await api.startHabit(habit.id);
+    await loadHabits();
+  } catch (err) {
+    console.error("Failed to start habit:", err);
+  }
+}
+
 export async function toggleComplete(habit: HabitData, note?: string): Promise<void> {
   try {
     if (habit.completedToday) {

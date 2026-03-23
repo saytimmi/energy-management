@@ -50,7 +50,10 @@ export interface HabitData {
   streakBest: number;
   consistency30d: number;
   freezesUsedThisWeek: number;
+  isDuration: boolean;
   completedToday: boolean;
+  inProgress?: boolean;
+  startedAt?: string | null;
   whyToday: string | null;
   whyMonth: string | null;
   whyYear: string | null;
@@ -79,6 +82,7 @@ export interface CreateHabitPayload {
   type: 'build' | 'break';
   routineSlot: string;
   duration?: number;
+  isDuration?: boolean;
   energyType?: string;
   lifeArea?: string;
   triggerAction?: string;

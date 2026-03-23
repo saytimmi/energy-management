@@ -61,6 +61,8 @@ export function HabitCreate({ onClose, microActionId }: Props) {
   const [name, setName] = useState("");
   const [routineSlot, setRoutineSlot] = useState<string>("morning");
   const [type, setType] = useState<"build" | "break">("build");
+  const [isDuration, setIsDuration] = useState(false);
+  const [durationMin, setDurationMin] = useState<number | null>(null);
   const [lifeArea, setLifeArea] = useState<string>("health");
 
   // Meaning (REQUIRED)
@@ -101,6 +103,8 @@ export function HabitCreate({ onClose, microActionId }: Props) {
       type,
       routineSlot,
       lifeArea,
+      isDuration,
+      ...(isDuration && durationMin ? { duration: durationMin } : {}),
       ...(microActionId ? { microActionId } : {}),
     };
 
@@ -201,6 +205,32 @@ export function HabitCreate({ onClose, microActionId }: Props) {
                 Убрать
               </button>
             </div>
+          </div>
+
+          {/* Duration toggle */}
+          <div class="form-group">
+            <div class="create-duration-toggle" onClick={() => { setIsDuration(!isDuration); haptic("light"); }}>
+              <div class="duration-toggle-info">
+                <span class="duration-toggle-label">На время</span>
+                <span class="duration-toggle-hint">Голодание, медитация, без телефона...</span>
+              </div>
+              <div class={`duration-toggle-switch${isDuration ? " on" : ""}`}>
+                <div class="duration-toggle-knob" />
+              </div>
+            </div>
+            {isDuration && (
+              <div class="create-duration-presets">
+                {[15, 30, 60, 120, 480, 960].map(m => (
+                  <button
+                    key={m}
+                    class={`duration-preset${durationMin === m ? " active" : ""}`}
+                    onClick={() => { setDurationMin(m); haptic("light"); }}
+                  >
+                    {m < 60 ? `${m}м` : `${m / 60}ч`}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div class="form-group">
