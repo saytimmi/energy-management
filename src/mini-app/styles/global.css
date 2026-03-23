@@ -853,10 +853,19 @@ body {
 .correlation-positive { color: var(--physical); }
 .correlation-negative { color: #ff6b6b; }
 
-/* ── Step Dots (HabitCreate) ── */
-.step-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
-.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--surface2); transition: all 0.3s; }
-.step-dot.active { background: var(--accent); box-shadow: 0 0 8px rgba(200, 255, 115, 0.3); }
+/* ── HabitCreate progress ── */
+.habit-create-step {
+  font-size: 13px; color: var(--text3); font-weight: 500;
+  margin-left: auto;
+}
+.create-progress {
+  height: 3px; background: var(--surface2); border-radius: 2px;
+  margin-bottom: 24px; overflow: hidden;
+}
+.create-progress-fill {
+  height: 100%; background: var(--accent); border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 /* ── Timeline Details Section ── */
 .timeline-section { margin-top: 20px; }
