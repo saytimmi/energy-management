@@ -27,12 +27,12 @@ export async function loadHabits(): Promise<void> {
   }
 }
 
-export async function toggleComplete(habit: HabitData): Promise<void> {
+export async function toggleComplete(habit: HabitData, note?: string): Promise<void> {
   try {
     if (habit.completedToday) {
       await api.uncompleteHabit(habit.id);
     } else {
-      await api.completeHabit(habit.id);
+      await api.completeHabit(habit.id, note);
     }
     await loadHabits(); // refresh
   } catch (err) {

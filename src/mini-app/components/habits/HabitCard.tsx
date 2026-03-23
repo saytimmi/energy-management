@@ -24,21 +24,40 @@ const AREA_GRADIENTS: Record<string, string> = {
 const DEFAULT_GRADIENT = "linear-gradient(135deg, rgba(200,255,115,0.12), rgba(200,255,115,0.04))";
 const DONE_GRADIENT = "linear-gradient(135deg, rgba(200,255,115,0.25), rgba(200,255,115,0.1))";
 
+function nowTimeStr(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
 export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) {
   const done = habit.completedToday;
   const [completing, setCompleting] = useState(false);
+  const [showTimeSheet, setShowTimeSheet] = useState(false);
+  const [selectedTime, setSelectedTime] = useState(nowTimeStr);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
-  async function handleComplete() {
+  async function confirmComplete() {
+    setShowTimeSheet(false);
+    setCompleting(true);
     haptic("medium");
-    if (!done) {
-      setCompleting(true);
-      await toggleComplete(habit);
-      setCompleting(false);
-      if (onCompleted) onCompleted(habit);
+    await toggleComplete(habit, `в ${selectedTime}`);
+    setCompleting(false);
+    if (onCompleted) onCompleted(habit);
+  }
+
+  async function handleUncomplete() {
+    haptic("light");
+    await toggleComplete(habit);
+  }
+
+  function handleTap() {
+    if (done) {
+      handleUncomplete();
     } else {
-      await toggleComplete(habit);
+      haptic("light");
+      setSelectedTime(nowTimeStr());
+      setShowTimeSheet(true);
     }
   }
 
@@ -60,7 +79,7 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
       e.preventDefault();
       return;
     }
-    handleComplete();
+    handleTap();
   }
 
   function onTouchMove() {
@@ -73,53 +92,86 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
   const iconGradient = done ? DONE_GRADIENT : (AREA_GRADIENTS[habit.lifeArea ?? ""] ?? DEFAULT_GRADIENT);
 
   return (
-    <div
-      class={`habit-card-v2${done ? " completed" : ""} ${completing ? "completing-card" : ""}`}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      onTouchMove={onTouchMove}
-      onMouseUp={(e) => { if (!didLongPress.current) handleComplete(); }}
-    >
-      {/* Icon with gradient background */}
-      <div class="habit-icon-wrap" style={{ background: iconGradient }}>
-        {done ? (
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M5 11l4.5 4.5 8-9.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        ) : (
-          <span class="habit-icon-emoji">{habit.icon}</span>
-        )}
-      </div>
-
-      {/* Info */}
-      <div class="habit-card-info">
-        <span class={`habit-card-name${done ? " done" : ""}`}>
-          {habit.name}
-        </span>
-        <div class="habit-card-meta">
-          {habit.streakCurrent > 0 && (
-            <span class="habit-streak-pill">
-              <span class="streak-fire">🔥</span> {habit.streakCurrent}д
-            </span>
-          )}
-          {habit.stage === "growth" && <span class="habit-stage-pill">🌿</span>}
-          {habit.stage === "autopilot" && <span class="habit-stage-pill">🌳</span>}
-        </div>
-      </div>
-
-      {/* Detail arrow */}
-      <button
-        class="habit-detail-arrow"
-        onClick={(e) => {
-          e.stopPropagation();
-          haptic("light");
-          if (onOpenDetail) onOpenDetail(habit);
-        }}
+    <>
+      <div
+        class={`habit-card-v2${done ? " completed" : ""} ${completing ? "completing-card" : ""}`}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onTouchMove={onTouchMove}
+        onMouseUp={() => { if (!didLongPress.current) handleTap(); }}
       >
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <path d="M7 13l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
+        {/* Icon with gradient background */}
+        <div class="habit-icon-wrap" style={{ background: iconGradient }}>
+          {done ? (
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M5 11l4.5 4.5 8-9.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          ) : (
+            <span class="habit-icon-emoji">{habit.icon}</span>
+          )}
+        </div>
+
+        {/* Info */}
+        <div class="habit-card-info">
+          <span class={`habit-card-name${done ? " done" : ""}`}>
+            {habit.name}
+          </span>
+          <div class="habit-card-meta">
+            {habit.streakCurrent > 0 && (
+              <span class="habit-streak-pill">
+                <span class="streak-fire">🔥</span> {habit.streakCurrent}д
+              </span>
+            )}
+            {habit.stage === "growth" && <span class="habit-stage-pill">🌿</span>}
+            {habit.stage === "autopilot" && <span class="habit-stage-pill">🌳</span>}
+          </div>
+        </div>
+
+        {/* Detail arrow */}
+        <button
+          class="habit-detail-arrow"
+          onClick={(e) => {
+            e.stopPropagation();
+            haptic("light");
+            if (onOpenDetail) onOpenDetail(habit);
+          }}
+          onTouchEnd={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M7 13l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Time confirmation sheet */}
+      {showTimeSheet && (
+        <div class="time-sheet-overlay" onClick={() => setShowTimeSheet(false)}>
+          <div class="time-sheet" onClick={(e) => e.stopPropagation()}>
+            <div class="time-sheet-header">
+              <span class="time-sheet-icon">{habit.icon}</span>
+              <span class="time-sheet-title">{habit.name}</span>
+            </div>
+            <div class="time-sheet-body">
+              <label class="time-sheet-label">Во сколько выполнил?</label>
+              <input
+                type="time"
+                class="time-sheet-input"
+                value={selectedTime}
+                onInput={(e) => setSelectedTime((e.target as HTMLInputElement).value)}
+              />
+            </div>
+            <div class="time-sheet-actions">
+              <button class="time-sheet-cancel" onClick={() => setShowTimeSheet(false)}>
+                Отмена
+              </button>
+              <button class="time-sheet-confirm" onClick={confirmComplete}>
+                Выполнено
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

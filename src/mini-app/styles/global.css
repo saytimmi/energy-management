@@ -624,6 +624,69 @@ body {
 }
 .habit-fab:active { transform: scale(0.92); box-shadow: 0 2px 12px rgba(200, 255, 115, 0.2); }
 
+/* ── Time Sheet (completion confirmation) ── */
+.time-sheet-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+.time-sheet {
+  width: 100%; max-width: 420px;
+  background: var(--surface-solid);
+  border: 1px solid var(--surface-border);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px calc(env(safe-area-inset-bottom, 16px) + 20px);
+  animation: sheetUp 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.time-sheet-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+.time-sheet-icon { font-size: 24px; }
+.time-sheet-title { font-size: 17px; font-weight: 600; }
+.time-sheet-body { margin-bottom: 24px; }
+.time-sheet-label {
+  display: block; font-size: 13px; color: var(--text2);
+  margin-bottom: 10px;
+}
+.time-sheet-input {
+  width: 100%; padding: 14px 16px;
+  background: var(--surface2); color: var(--text);
+  border: 1.5px solid var(--surface-border);
+  border-radius: 12px; font-size: 18px; font-family: inherit;
+  text-align: center; font-weight: 600;
+  -webkit-appearance: none;
+}
+.time-sheet-input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200, 255, 115, 0.15);
+}
+.time-sheet-actions {
+  display: flex; gap: 10px;
+}
+.time-sheet-cancel {
+  flex: 1; padding: 14px;
+  background: var(--surface2); color: var(--text2);
+  border: none; border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.time-sheet-cancel:active { transform: scale(0.97); }
+.time-sheet-confirm {
+  flex: 2; padding: 14px;
+  background: var(--accent); color: var(--bg);
+  border: none; border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 4px 16px rgba(200, 255, 115, 0.2);
+}
+.time-sheet-confirm:active { transform: scale(0.97); }
+
 /* ── Habit Create ── */
 .habit-create {
   padding: 20px;
@@ -706,7 +769,7 @@ body {
 }
 .create-error { color: #ff6b6b; font-size: 13px; text-align: center; margin-top: 8px; }
 
-/* Submit button */
+/* Submit button — sticky above keyboard */
 .create-submit-btn {
   width: 100%; padding: 16px;
   background: var(--accent); color: var(--bg);
@@ -715,6 +778,9 @@ body {
   cursor: pointer; flex-shrink: 0;
   transition: opacity 0.15s, transform 0.1s;
   box-shadow: 0 4px 20px rgba(200, 255, 115, 0.2);
+  position: sticky; bottom: 16px;
+  margin-top: auto;
+  z-index: 10;
 }
 .create-submit-btn:active { transform: scale(0.98); }
 .create-submit-btn:disabled { opacity: 1; background: var(--surface2); color: var(--text3); cursor: not-allowed; box-shadow: none; }
