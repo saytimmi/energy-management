@@ -204,20 +204,20 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
         )}
       </div>
 
+      {/* Duration info */}
+      {habit.duration && (
+        <div class="detail-duration-info">
+          {habit.duration < 60 ? `${habit.duration} мин` : `${Math.floor(habit.duration / 60)} ч${habit.duration % 60 ? ` ${habit.duration % 60} мин` : ""}`}
+          {habit.isDuration ? " (с таймером)" : ""}
+        </div>
+      )}
+
       {/* Heatmap */}
       <div class="detail-section-title">Месяц</div>
       {statsLoading.value ? (
         <div style={{ textAlign: "center", padding: "20px", opacity: 0.5 }}>Загрузка...</div>
       ) : s?.heatmap ? (
-        <div class="detail-heatmap">
-          {s.heatmap.map((day) => (
-            <div
-              key={day.date}
-              class={`detail-heatmap-dot ${day.completed ? "detail-heatmap-done" : "detail-heatmap-missed"}`}
-              title={day.date}
-            />
-          ))}
-        </div>
+        <MonthHeatmap heatmap={s.heatmap} />
       ) : (
         <div style={{ textAlign: "center", padding: "20px", opacity: 0.5 }}>Нет данных</div>
       )}
@@ -297,4 +297,47 @@ function MeaningField({ label, placeholder, value, onInput }: {
 
 function hasAnyWhy(h: HabitData): boolean {
   return !!(h.whyToday || h.whyMonth || h.whyYear || h.whyIdentity || h.isItBeneficial || h.breakTrigger || h.replacement);
+}
+
+const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+function MonthHeatmap({ heatmap }: { heatmap: Array<{ date: string; completed: boolean }> }) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Build calendar grid aligned to weekdays
+  const firstDate = new Date(heatmap[0].date);
+  // JS: 0=Sun, we want 0=Mon
+  const firstDow = (firstDate.getDay() + 6) % 7;
+
+  // Create data map
+  const dataMap = new Map(heatmap.map(d => [d.date, d.completed]));
+
+  // Pad start with empty cells
+  const cells: Array<{ date: string; completed: boolean; dayNum: number } | null> = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (const d of heatmap) {
+    cells.push({ date: d.date, completed: d.completed, dayNum: parseInt(d.date.slice(8)) });
+  }
+
+  return (
+    <div class="month-heatmap">
+      <div class="month-heatmap-header">
+        {DAY_NAMES.map(d => <div key={d} class="month-heatmap-day-name">{d}</div>)}
+      </div>
+      <div class="month-heatmap-grid">
+        {cells.map((cell, i) =>
+          cell ? (
+            <div
+              key={cell.date}
+              class={`month-heatmap-cell${cell.completed ? " done" : ""}${cell.date === today ? " today" : ""}`}
+            >
+              {cell.dayNum}
+            </div>
+          ) : (
+            <div key={`empty-${i}`} class="month-heatmap-cell empty" />
+          )
+        )}
+      </div>
+    </div>
+  );
 }

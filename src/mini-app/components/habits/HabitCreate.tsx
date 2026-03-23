@@ -104,7 +104,7 @@ export function HabitCreate({ onClose, microActionId }: Props) {
       routineSlot,
       lifeArea,
       isDuration,
-      ...(isDuration && durationMin ? { duration: durationMin } : {}),
+      ...(durationMin ? { duration: durationMin } : {}),
       ...(microActionId ? { microActionId } : {}),
     };
 
@@ -207,30 +207,33 @@ export function HabitCreate({ onClose, microActionId }: Props) {
             </div>
           </div>
 
+          {/* Duration */}
+          <div class="form-group">
+            <label class="form-label">Сколько времени</label>
+            <div class="create-duration-presets">
+              {(isDuration ? [15, 30, 60, 120, 480, 960] : [5, 10, 15, 20, 30, 60]).map(m => (
+                <button
+                  key={m}
+                  class={`duration-preset${durationMin === m ? " active" : ""}`}
+                  onClick={() => { setDurationMin(durationMin === m ? null : m); haptic("light"); }}
+                >
+                  {m < 60 ? `${m}м` : `${m / 60}ч`}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Duration toggle */}
           <div class="form-group">
-            <div class="create-duration-toggle" onClick={() => { setIsDuration(!isDuration); haptic("light"); }}>
+            <div class="create-duration-toggle" onClick={() => { setIsDuration(!isDuration); setDurationMin(null); haptic("light"); }}>
               <div class="duration-toggle-info">
-                <span class="duration-toggle-label">На время</span>
-                <span class="duration-toggle-hint">Голодание, медитация, без телефона...</span>
+                <span class="duration-toggle-label">С таймером</span>
+                <span class="duration-toggle-hint">Начать → отслеживать → Завершить</span>
               </div>
               <div class={`duration-toggle-switch${isDuration ? " on" : ""}`}>
                 <div class="duration-toggle-knob" />
               </div>
             </div>
-            {isDuration && (
-              <div class="create-duration-presets">
-                {[15, 30, 60, 120, 480, 960].map(m => (
-                  <button
-                    key={m}
-                    class={`duration-preset${durationMin === m ? " active" : ""}`}
-                    onClick={() => { setDurationMin(m); haptic("light"); }}
-                  >
-                    {m < 60 ? `${m}м` : `${m / 60}ч`}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <div class="form-group">

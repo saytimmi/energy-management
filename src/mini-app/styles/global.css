@@ -964,10 +964,30 @@ body {
 .detail-why-item { padding: 6px 0; font-size: 14px; }
 .detail-why-label { font-size: 12px; color: var(--text3); }
 
-.detail-heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.detail-heatmap-dot { aspect-ratio: 1; border-radius: 4px; }
-.detail-heatmap-done { background: var(--accent); }
-.detail-heatmap-missed { background: var(--surface2); }
+/* Detail duration info */
+.detail-duration-info {
+  text-align: center; padding: 8px 16px; margin-bottom: 16px;
+  background: var(--surface); border-radius: var(--radius-xs);
+  font-size: 14px; color: var(--text2);
+}
+
+/* Month heatmap */
+.month-heatmap { margin-bottom: 8px; }
+.month-heatmap-header {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  margin-bottom: 6px;
+}
+.month-heatmap-day-name {
+  text-align: center; font-size: 11px; color: var(--text3); font-weight: 500;
+}
+.month-heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.month-heatmap-cell {
+  aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--text3); background: var(--surface2);
+}
+.month-heatmap-cell.done { background: var(--accent); color: var(--bg); font-weight: 600; }
+.month-heatmap-cell.today { border: 2px solid var(--accent); box-shadow: 0 0 8px rgba(200, 255, 115, 0.2); }
+.month-heatmap-cell.empty { background: transparent; }
 
 /* Hub Habits Card */
 .hub-habits-progress { height: 6px; background: var(--surface2); border-radius: 3px; margin: 8px 0; overflow: hidden; }

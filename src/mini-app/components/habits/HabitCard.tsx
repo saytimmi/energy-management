@@ -29,6 +29,13 @@ function nowTimeStr(): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}м`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}ч ${m}м` : `${h}ч`;
+}
+
 function formatElapsed(startedAt: string): string {
   const start = new Date(startedAt).getTime();
   const now = Date.now();
@@ -142,12 +149,14 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
       ? PROGRESS_GRADIENT
       : (AREA_GRADIENTS[habit.lifeArea ?? ""] ?? DEFAULT_GRADIENT);
 
-  // Status label for duration habits
+  // Status label
   let statusLabel: string | null = null;
   if (isDuration && inProgress && elapsed) {
     statusLabel = elapsed;
   } else if (isDuration && !done && !inProgress) {
-    statusLabel = habit.duration ? `${habit.duration}м` : "На время";
+    statusLabel = habit.duration ? formatDuration(habit.duration) : "На время";
+  } else if (!isDuration && !done && habit.duration) {
+    statusLabel = formatDuration(habit.duration);
   }
 
   return (
@@ -181,7 +190,7 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
             {inProgress && statusLabel && (
               <span class="habit-timer-pill">{statusLabel}</span>
             )}
-            {!inProgress && isDuration && !done && statusLabel && (
+            {!inProgress && !done && statusLabel && (
               <span class="habit-duration-pill">{statusLabel}</span>
             )}
             {habit.streakCurrent > 0 && (
