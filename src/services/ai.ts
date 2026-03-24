@@ -144,6 +144,25 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "set_vacation_mode",
+    description: `Включить/выключить режим паузы (отпуск, болезнь, перегрузка). Все привычки замораживаются, уведомления отключаются.
+
+Примеры:
+- "я заболел" → enabled: true, reason: "болезнь"
+- "в отпуске на неделю" → enabled: true, days: 7, reason: "отпуск"
+- "устал от всего, пауза" → enabled: true, days: 3, reason: "перегрузка"
+- "я вернулся" / "конец паузы" → enabled: false`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        enabled: { type: "boolean", description: "true = включить паузу, false = выключить" },
+        days: { type: "number", description: "На сколько дней (auto-resume). Если не указано — бессрочно до ручного выключения." },
+        reason: { type: "string", description: "Причина: болезнь, отпуск, перегрузка" },
+      },
+      required: ["enabled"],
+    },
+  },
+  {
     name: "rate_life_area",
     description: "Сохранить оценку сферы жизни (колесо баланса). Используй после обсуждения аспектов сферы. Для AI-guided assessment заполни subScores по каждому аспекту.",
     input_schema: {
@@ -654,6 +673,61 @@ async function executeTool(
         text: `Часовой пояс обновлён: ${input.timezone}${input.city ? ` (${input.city})` : ""}. Сейчас у пользователя ${nowLocal}. Утренний чекин в 09:00, вечерний в 21:00 по местному.`,
         actions: [],
       };
+    }
+
+    case "set_vacation_mode": {
+      const input = toolInput as { enabled: boolean; days?: number; reason?: string };
+
+      if (input.enabled) {
+        const vacationUntil = input.days
+          ? new Date(Date.now() + input.days * 24 * 60 * 60 * 1000)
+          : null;
+
+        // Pause all active habits
+        await prisma.habit.updateMany({
+          where: { userId, isActive: true, pausedAt: null },
+          data: {
+            pausedAt: new Date(),
+            pausedUntil: vacationUntil,
+          },
+        });
+
+        // Set vacation on user
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            vacationUntil,
+            vacationReason: input.reason || "пауза",
+          },
+        });
+
+        const untilText = vacationUntil
+          ? `до ${vacationUntil.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}`
+          : "до ручного выключения";
+        const reasonText = input.reason || "пауза";
+
+        return {
+          text: `Режим паузы включён (${reasonText}) ${untilText}. Все привычки заморожены, уведомления отключены. Стрики не пострадают.`,
+          actions: [],
+        };
+      } else {
+        // Disable vacation
+        await prisma.user.update({
+          where: { id: userId },
+          data: { vacationUntil: null, vacationReason: null },
+        });
+
+        // Resume all habits that were paused for vacation
+        await prisma.habit.updateMany({
+          where: { userId, isActive: true, pausedAt: { not: null } },
+          data: { pausedAt: null, pausedUntil: null },
+        });
+
+        return {
+          text: "С возвращением! Пауза снята, привычки разморожены. Как ты себя чувствуешь?",
+          actions: [],
+        };
+      }
     }
 
     case "rate_life_area": {
