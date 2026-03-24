@@ -8,26 +8,26 @@ datasource db {
 }
 
 model User {
-  id           Int            @id @default(autoincrement())
-  telegramId   BigInt         @unique
-  firstName    String
-  lastName     String?
-  username     String?
-  timezone     String         @default("Asia/Shanghai")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  energyLogs   EnergyLog[]
-  messages     Message[]
-  sessions     Session[]
-  observations Observation[]
+  id             Int             @id @default(autoincrement())
+  telegramId     BigInt          @unique
+  firstName      String
+  lastName       String?
+  username       String?
+  timezone       String          @default("Asia/Shanghai")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  energyLogs     EnergyLog[]
+  messages       Message[]
+  sessions       Session[]
+  observations   Observation[]
   habits         Habit[]
   habitLogs      HabitLog[]
   balanceRatings BalanceRating[]
-  mission       Mission?
-  balanceGoals  BalanceGoal[]
-  goals         Goal[]
-  algorithms    Algorithm[]
-  reflections   Reflection[]
+  mission        Mission?
+  balanceGoals   BalanceGoal[]
+  goals          Goal[]
+  algorithms     Algorithm[]
+  reflections    Reflection[]
 }
 
 model EnergyLog {
@@ -56,15 +56,15 @@ model Message {
 }
 
 model Session {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  status    String    @default("active")
-  summary   String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user      User      @relation(fields: [userId], references: [id])
-  messages  Message[]
-  reflections   Reflection[]
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  status      String       @default("active")
+  summary     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id])
+  messages    Message[]
+  reflections Reflection[]
 }
 
 model ErrorLog {
@@ -101,45 +101,45 @@ model Observation {
 }
 
 model Habit {
-  id              Int        @id @default(autoincrement())
-  userId          Int
-  user            User       @relation(fields: [userId], references: [id])
-  name            String
-  icon            String
-  type            String     // "build" | "break"
-  routineSlot     String     // "morning" | "afternoon" | "evening"
-  sortOrder       Int        @default(0)
-  lifeArea        String?    // "health" | "career" | "relationships" | "finances" | "family" | "growth" | "recreation" | "environment"
-  energyType      String?
-  frequency       String     @default("daily")
-  customDays      String?
-  triggerAction   String?
-  duration        Int?       // target duration in minutes (for duration-based habits)
-  isDuration      Boolean    @default(false)  // true = duration habit (start→finish)
-  whyToday        String?
-  whyMonth        String?
-  whyYear         String?
-  whyIdentity     String?
-  isItBeneficial  String?
-  breakTrigger    String?
-  replacement     String?
-  stage           String     @default("seed")
-  stageUpdatedAt  DateTime   @default(now())
-  streakCurrent   Int        @default(0)
-  streakBest      Int        @default(0)
-  consistency30d  Float      @default(0)
-  freezesUsedThisWeek Int    @default(0)
-  strength        Float    @default(0)     // "habit strength" 0-100, grows slowly, decays gently
-  gracePeriod     Int      @default(2)     // max skips per week without losing streak
-  gracesUsed      Int      @default(0)     // skips used this week
-  minimalDose     String?                  // e.g. "5 мин растяжки" — reduced version for low energy
-  pausedAt        DateTime?
-  pausedUntil     DateTime?
-  microActionId   String?
-  isActive        Boolean    @default(true)
-  logs            HabitLog[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                  Int        @id @default(autoincrement())
+  userId              Int
+  user                User       @relation(fields: [userId], references: [id])
+  name                String
+  icon                String
+  type                String // "build" | "break"
+  routineSlot         String // "morning" | "afternoon" | "evening"
+  sortOrder           Int        @default(0)
+  lifeArea            String? // "health" | "career" | "relationships" | "finances" | "family" | "growth" | "recreation" | "environment"
+  energyType          String?
+  frequency           String     @default("daily")
+  customDays          String?
+  triggerAction       String?
+  duration            Int? // target duration in minutes (for duration-based habits)
+  isDuration          Boolean    @default(false) // true = duration habit (start→finish)
+  whyToday            String?
+  whyMonth            String?
+  whyYear             String?
+  whyIdentity         String?
+  isItBeneficial      String?
+  breakTrigger        String?
+  replacement         String?
+  stage               String     @default("seed")
+  stageUpdatedAt      DateTime   @default(now())
+  streakCurrent       Int        @default(0)
+  streakBest          Int        @default(0)
+  consistency30d      Float      @default(0)
+  freezesUsedThisWeek Int        @default(0)
+  strength            Float      @default(0) // "habit strength" 0-100, grows slowly, decays gently
+  gracePeriod         Int        @default(2) // max skips per week without losing streak
+  gracesUsed          Int        @default(0) // skips used this week
+  minimalDose         String? // e.g. "5 мин растяжки" — reduced version for low energy
+  pausedAt            DateTime?
+  pausedUntil         DateTime?
+  microActionId       String?
+  isActive            Boolean    @default(true)
+  logs                HabitLog[]
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 }
 
 model HabitLog {
@@ -149,7 +149,7 @@ model HabitLog {
   userId      Int
   user        User      @relation(fields: [userId], references: [id])
   date        DateTime  @db.Date
-  startedAt   DateTime?                      // when duration habit was started
+  startedAt   DateTime? // when duration habit was started
   completedAt DateTime  @default(now())
   status      String    @default("completed") // "started" | "completed"
   note        String?
@@ -158,13 +158,13 @@ model HabitLog {
 }
 
 model BalanceRating {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  area      String   // "health" | "career" | "relationships" | "finances" | "family" | "growth" | "recreation" | "environment"
-  score     Int      // 1-10
-  note      String?
-  createdAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  area           String // "health" | "career" | "relationships" | "finances" | "family" | "growth" | "recreation" | "environment"
+  score          Int // 1-10
+  note           String?
+  createdAt      DateTime @default(now())
   subScores      Json?
   assessmentType String   @default("subjective")
 
