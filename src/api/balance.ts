@@ -190,4 +190,37 @@ export default function balanceRoute(router: Router): void {
       res.status(500).json({ error: "internal_error" });
     }
   });
+
+  // POST /api/balance/rate — bulk quick rating from Mini App
+  router.post("/balance/rate", async (req: Request, res: Response) => {
+    const userId = (req as any).userId as number;
+    const { ratings } = req.body as { ratings: Array<{ area: string; score: number; subScores?: Record<string, number> }> };
+
+    if (!ratings || !Array.isArray(ratings) || ratings.length === 0) {
+      res.status(400).json({ error: "ratings array required" }); return;
+    }
+
+    try {
+      let updated = 0;
+      for (const r of ratings) {
+        if (!LIFE_AREAS.includes(r.area as any)) continue;
+        if (!Number.isInteger(r.score) || r.score < 1 || r.score > 10) continue;
+
+        await prisma.balanceRating.create({
+          data: {
+            userId,
+            area: r.area,
+            score: r.score,
+            subScores: r.subScores ?? undefined,
+            assessmentType: "quick",
+          },
+        });
+        updated++;
+      }
+      res.json({ ok: true, updated });
+    } catch (err) {
+      console.error("Balance rate API error:", err);
+      res.status(500).json({ error: "internal_error" });
+    }
+  });
 }

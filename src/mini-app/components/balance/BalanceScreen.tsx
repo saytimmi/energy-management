@@ -1,14 +1,18 @@
 import { useEffect } from "preact/hooks";
+import { signal } from "@preact/signals";
 import { RadarChart } from "./RadarChart";
 import { BalanceDetail } from "./BalanceDetail";
 import { StrategyScreen } from "./StrategyScreen";
+import { BalanceRateOverlay } from "./BalanceRateOverlay";
 import {
   balanceOverview, radarData, balanceLoading, balanceError,
-  loadBalanceOverview,
+  loadBalanceOverview, resetBalanceCache,
 } from "../../store/balance";
 import { navigate } from "../../router";
 import { haptic } from "../../telegram";
 import type { BalanceAreaSummary } from "../../api/types";
+
+const showRate = signal(false);
 
 interface BalanceScreenProps {
   param?: string;
@@ -46,11 +50,7 @@ export function BalanceScreen({ param }: BalanceScreenProps) {
 
   const handleAssess = () => {
     haptic("medium");
-    // Deep link to Telegram bot
-    const botUsername = getBotUsername();
-    if (botUsername) {
-      window.open(`https://t.me/${botUsername}?text=${encodeURIComponent("баланс")}`, "_blank");
-    }
+    showRate.value = true;
   };
 
   if (loading && !overview) {
@@ -107,7 +107,7 @@ export function BalanceScreen({ param }: BalanceScreenProps) {
           <div class="balance-empty-radar">
             <div style={{ fontSize: "32px", marginBottom: "12px" }}>⚖️</div>
             <div style={{ fontSize: "14px", color: "var(--text2)", marginBottom: "16px", lineHeight: 1.5 }}>
-              Оцени баланс жизни через AI коуча — он поможет разобрать каждую сферу по аспектам
+              Оцени удовлетворённость каждой сферой жизни
             </div>
             <button class="balance-assess-btn" onClick={handleAssess}>
               Оценить баланс
@@ -118,30 +118,39 @@ export function BalanceScreen({ param }: BalanceScreenProps) {
         {/* Assess button (when data exists) */}
         {hasAnyScores && (
           <button class="balance-reassess-btn" onClick={handleAssess}>
-            🔄 Обновить оценку через AI коуча
+            🔄 Обновить оценку
           </button>
         )}
 
         {/* Area list */}
         {overview && (
           <div class="balance-area-list">
-            {/* Focus areas first, then by score ascending (worst first) */}
             {sortAreas(overview.areas).map(area => (
               <AreaRow key={area.area} area={area} onClick={() => handleAreaClick(area.area)} />
             ))}
           </div>
         )}
       </main>
+
+      {showRate.value && (
+        <BalanceRateOverlay
+          areas={overview?.areas}
+          onClose={() => { showRate.value = false; }}
+          onComplete={() => {
+            showRate.value = false;
+            resetBalanceCache();
+            loadBalanceOverview();
+          }}
+        />
+      )}
     </div>
   );
 }
 
 function sortAreas(areas: BalanceAreaSummary[]): BalanceAreaSummary[] {
   return [...areas].sort((a, b) => {
-    // Focus areas first
     if (a.isFocus && !b.isFocus) return -1;
     if (!a.isFocus && b.isFocus) return 1;
-    // Then by score ascending (critical first), null last
     const sa = a.score ?? 99;
     const sb = b.score ?? 99;
     return sa - sb;
@@ -180,12 +189,4 @@ function AreaRow({ area, onClick }: AreaRowProps) {
       </div>
     </div>
   );
-}
-
-function getBotUsername(): string | null {
-  try {
-    return (window as any).Telegram?.WebApp?.initDataUnsafe?.user ? "energy_coach_bot" : null;
-  } catch {
-    return null;
-  }
 }
