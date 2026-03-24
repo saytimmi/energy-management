@@ -74,6 +74,13 @@ async function flushBuffer(userId: number) {
 
     // Handle actions (e.g., start checkin with InlineKeyboard)
     await handleChatActions(userId, result.actions);
+
+    // If neither text nor actions were sent, ensure user gets something
+    if (!result.text.trim() && result.actions.length === 0) {
+      try {
+        await bot.api.sendMessage(userId, "Хм, не совсем понял. Расскажи подробнее — что ты хочешь сделать?");
+      } catch {}
+    }
   } catch (err) {
     // Catch-all: always respond to user, never leave them hanging
     await trackError("bot", err, { handler: "flushBuffer", userId });

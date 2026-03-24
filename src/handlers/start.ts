@@ -50,7 +50,8 @@ export async function startHandler(ctx: CommandContext<Context>) {
       "Привет, я снова тут",
       from.first_name,
     );
-    await ctx.reply(result.text, {
+    const text = result.text.trim() || "С возвращением! Чем могу помочь?";
+    await ctx.reply(text, {
       reply_markup: getMainKeyboard(),
     });
     return;
@@ -74,7 +75,8 @@ export async function startHandler(ctx: CommandContext<Context>) {
       "Привет! Я только что нажал /start. Я возвращаюсь — посмотри в историю. Поприветствуй коротко и тепло.",
       from.first_name,
     );
-    await ctx.reply(result.text, {
+    const text = result.text.trim() || `Привет, ${from.first_name}! Рад видеть снова 👋`;
+    await ctx.reply(text, {
       reply_markup: getMainKeyboard(),
     });
   }

@@ -202,18 +202,18 @@ async function executeTool(
         replacement?: string;
       };
 
-      // Check for duplicate
+      // Check for duplicate — exact name match only (case-insensitive)
       const existing = await prisma.habit.findFirst({
         where: {
           userId,
-          name: { contains: input.name.substring(0, 20), mode: "insensitive" },
+          name: { equals: input.name, mode: "insensitive" },
           isActive: true,
         },
       });
 
       if (existing) {
         return {
-          text: `Привычка "${existing.name}" уже существует (id: ${existing.id}, icon: ${existing.icon}, slot: ${existing.routineSlot}).`,
+          text: `Привычка "${existing.name}" уже существует (id: ${existing.id}, icon: ${existing.icon}, slot: ${existing.routineSlot}). Создать с другим названием?`,
           actions: [],
         };
       }
@@ -520,10 +520,15 @@ export async function chat(
       );
       const text = textBlocks.map((b) => b.text).join("\n");
       if (!text && allActions.length > 0) {
-        // AI used tools but didn't produce text — don't send empty/emoji reply
+        // AI used tools but didn't produce text — actions speak for themselves
         return "";
       }
-      return text || "👍";
+      if (!text) {
+        // No text and no actions — force a non-empty response
+        // This should rarely happen; "👍" was causing user frustration
+        return "";
+      }
+      return text;
     }, { historyLength: String(history.length) });
 
     // Extract observations and clean reply
