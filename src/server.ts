@@ -9,6 +9,7 @@ import { observationsRoute } from "./api/observations.js";
 import { checkinTriggerRoute } from "./api/checkin-trigger.js";
 import { habitsRoute } from "./api/habits.js";
 import { diagnosticsRoute } from "./api/diagnostics.js";
+import balanceRoute from "./api/balance.js";
 import { telegramAuth } from "./middleware/telegram-auth.js";
 import { config } from "./config.js";
 
@@ -46,6 +47,7 @@ export function startServer(port?: number): http.Server {
   observationsRoute(authedRouter);
   checkinTriggerRoute(authedRouter);
   habitsRoute(authedRouter);
+  balanceRoute(authedRouter);
   app.use("/api", authedRouter);
 
   server = app.listen(listenPort, "0.0.0.0", () => {
