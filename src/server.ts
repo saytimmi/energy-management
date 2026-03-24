@@ -11,6 +11,9 @@ import { habitsRoute } from "./api/habits.js";
 import { diagnosticsRoute } from "./api/diagnostics.js";
 import balanceRoute from "./api/balance.js";
 import { kaizenApiRoutes } from "./api/kaizen-api.js";
+import { missionRoute } from "./api/mission.js";
+import { goalsRoute } from "./api/goals.js";
+import { strategyRoute } from "./api/strategy.js";
 import { telegramAuth } from "./middleware/telegram-auth.js";
 import { config } from "./config.js";
 
@@ -23,7 +26,7 @@ export function startServer(port?: number): http.Server {
   // CORS for Telegram WebView
   app.use((_req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     next();
   });
@@ -50,6 +53,9 @@ export function startServer(port?: number): http.Server {
   habitsRoute(authedRouter);
   balanceRoute(authedRouter);
   kaizenApiRoutes(authedRouter);
+  missionRoute(authedRouter);
+  goalsRoute(authedRouter);
+  strategyRoute(authedRouter);
   app.use("/api", authedRouter);
 
   server = app.listen(listenPort, "0.0.0.0", () => {
