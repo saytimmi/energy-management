@@ -3,6 +3,7 @@ import { EnergyCard } from "./EnergyCard";
 import { BalanceCard } from "./BalanceCard";
 import { HabitsCard } from "./HabitsCard";
 import { KaizenCard } from "./KaizenCard";
+import { StrategyCard } from "./StrategyCard";
 import { loadInitialData, isLoading, hasError, hasNoData } from "../../store/energy";
 import { LoadingScreen, WelcomeScreen, ErrorScreen } from "../shared/Loading";
 import { getTelegramUser } from "../../telegram";
@@ -35,6 +36,7 @@ export function Hub() {
           <EnergyCard />
           <BalanceCard />
           <HabitsCard />
+          <StrategyCard />
           <KaizenCard />
         </div>
       </main>
