@@ -3,6 +3,7 @@ import { sendScheduledCheckins } from "./checkin-sender.js";
 import { runDailyHabitCron, runWeeklyHabitReset } from "./habit-cron.js";
 import { sendWeeklyDigest } from "./weekly-digest.js";
 import { sendRoutineReminders } from "./habit-cron.js";
+import { checkBalanceAssessment } from "./balance-cron.js";
 
 const tasks: ScheduledTask[] = [];
 
@@ -61,6 +62,13 @@ export function startScheduler(): void {
   }, { timezone: "Asia/Shanghai" });
   tasks.push(weeklyDigest);
   console.log("Weekly digest scheduled: 0 20 * * 0 (Asia/Shanghai)");
+
+  // Balance assessment check — daily at 10:00, sends if >=14 days since last
+  const balanceCheck = cron.schedule("0 10 * * *", () => {
+    checkBalanceAssessment().catch(err => console.error("Balance assessment check failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(balanceCheck);
+  console.log("Balance assessment check scheduled: 0 10 * * * (Asia/Shanghai)");
 }
 
 export function stopScheduler(): void {
