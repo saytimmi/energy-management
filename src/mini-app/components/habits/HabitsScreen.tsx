@@ -8,6 +8,7 @@ import { RoutineFlow } from "./RoutineFlow";
 import { HabitCreate } from "./HabitCreate";
 import { HabitDetail } from "./HabitDetail";
 import { MilestoneToast } from "./MilestoneToast";
+import { Skeleton, SkeletonCard } from "../shared/Skeleton";
 import { haptic } from "../../telegram";
 import type { HabitData } from "../../api/types";
 
@@ -88,8 +89,8 @@ export function HabitsScreen() {
   if (routineFlowSlot.value && data) {
     const slotHabits = data[routineFlowSlot.value as keyof typeof data] ?? [];
     const slotLabels: Record<string, string> = {
-      morning: "☀️ Утренняя рутина",
-      afternoon: "🌤 Дневная рутина",
+      morning: "🌅 Утренняя рутина",
+      afternoon: "☀️ Дневная рутина",
       evening: "🌙 Вечерняя рутина",
     };
     return (
@@ -126,9 +127,14 @@ export function HabitsScreen() {
 
   if (habitsLoading.value && !habitsData.value) {
     return (
-      <div class="screen loading-screen">
-        <div class="pulse-ring" />
-        <p class="loading-text">Загружаю привычки...</p>
+      <div class="habits-screen">
+        <SkeletonCard style={{ marginBottom: "12px" }}>
+          <Skeleton width="40%" height="24px" style={{ marginBottom: "8px" }} />
+          <Skeleton width="100%" height="8px" radius="4px" />
+        </SkeletonCard>
+        {[0, 1, 2].map((i) => (
+          <SkeletonCard key={i} style={{ marginBottom: "10px" }} />
+        ))}
       </div>
     );
   }

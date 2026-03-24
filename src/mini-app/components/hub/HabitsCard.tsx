@@ -3,10 +3,11 @@ import { habitsData, todayProgress, loadHabits } from "../../store/habits";
 import { navigate } from "../../router";
 import { haptic } from "../../telegram";
 import { Card } from "../shared/Card";
+import { Skeleton } from "../shared/Skeleton";
 
 const SLOT_EMOJI: Record<string, string> = {
-  morning: "☀️",
-  afternoon: "🌤",
+  morning: "🌅",
+  afternoon: "☀️",
   evening: "🌙",
 };
 
@@ -29,7 +30,10 @@ export function HabitsCard() {
         <div class="hub-card-header">
           <span class="hub-card-title">Привычки</span>
         </div>
-        <div class="hub-card-empty">Загрузка...</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <Skeleton width="70%" height="14px" />
+          <Skeleton width="50%" height="12px" />
+        </div>
       </Card>
     );
   }

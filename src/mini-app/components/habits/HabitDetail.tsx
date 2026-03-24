@@ -3,6 +3,7 @@ import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import type { HabitData, HabitStats } from "../../api/types";
 import { api } from "../../api/client";
+import { Skeleton } from "../shared/Skeleton";
 import { updateHabit, deleteHabit, pauseHabit, resumeHabit, loadHabits } from "../../store/habits";
 import { haptic, hapticSuccess } from "../../telegram";
 import { StageIndicator } from "./StageIndicator";
@@ -240,7 +241,11 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
       {/* Heatmap */}
       <div class="detail-section-title">Месяц</div>
       {statsLoading.value ? (
-        <div style={{ textAlign: "center", padding: "20px", opacity: 0.5 }}>Загрузка...</div>
+        <div style={{ padding: "20px" }}>
+          <Skeleton width="60%" height="18px" style={{ marginBottom: "16px" }} />
+          <Skeleton width="100%" height="12px" style={{ marginBottom: "8px" }} />
+          <Skeleton width="80%" height="12px" />
+        </div>
       ) : s?.heatmap ? (
         <MonthHeatmap heatmap={s.heatmap} />
       ) : (
