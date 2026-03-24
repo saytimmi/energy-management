@@ -130,3 +130,81 @@ export interface HabitCorrelation {
   habitName?: string;
   habitIcon?: string;
 }
+
+// --- Balance ---
+
+export interface BalanceAreaSummary {
+  area: string;
+  label: string;
+  icon: string;
+  score: number | null;
+  targetScore: number | null;
+  identity: string | null;
+  isFocus: boolean;
+  habitCount: number;
+  lastRatedAt: string | null;
+  assessmentType: string | null;
+}
+
+export interface BalanceOverview {
+  areas: BalanceAreaSummary[];
+  avgScore: number | null;
+  ratedCount: number;
+  totalCount: number;
+  lastAssessmentDate: string | null;
+}
+
+export interface RadarPoint {
+  area: string;
+  label: string;
+  icon: string;
+  score: number;
+  targetScore: number | null;
+  isFocus: boolean;
+}
+
+export interface RadarData {
+  points: RadarPoint[];
+}
+
+export interface BalanceAspect {
+  key: string;
+  label: string;
+  score: number | null;
+}
+
+export interface BalanceAreaHabit {
+  id: number;
+  name: string;
+  icon: string;
+  streakCurrent: number;
+  consistency30d: number;
+  stage: string;
+  isDuration: boolean;
+}
+
+export interface BalanceHistoryEntry {
+  score: number;
+  note: string | null;
+  subScores: Record<string, number> | null;
+  assessmentType: string;
+  createdAt: string;
+}
+
+export interface BalanceAreaDetail {
+  area: string;
+  label: string;
+  icon: string;
+  score: number | null;
+  subScores: Record<string, number> | null;
+  aspects: BalanceAspect[];
+  assessmentType: string | null;
+  note: string | null;
+  lastRatedAt: string | null;
+  targetScore: number | null;
+  identity: string | null;
+  isFocus: boolean;
+  habits: BalanceAreaHabit[];
+  autoMetrics: Record<string, number | null>;
+  history: BalanceHistoryEntry[];
+}
