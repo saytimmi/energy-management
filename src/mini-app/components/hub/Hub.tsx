@@ -1,6 +1,8 @@
 import { useEffect } from "preact/hooks";
 import { EnergyCard } from "./EnergyCard";
+import { BalanceCard } from "./BalanceCard";
 import { HabitsCard } from "./HabitsCard";
+import { KaizenCard } from "./KaizenCard";
 import { loadInitialData, isLoading, hasError, hasNoData } from "../../store/energy";
 import { LoadingScreen, WelcomeScreen, ErrorScreen } from "../shared/Loading";
 import { getTelegramUser } from "../../telegram";
@@ -31,9 +33,9 @@ export function Hub() {
       <main class="views">
         <div class="hub-grid">
           <EnergyCard />
-          {/* Phase 2: BalanceCard */}
+          <BalanceCard />
           <HabitsCard />
-          {/* Phase 4: TasksCard */}
+          <KaizenCard />
         </div>
       </main>
     </div>
