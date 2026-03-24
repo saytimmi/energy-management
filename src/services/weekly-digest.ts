@@ -10,6 +10,7 @@ import { trackError } from "./monitor.js";
 import { InlineKeyboard } from "grammy";
 import { getHabitEnergyCorrelation } from "./habit-correlation.js";
 import Anthropic from "@anthropic-ai/sdk";
+import { isOnVacation } from "./awareness.js";
 
 // --- Types ---
 
@@ -562,6 +563,7 @@ export async function sendWeeklyDigest(): Promise<void> {
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       const insight = await analyzeWeeklyPatterns(user.id);
       if (!insight) continue; // Not enough data
 

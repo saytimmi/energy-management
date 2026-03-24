@@ -3,6 +3,7 @@
  */
 
 import prisma from "../db.js";
+import { isOnVacation } from "./awareness.js";
 import {
   calculateStreak,
   calculateConsistency30d,
@@ -11,6 +12,7 @@ import {
   calculateStrength,
 } from "./habit-streaks.js";
 import { sendMissedDayNudge, sendRoutineReminder } from "../handlers/habits.js";
+import { isOnVacation } from "./awareness.js";
 
 /**
  * Phase D intelligence: compute median completion hour for a user's habits
@@ -267,6 +269,7 @@ export async function sendRoutineReminders(slot: "morning" | "afternoon" | "even
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       await sendRoutineReminder(Number(user.telegramId), user.id, slot);
     } catch (err) {
       console.error(`[habit-cron] Failed to send ${slot} reminder to user ${user.id}:`, err);

@@ -1,6 +1,7 @@
 import prisma from "../db.js";
 import { bot } from "../bot.js";
 import { trackError } from "./monitor.js";
+import { isOnVacation } from "./awareness.js";
 
 const ASSESSMENT_INTERVAL_DAYS = 14;
 
@@ -9,6 +10,7 @@ export async function checkBalanceAssessment(): Promise<void> {
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       // Find the most recent balance rating for this user
       const lastRating = await prisma.balanceRating.findFirst({
         where: { userId: user.id },

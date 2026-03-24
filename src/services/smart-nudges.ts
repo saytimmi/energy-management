@@ -9,6 +9,7 @@ import { bot } from "../bot.js";
 import { trackError } from "./monitor.js";
 import { InlineKeyboard } from "grammy";
 import Anthropic from "@anthropic-ai/sdk";
+import { isOnVacation } from "./awareness.js";
 
 // --- Nudge types by priority ---
 
@@ -33,6 +34,7 @@ export async function sendDailyNudges(): Promise<void> {
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       const nudges = await collectNudges(user.id);
       if (nudges.length === 0) continue;
 

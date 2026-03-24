@@ -1,6 +1,7 @@
 import prisma from "../db.js";
 import { sendCheckInMessage } from "../handlers/checkin.js";
 import { trackError } from "./monitor.js";
+import { isOnVacation } from "./awareness.js";
 
 /**
  * Send checkin to all users — legacy, used as fallback.
@@ -16,6 +17,7 @@ export async function sendCheckInToAll(
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       const chatId = Number(user.telegramId);
       await sendCheckInMessage(chatId, logType);
     } catch (err) {

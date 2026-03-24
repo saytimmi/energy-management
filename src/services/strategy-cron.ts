@@ -1,6 +1,7 @@
 import prisma from "../db.js";
 import { bot } from "../bot.js";
 import { trackError } from "./monitor.js";
+import { isOnVacation } from "./awareness.js";
 
 const AREA_LABELS: Record<string, string> = {
   health: "Здоровье", career: "Карьера", relationships: "Отношения",
@@ -27,6 +28,7 @@ export async function sendQuarterlyReview(): Promise<void> {
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       // Get goals for previous quarter
       const prevGoals = await prisma.goal.findMany({
         where: { userId: user.id, period: prevPeriod },
@@ -81,6 +83,7 @@ export async function sendMissionReview(): Promise<void> {
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       const mission = await prisma.mission.findUnique({
         where: { userId: user.id },
       });
