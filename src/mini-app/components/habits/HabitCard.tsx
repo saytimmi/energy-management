@@ -24,11 +24,6 @@ const DEFAULT_GRADIENT = "linear-gradient(135deg, rgba(200,255,115,0.12), rgba(2
 const DONE_GRADIENT = "linear-gradient(135deg, rgba(200,255,115,0.25), rgba(200,255,115,0.1))";
 const PROGRESS_GRADIENT = "linear-gradient(135deg, rgba(91,168,255,0.25), rgba(91,168,255,0.1))";
 
-function nowTimeStr(): string {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-}
-
 function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}м`;
   const h = Math.floor(minutes / 60);
@@ -51,8 +46,6 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
   const inProgress = habit.inProgress;
   const isDuration = habit.isDuration;
   const [completing, setCompleting] = useState(false);
-  const [showTimeSheet, setShowTimeSheet] = useState(false);
-  const [selectedTime, setSelectedTime] = useState(nowTimeStr);
   const [elapsed, setElapsed] = useState("");
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
@@ -63,18 +56,9 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
     setElapsed(formatElapsed(habit.startedAt));
     const interval = setInterval(() => {
       setElapsed(formatElapsed(habit.startedAt!));
-    }, 30000); // update every 30s
+    }, 30000);
     return () => clearInterval(interval);
   }, [inProgress, habit.startedAt]);
-
-  async function confirmComplete() {
-    setShowTimeSheet(false);
-    setCompleting(true);
-    haptic("medium");
-    await toggleComplete(habit, `в ${selectedTime}`);
-    setCompleting(false);
-    if (onCompleted) onCompleted(habit);
-  }
 
   async function handleStartDuration() {
     haptic("medium");
@@ -109,10 +93,15 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
       return;
     }
 
-    // Instant habit — show time sheet
-    haptic("light");
-    setSelectedTime(nowTimeStr());
-    setShowTimeSheet(true);
+    // Instant habit — complete NOW with current time
+    haptic("medium");
+    setCompleting(true);
+    const now = new Date();
+    const timeStr = `в ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    toggleComplete(habit, timeStr).then(() => {
+      setCompleting(false);
+      if (onCompleted) onCompleted(habit);
+    });
   }
 
   function onTouchStart() {
@@ -164,98 +153,71 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
   }
 
   return (
-    <>
-      <div
-        class={`habit-card-v2${done ? " completed" : ""}${inProgress ? " in-progress" : ""}${isPaused ? " paused" : ""} ${completing ? `completing-card completing-${habit.stage}` : ""}`}
-        onTouchStart={isPaused ? undefined : onTouchStart}
-        onTouchEnd={isPaused ? undefined : onTouchEnd}
-        onTouchMove={isPaused ? undefined : onTouchMove}
-        onMouseUp={isPaused ? undefined : () => { if (!didLongPress.current) handleTap(); }}
-      >
-        {/* Icon */}
-        <div class="habit-icon-wrap" style={{ background: iconGradient }}>
-          {done ? (
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M5 11l4.5 4.5 8-9.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          ) : inProgress ? (
-            <div class="habit-pulse-dot" />
-          ) : (
-            <span class="habit-icon-emoji">{habit.icon}</span>
-          )}
-        </div>
-
-        {/* Info */}
-        <div class="habit-card-info">
-          <span class={`habit-card-name${done ? " done" : ""}`}>
-            {habit.name}
-          </span>
-          <div class="habit-card-meta">
-            {inProgress && statusLabel && (
-              <span class="habit-timer-pill">{statusLabel}</span>
-            )}
-            {!inProgress && !done && statusLabel && (
-              <span class="habit-duration-pill">{statusLabel}</span>
-            )}
-            {habit.streakCurrent > 0 && (
-              <span class="habit-streak-pill">
-                <span class="streak-fire">🔥</span> {habit.streakCurrent}д
-              </span>
-            )}
-            {habit.stage === "growth" && <span class="habit-stage-pill">🌿</span>}
-            {habit.stage === "autopilot" && <span class="habit-stage-pill">🌳</span>}
-            {isPaused && <span class="habit-paused-pill">⏸</span>}
-          </div>
-        </div>
-
-        {/* Action / Detail */}
-        {isDuration && !done && !inProgress ? (
-          <button class="habit-start-btn" onClick={(e) => { e.stopPropagation(); handleStartDuration(); }}
-            onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
-            Начать
-          </button>
-        ) : isDuration && inProgress ? (
-          <button class="habit-finish-btn" onClick={(e) => { e.stopPropagation(); handleCompleteDuration(); }}
-            onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
-            Готово
-          </button>
+    <div
+      class={`habit-card-v2${done ? " completed" : ""}${inProgress ? " in-progress" : ""}${isPaused ? " paused" : ""} ${completing ? `completing-card completing-${habit.stage}` : ""}`}
+      onTouchStart={isPaused ? undefined : onTouchStart}
+      onTouchEnd={isPaused ? undefined : onTouchEnd}
+      onTouchMove={isPaused ? undefined : onTouchMove}
+      onMouseUp={isPaused ? undefined : () => { if (!didLongPress.current) handleTap(); }}
+    >
+      {/* Icon */}
+      <div class="habit-icon-wrap" style={{ background: iconGradient }}>
+        {done ? (
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M5 11l4.5 4.5 8-9.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        ) : inProgress ? (
+          <div class="habit-pulse-dot" />
         ) : (
-          <button
-            class="habit-detail-arrow"
-            onClick={(e) => { e.stopPropagation(); haptic("light"); if (onOpenDetail) onOpenDetail(habit); }}
-            onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M7 13l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
+          <span class="habit-icon-emoji">{habit.icon}</span>
         )}
       </div>
 
-      {/* Time confirmation sheet (instant habits only) */}
-      {showTimeSheet && (
-        <div class="time-sheet-overlay" onClick={() => setShowTimeSheet(false)}>
-          <div class="time-sheet" onClick={(e) => e.stopPropagation()}>
-            <div class="time-sheet-header">
-              <span class="time-sheet-icon">{habit.icon}</span>
-              <span class="time-sheet-title">{habit.name}</span>
-            </div>
-            <div class="time-sheet-body">
-              <label class="time-sheet-label">Во сколько выполнил?</label>
-              <input
-                type="time"
-                class="time-sheet-input"
-                value={selectedTime}
-                onInput={(e) => setSelectedTime((e.target as HTMLInputElement).value)}
-              />
-            </div>
-            <div class="time-sheet-actions">
-              <button class="time-sheet-cancel" onClick={() => setShowTimeSheet(false)}>Отмена</button>
-              <button class="time-sheet-confirm" onClick={confirmComplete}>Выполнено</button>
-            </div>
-          </div>
+      {/* Info */}
+      <div class="habit-card-info">
+        <span class={`habit-card-name${done ? " done" : ""}`}>
+          {habit.name}
+        </span>
+        <div class="habit-card-meta">
+          {inProgress && statusLabel && (
+            <span class="habit-timer-pill">{statusLabel}</span>
+          )}
+          {!inProgress && !done && statusLabel && (
+            <span class="habit-duration-pill">{statusLabel}</span>
+          )}
+          {habit.streakCurrent > 0 && (
+            <span class="habit-streak-pill">
+              <span class="streak-fire">🔥</span> {habit.streakCurrent}д
+            </span>
+          )}
+          {habit.stage === "growth" && <span class="habit-stage-pill">🌿</span>}
+          {habit.stage === "autopilot" && <span class="habit-stage-pill">🌳</span>}
+          {isPaused && <span class="habit-paused-pill">⏸</span>}
         </div>
+      </div>
+
+      {/* Action / Detail */}
+      {isDuration && !done && !inProgress ? (
+        <button class="habit-start-btn" onClick={(e) => { e.stopPropagation(); handleStartDuration(); }}
+          onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+          Начать
+        </button>
+      ) : isDuration && inProgress ? (
+        <button class="habit-finish-btn" onClick={(e) => { e.stopPropagation(); handleCompleteDuration(); }}
+          onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+          Готово
+        </button>
+      ) : (
+        <button
+          class="habit-detail-arrow"
+          onClick={(e) => { e.stopPropagation(); haptic("light"); if (onOpenDetail) onOpenDetail(habit); }}
+          onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M7 13l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       )}
-    </>
+    </div>
   );
 }

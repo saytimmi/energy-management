@@ -591,9 +591,10 @@ body {
 .habit-detail-arrow {
   flex-shrink: 0; background: none; border: none;
   color: var(--text3); cursor: pointer;
-  padding: 8px; margin: -8px -4px -8px 0;
+  width: 44px; height: 44px; margin: -8px -4px -8px 0;
   display: flex; align-items: center; justify-content: center;
   border-radius: 10px; transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
   min-width: 36px; min-height: 36px;
 }
 .habit-detail-arrow:active { background: var(--surface2); }
