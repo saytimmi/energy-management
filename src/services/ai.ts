@@ -172,6 +172,17 @@ const TOOLS: Anthropic.Tool[] = [
       required: ["area"],
     },
   },
+  {
+    name: "start_balance_assessment",
+    description: "Получить данные для AI-guided оценки баланса. Возвращает по каждой сфере: оценку, привычки, автометрики, цели. Вызови ПЕРЕД оценкой сфер.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        areas: { type: "array", items: { type: "string" }, description: "Сферы для оценки (пусто = все 8)" },
+      },
+      required: [],
+    },
+  },
 ];
 
 // --- System Prompt ---
@@ -546,6 +557,71 @@ async function executeTool(
 
       return {
         text: `Оценка записана: ${AREA_LABELS[input.area] || input.area} = ${clampedScore}/10${input.assessmentType === "ai_guided" ? " (AI-guided)" : ""}.${subScoresText}\n\nТекущий баланс:\n${latestRatings.join("\n") || "Только одна сфера оценена."}`,
+        actions: [],
+      };
+    }
+
+    case "start_balance_assessment": {
+      const input = toolInput as { areas?: string[] };
+      const ALL_AREAS = ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"];
+      const AREA_LABELS_ASSESS: Record<string, string> = {
+        health: "Здоровье", career: "Карьера", relationships: "Отношения",
+        finances: "Финансы", family: "Семья", growth: "Развитие",
+        recreation: "Отдых", environment: "Среда",
+      };
+      const targetAreas = input.areas && input.areas.length > 0 ? input.areas.filter(a => ALL_AREAS.includes(a)) : ALL_AREAS;
+
+      const sections: string[] = [];
+      for (const area of targetAreas) {
+        const parts: string[] = [`📊 ${AREA_LABELS_ASSESS[area] || area}`];
+
+        // Last rating
+        const lastRating = await prisma.balanceRating.findFirst({
+          where: { userId, area },
+          orderBy: { createdAt: "desc" },
+        });
+        if (lastRating) {
+          const daysAgo = Math.floor((Date.now() - lastRating.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          parts.push(`Последняя оценка: ${lastRating.score}/10 (${daysAgo}д назад)`);
+        } else {
+          parts.push("Оценок ещё нет");
+        }
+
+        // Goal
+        const goal = await (prisma as any).balanceGoal.findUnique({
+          where: { userId_area: { userId, area } },
+        });
+        if (goal) {
+          const goalParts: string[] = [];
+          if (goal.targetScore) goalParts.push(`цель: ${goal.targetScore}/10`);
+          if (goal.identity) goalParts.push(`идентичность: "${goal.identity}"`);
+          if (goal.isFocus) goalParts.push("в фокусе");
+          if (goalParts.length > 0) parts.push(`Цель: ${goalParts.join(", ")}`);
+        }
+
+        // Habits count
+        const habitCount = await prisma.habit.count({
+          where: { userId, lifeArea: area, isActive: true },
+        });
+        if (habitCount > 0) parts.push(`Привычек: ${habitCount}`);
+
+        // Health: avg energy last 7 days
+        if (area === "health") {
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          const energyLogs = await prisma.energyLog.findMany({
+            where: { userId, createdAt: { gte: weekAgo } },
+          });
+          if (energyLogs.length > 0) {
+            const avgPhysical = energyLogs.reduce((sum, l) => sum + l.physical, 0) / energyLogs.length;
+            parts.push(`Средняя физ. энергия (7д): ${avgPhysical.toFixed(1)}/10`);
+          }
+        }
+
+        sections.push(parts.join("\n"));
+      }
+
+      return {
+        text: `Данные для оценки баланса:\n\n${sections.join("\n\n")}`,
         actions: [],
       };
     }
