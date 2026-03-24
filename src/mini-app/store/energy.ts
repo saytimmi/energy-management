@@ -11,6 +11,12 @@ export const hasNoData = signal(false);
 
 let loaded = false;
 
+export function resetEnergyCache(): void {
+  loaded = false;
+  dashboardData.value = null;
+  hasNoData.value = false;
+}
+
 export async function loadInitialData(): Promise<void> {
   if (loaded) return;
   loaded = true;

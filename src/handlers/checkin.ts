@@ -3,6 +3,7 @@ import type { Context } from "grammy";
 import prisma from "../db.js";
 import { bot } from "../bot.js";
 import { getInstantRecommendations } from "../services/instant-recommendations.js";
+import { getSeverity, CRITICAL_TRIGGERS, MODERATE_TRIGGERS, IMPROVED_TRIGGERS, type Severity } from "../services/energy-analysis.js";
 import { config } from "../config.js";
 
 const ENERGY_LABELS: Record<string, string> = {
@@ -58,43 +59,7 @@ interface PendingDetail {
 }
 const awaitingDetail = new Map<number, PendingDetail>(); // telegramId -> detail
 
-// --- Severity System ---
-
-type Severity = "critical" | "moderate" | "mild" | "stable" | "improved";
-
-function getSeverity(current: number, previous: number): Severity {
-  const drop = previous - current;
-  if (current <= 3 && drop >= 3) return "critical";
-  if (drop >= 4) return "critical";
-  if (current <= 3 && drop >= 1) return "moderate";
-  if (drop >= 2) return "moderate";
-  if (drop === 1) return "mild";
-  if (drop <= -2) return "improved";
-  return "stable";
-}
-
-// --- Trigger buttons by severity ---
-
-const CRITICAL_TRIGGERS: Record<string, string[]> = {
-  physical: ["Не спал", "Болезнь", "Перетренировка", "Голод", "Алкоголь"],
-  mental: ["Выгорание", "Дедлайн", "Инфо-перегрузка", "Конфликт на работе"],
-  emotional: ["Ссора", "Потеря", "Одиночество", "Тревога", "Подавленность"],
-  spiritual: ["Всё бесполезно", "Кризис смысла", "Выгорание", "Пустота"],
-};
-
-const MODERATE_TRIGGERS: Record<string, string[]> = {
-  physical: ["Плохой сон", "Нет движения", "Плохая еда", "Устал"],
-  mental: ["Долго за экраном", "Много задач", "Нет фокуса"],
-  emotional: ["Конфликт", "Одиночество", "Стресс"],
-  spiritual: ["Потеря смысла", "Рутина", "Нет прогресса"],
-};
-
-const IMPROVED_TRIGGERS: Record<string, string[]> = {
-  physical: ["Хороший сон", "Тренировка", "Здоровая еда", "Прогулка"],
-  mental: ["Отдых от экранов", "Медитация", "Интересная задача"],
-  emotional: ["Хорошее общение", "Смех", "Природа"],
-  spiritual: ["Помог кому-то", "Осмысленная работа", "Благодарность"],
-};
+// Severity system and trigger constants imported from ../services/energy-analysis.js
 
 // --- Keyboards ---
 

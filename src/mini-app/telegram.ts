@@ -71,6 +71,19 @@ export function applyColorScheme(): void {
   document.documentElement.setAttribute("data-theme", scheme);
 }
 
+export function openTelegramLink(path: string): void {
+  const url = `https://t.me/${path}`;
+  try {
+    (tg as any)?.openTelegramLink?.(url);
+  } catch {
+    window.open(url, "_blank");
+  }
+}
+
+export function onActivated(cb: () => void): void {
+  tg?.onEvent("activated", cb);
+}
+
 export function syncTheme(): void {
   applyColorScheme();
   if (!tg) return;

@@ -1,6 +1,6 @@
 import { useEffect } from "preact/hooks";
 import { navigate } from "../../router";
-import { haptic } from "../../telegram";
+import { haptic, openTelegramLink } from "../../telegram";
 import {
   reflectionStatus,
   algorithms,
@@ -31,10 +31,7 @@ export function KaizenScreen({ param }: KaizenScreenProps) {
 
   const handleAskAI = () => {
     haptic("medium");
-    const botUsername = getBotUsername();
-    if (botUsername) {
-      window.open(`https://t.me/${botUsername}`, "_blank");
-    }
+    openTelegramLink("energy_coach_bot");
   };
 
   const status = reflectionStatus.value;
@@ -131,16 +128,6 @@ export function KaizenScreen({ param }: KaizenScreenProps) {
 }
 
 // --- Sub-components ---
-
-function getBotUsername(): string | null {
-  try {
-    return (window as any).Telegram?.WebApp?.initDataUnsafe?.user
-      ? "energy_coach_bot"
-      : null;
-  } catch {
-    return null;
-  }
-}
 
 function LoadingPlaceholder() {
   return (
