@@ -11,6 +11,7 @@ import { MilestoneToast } from "./MilestoneToast";
 import { Skeleton, SkeletonCard } from "../shared/Skeleton";
 import { haptic } from "../../telegram";
 import type { HabitData } from "../../api/types";
+import { api } from "../../api/client";
 
 export const suggestedHabit = signal<string | null>(null);
 const showCreate = signal(false);
@@ -18,6 +19,7 @@ const selectedHabit = signal<HabitData | null>(null);
 const milestoneMessage = signal<string | null>(null);
 const showConfetti = signal(false);
 const routineFlowSlot = signal<string | null>(null);
+const identityMap = signal<Record<string, string | null>>({});
 
 function parseSuggestParam() {
   const params = new URLSearchParams(window.location.search);
@@ -83,6 +85,14 @@ export function HabitsScreen() {
   useEffect(() => {
     parseSuggestParam();
     loadHabits();
+    // Fetch identity map for RoutineFlow identity card
+    api.strategy().then(data => {
+      const map: Record<string, string | null> = {};
+      for (const area of [...data.focusAreas, ...data.otherAreas]) {
+        if (area.identity) map[area.area] = area.identity;
+      }
+      identityMap.value = map;
+    }).catch(() => { /* non-critical */ });
   }, []);
 
   // Routine Flow mode
@@ -97,6 +107,7 @@ export function HabitsScreen() {
       <RoutineFlow
         habits={slotHabits}
         slotLabel={slotLabels[routineFlowSlot.value] ?? "Рутина"}
+        identityMap={identityMap.value}
         onFinish={() => { routineFlowSlot.value = null; loadHabits(); }}
       />
     );
