@@ -41,3 +41,39 @@
   --tg-button: var(--accent);
   --tg-surface: var(--surface-solid);
 }
+
+/* ── Light Theme ── */
+:root[data-theme="light"] {
+  --bg: #f5f5f7;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface-solid: #ffffff;
+  --surface2: #e8e8ed;
+  --surface-border: rgba(0, 0, 0, 0.06);
+  --surface-glow: rgba(0, 0, 0, 0.02);
+
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --text3: #8e8e93;
+
+  /* Accent — darker lime for contrast on white */
+  --accent: #4a8c00;
+  --accent-glow: rgba(74, 140, 0, 0.12);
+  --accent-soft: rgba(74, 140, 0, 0.06);
+
+  /* Energy type colors — slightly deeper for white bg */
+  --physical: #2d9e4a;
+  --physical-glow: rgba(45, 158, 74, 0.15);
+  --mental: #3478f6;
+  --mental-glow: rgba(52, 120, 246, 0.15);
+  --emotional: #e8550f;
+  --emotional-glow: rgba(232, 85, 15, 0.15);
+  --spiritual: #a14de0;
+  --spiritual-glow: rgba(161, 77, 224, 0.15);
+
+  /* Telegram theme mapping */
+  --tg-bg: var(--bg);
+  --tg-text: var(--text);
+  --tg-hint: var(--text2);
+  --tg-button: var(--accent);
+  --tg-surface: var(--surface-solid);
+}

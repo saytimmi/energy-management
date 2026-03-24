@@ -66,7 +66,13 @@ export function hideBackButton(): void {
   tg?.BackButton?.hide();
 }
 
+export function applyColorScheme(): void {
+  const scheme = tg?.colorScheme ?? "dark";
+  document.documentElement.setAttribute("data-theme", scheme);
+}
+
 export function syncTheme(): void {
+  applyColorScheme();
   if (!tg) return;
   const params = tg.themeParams;
   const root = document.documentElement;

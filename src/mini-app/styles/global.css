@@ -407,7 +407,7 @@ body {
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0;
   height: var(--nav-h);
-  background: rgba(12, 13, 18, 0.85);
+  background: var(--surface);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid var(--surface-border);
@@ -2030,3 +2030,47 @@ body {
   font-family: inherit;
 }
 .strategy-nav-btn:active { transform: scale(0.98); }
+
+/* ── Skeleton Loading ── */
+.skeleton {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--surface-glow) 20%,
+    rgba(255, 255, 255, 0.06) 50%,
+    var(--surface-glow) 80%,
+    transparent 100%
+  );
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.skeleton-text { height: 12px; border-radius: 6px; }
+.skeleton-title { height: 16px; width: 60%; border-radius: 8px; }
+.skeleton-circle { border-radius: 50%; }
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+/* ── Screen Transitions ── */
+.screen-enter {
+  animation: screenIn 0.3s ease both;
+}
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
