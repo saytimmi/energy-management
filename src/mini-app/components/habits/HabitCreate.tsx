@@ -35,19 +35,19 @@ function pickIcon(name: string): string {
 }
 
 const LIFE_AREAS = [
-  { id: "health", label: "Здоровье", icon: "❤️" },
-  { id: "career", label: "Карьера", icon: "💼" },
-  { id: "relationships", label: "Отношения", icon: "👫" },
-  { id: "finances", label: "Финансы", icon: "💰" },
-  { id: "family", label: "Семья", icon: "👨‍👩‍👧" },
-  { id: "growth", label: "Развитие", icon: "🧠" },
-  { id: "recreation", label: "Отдых", icon: "🎮" },
-  { id: "environment", label: "Среда", icon: "🏠" },
+  { id: "health", label: "Здоровье", icon: "🩺" },
+  { id: "career", label: "Карьера", icon: "🚀" },
+  { id: "relationships", label: "Отношения", icon: "💞" },
+  { id: "finances", label: "Финансы", icon: "💎" },
+  { id: "family", label: "Семья", icon: "🏡" },
+  { id: "growth", label: "Развитие", icon: "📚" },
+  { id: "recreation", label: "Отдых", icon: "🧘" },
+  { id: "environment", label: "Среда", icon: "🌿" },
 ] as const;
 
 const SLOTS = [
-  { id: "morning", label: "Утро", icon: "☀️" },
-  { id: "afternoon", label: "День", icon: "🌤" },
+  { id: "morning", label: "Утро", icon: "🌅" },
+  { id: "afternoon", label: "День", icon: "☀️" },
   { id: "evening", label: "Вечер", icon: "🌙" },
 ] as const;
 
