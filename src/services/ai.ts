@@ -25,22 +25,34 @@ export interface ChatResult {
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "create_habit",
-    description: "Создать новую привычку для пользователя в системе. Используй когда пользователь просит добавить или создать привычку. Это РЕАЛЬНОЕ действие — привычка появится в мини-приложении.",
+    description: `Создать новую привычку для пользователя. РЕАЛЬНОЕ действие — привычка появится в мини-приложении.
+
+Пользователь может описать привычку:
+- Голосом: "хочу ложиться до полуночи" → name: "Отбой до 00:00", routineSlot: "evening", lifeArea: "health"
+- Текстом со структурой: "Привычка: ..., Категория: ..., Время: ..." → парси ВСЕ поля
+- Просто название: "медитация 10 минут" → name + duration + подбери icon, slot, lifeArea
+
+ВСЕГДА заполняй максимум полей на основе контекста. Если пользователь дал достаточно информации — создавай сразу, не переспрашивай.`,
     input_schema: {
       type: "object" as const,
       properties: {
-        name: { type: "string", description: "Название привычки, например 'Интервальное голодание 16:8'" },
-        icon: { type: "string", description: "Эмодзи иконка, например '🍽'" },
+        name: { type: "string", description: "Название привычки, краткое и понятное" },
+        icon: { type: "string", description: "Эмодзи иконка, подбери по смыслу: 🏃💪🧘🧠📚💤🥗🚶‍♂️🎯✨" },
         type: { type: "string", enum: ["build", "break"], description: "build = формировать новую, break = избавиться от старой" },
-        routineSlot: { type: "string", enum: ["morning", "afternoon", "evening"], description: "Время дня для привычки" },
-        energyType: { type: "string", enum: ["physical", "mental", "emotional", "spiritual"], description: "Тип энергии, на который влияет привычка" },
-        lifeArea: { type: "string", enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"], description: "Сфера жизни: здоровье, карьера, отношения, финансы, семья, развитие, отдых, среда" },
-        whyToday: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: какая конкретная выгода сегодня?" },
-        whyYear: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: что изменится через год?" },
-        whyIdentity: { type: "string", description: "ОБЯЗАТЕЛЬНО для build: кем станешь, когда это привычка?" },
-        isItBeneficial: { type: "string", description: "ОБЯЗАТЕЛЬНО для break: выгодно ли это организму?" },
-        breakTrigger: { type: "string", description: "ОБЯЗАТЕЛЬНО для break: что триггерит эту привычку?" },
-        replacement: { type: "string", description: "ОБЯЗАТЕЛЬНО для break: что делать вместо?" },
+        routineSlot: { type: "string", enum: ["morning", "afternoon", "evening"], description: "morning = утро (до 12), afternoon = день (12-18), evening = вечер (после 18). Определи по смыслу привычки." },
+        energyType: { type: "string", enum: ["physical", "mental", "emotional", "spiritual"], description: "Какой тип энергии затрагивает. Сон/еда/спорт = physical, фокус/учёба = mental, общение = emotional, смысл/миссия = spiritual" },
+        lifeArea: { type: "string", enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"], description: "Сфера жизни. Определи автоматически: сон/еда/спорт = health, работа = career, друзья = relationships, учёба = growth" },
+        duration: { type: "number", description: "Длительность в минутах (если указана). Например: 10 мин медитации = 10, 8 часов сна = 480" },
+        isDuration: { type: "boolean", description: "true если привычка длительная (с таймером старт→стоп): сон, медитация, тренировка. false для мгновенных: выпить воду, записать мысль" },
+        triggerAction: { type: "string", description: "Триггер — что запускает привычку. Например: 'После пробуждения', 'После обеда', 'Перед сном'" },
+        minimalDose: { type: "string", description: "Минимальная версия для тяжёлых дней. Например: если привычка '30 мин зарядки', минимум = '5 мин растяжки'" },
+        whyToday: { type: "string", description: "Для build: конкретная выгода сегодня. Заполни сам если пользователь не сказал: сформулируй от его лица." },
+        whyMonth: { type: "string", description: "Для build: что изменится через месяц" },
+        whyYear: { type: "string", description: "Для build: что изменится через год" },
+        whyIdentity: { type: "string", description: "Для build: кем станешь, когда это привычка" },
+        isItBeneficial: { type: "string", description: "Для break: выгодно ли это организму?" },
+        breakTrigger: { type: "string", description: "Для break: что триггерит эту вредную привычку?" },
+        replacement: { type: "string", description: "Для break: какое действие заменит?" },
       },
       required: ["name", "icon", "type", "routineSlot"],
     },
@@ -122,13 +134,27 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - start_energy_checkin — запустить оценку энергии с кнопками (НЕ спрашивай текстом!)
 - get_user_habits — посмотреть текущие привычки пользователя
 
-СОЗДАНИЕ ПРИВЫЧКИ — ОБЯЗАТЕЛЬНЫЙ ФИЛЬТР СМЫСЛА:
-Каждая привычка ОБЯЗАНА пройти через призму "зачем". НЕ создавай привычку без meaning.
-- Для build: СПРОСИ "какая выгода сегодня?", "что изменится через год?", "кем станешь?" ПЕРЕД вызовом create_habit.
-- Для break: СПРОСИ "выгодно ли организму?", "что триггерит?", "что вместо?" ПЕРЕД вызовом create_habit.
-- Передавай ответы в create_habit (whyToday, whyYear, whyIdentity для build; isItBeneficial, breakTrigger, replacement для break).
-- Если пользователь дал название + смысл в одном сообщении — создавай сразу.
-- Если только название — задай ОДИН вопрос про смысл, потом создай.
+СОЗДАНИЕ ПРИВЫЧКИ — ПАРСИ ВСЁ ИЗ СООБЩЕНИЯ:
+Когда пользователь описывает привычку (текстом, голосом, или структурированно) — ИЗВЛЕКИ ВСЕ данные и СРАЗУ вызови create_habit с максимумом заполненных полей.
+
+Маппинг полей из сообщения пользователя:
+- "Категория: Здоровье" или "для здоровья" → lifeArea: "health"
+- "Время: Вечер" или "перед сном" → routineSlot: "evening"
+- "Длительность: 480 мин" или "8 часов" → duration: 480, isDuration: true
+- "Триггер: После 23:30" → triggerAction: "После 23:30"
+- "утром/с утра/после пробуждения" → routineSlot: "morning"
+- "днём/в обед/после обеда" → routineSlot: "afternoon"
+- "вечером/перед сном/на ночь" → routineSlot: "evening"
+
+Автозаполнение:
+- icon — ВСЕГДА подбирай по смыслу (сон 🌙, зарядка 🏃, медитация 🧘, еда 🥗, чтение 📚, вода 💧)
+- lifeArea — определи автоматически (сон/спорт/еда → health, работа → career)
+- energyType — определи автоматически (сон/спорт → physical, учёба → mental)
+- isDuration — true для: сон, медитация, тренировка, работа. false для: выпить воду, записать мысль
+- minimalDose — придумай сам если привычка длительная (30 мин зарядки → "5 мин растяжки")
+- whyToday — если не указано, сформулируй сам от лица пользователя на основе контекста
+
+ВАЖНО: Если пользователь прислал достаточно данных (название + хотя бы время) — СОЗДАВАЙ СРАЗУ. Не переспрашивай каждое поле. Заполни что можешь сам, создай привычку, и ПОТОМ скажи что создал и что заполнил.
 
 КРИТИЧЕСКИЕ ЗАПРЕТЫ:
 1. НИКОГДА не говори "создал", "записал", "зафиксировал" если НЕ вызвал соответствующий инструмент.
@@ -194,7 +220,12 @@ async function executeTool(
         routineSlot: string;
         energyType?: string;
         lifeArea?: string;
+        duration?: number;
+        isDuration?: boolean;
+        triggerAction?: string;
+        minimalDose?: string;
         whyToday?: string;
+        whyMonth?: string;
         whyYear?: string;
         whyIdentity?: string;
         isItBeneficial?: string;
@@ -232,8 +263,13 @@ async function executeTool(
           routineSlot: input.routineSlot,
           energyType: input.energyType || null,
           lifeArea: input.lifeArea || null,
+          duration: input.duration || null,
+          isDuration: input.isDuration ?? (input.duration ? input.duration >= 10 : false),
+          triggerAction: input.triggerAction || null,
+          minimalDose: input.minimalDose || null,
           frequency: "daily",
           whyToday: input.whyToday || null,
+          whyMonth: input.whyMonth || null,
           whyYear: input.whyYear || null,
           whyIdentity: input.whyIdentity || null,
           isItBeneficial: input.isItBeneficial || null,
@@ -243,9 +279,19 @@ async function executeTool(
         },
       });
 
+      // Build confirmation with filled fields
+      const fields: string[] = [];
+      if (habit.lifeArea) fields.push(`сфера: ${habit.lifeArea}`);
+      if (habit.duration) fields.push(`${habit.duration} мин`);
+      if (habit.isDuration) fields.push("с таймером");
+      if (habit.triggerAction) fields.push(`триггер: ${habit.triggerAction}`);
+      if (habit.minimalDose) fields.push(`минимум: ${habit.minimalDose}`);
       const meaningFilled = input.whyToday || input.isItBeneficial;
+      if (meaningFilled) fields.push("смысл заполнен");
+
+      const details = fields.length > 0 ? ` (${fields.join(", ")})` : "";
       return {
-        text: `Привычка создана! ID: ${habit.id}, "${habit.name}" ${habit.icon}, ${habit.routineSlot}.${meaningFilled ? " Смысл заполнен." : " ВНИМАНИЕ: смысл не заполнен — попроси пользователя ответить на вопросы 'зачем'."}`,
+        text: `Привычка создана! "${habit.name}" ${habit.icon}, ${habit.routineSlot}${details}.${!meaningFilled ? " ВНИМАНИЕ: смысл не заполнен — спроси пользователя 'зачем эта привычка?'" : ""}`,
         actions: [],
       };
     }
