@@ -158,6 +158,20 @@ const TOOLS: Anthropic.Tool[] = [
       required: ["area", "score"],
     },
   },
+  {
+    name: "set_balance_goal",
+    description: "Установить идентичность, фокус и целевую оценку для сферы жизни.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        area: { type: "string", enum: ["health","career","relationships","finances","family","growth","recreation","environment"] },
+        targetScore: { type: "number", description: "Целевая оценка (1-10)" },
+        identity: { type: "string", description: "Кем человек хочет стать в этой сфере" },
+        isFocus: { type: "boolean", description: "В фокусе этого квартала" },
+      },
+      required: ["area"],
+    },
+  },
 ];
 
 // --- System Prompt ---
@@ -532,6 +546,36 @@ async function executeTool(
 
       return {
         text: `Оценка записана: ${AREA_LABELS[input.area] || input.area} = ${clampedScore}/10${input.assessmentType === "ai_guided" ? " (AI-guided)" : ""}.${subScoresText}\n\nТекущий баланс:\n${latestRatings.join("\n") || "Только одна сфера оценена."}`,
+        actions: [],
+      };
+    }
+
+    case "set_balance_goal": {
+      const input = toolInput as { area: string; targetScore?: number; identity?: string; isFocus?: boolean };
+      const AREA_LABELS: Record<string, string> = {
+        health: "Здоровье", career: "Карьера", relationships: "Отношения",
+        finances: "Финансы", family: "Семья", growth: "Развитие",
+        recreation: "Отдых", environment: "Среда",
+      };
+
+      const updateData: Record<string, unknown> = {};
+      if (input.targetScore !== undefined) updateData.targetScore = Math.max(1, Math.min(10, Math.round(input.targetScore)));
+      if (input.identity !== undefined) updateData.identity = input.identity;
+      if (input.isFocus !== undefined) updateData.isFocus = input.isFocus;
+
+      await (prisma as any).balanceGoal.upsert({
+        where: { userId_area: { userId, area: input.area } },
+        create: { userId, area: input.area, ...updateData },
+        update: updateData,
+      });
+
+      const parts: string[] = [];
+      if (updateData.targetScore) parts.push(`цель: ${updateData.targetScore}/10`);
+      if (updateData.identity) parts.push(`идентичность: "${updateData.identity}"`);
+      if (updateData.isFocus !== undefined) parts.push(updateData.isFocus ? "в фокусе" : "не в фокусе");
+
+      return {
+        text: `Цель для ${AREA_LABELS[input.area] || input.area} обновлена: ${parts.join(", ") || "без изменений"}.`,
         actions: [],
       };
     }
