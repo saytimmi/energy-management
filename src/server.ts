@@ -15,6 +15,7 @@ import { missionRoute } from "./api/mission.js";
 import { goalsRoute } from "./api/goals.js";
 import { strategyRoute } from "./api/strategy.js";
 import { energyRoute, configRoute } from "./api/energy.js";
+import { settingsRoute } from "./api/settings.js";
 import { telegramAuth } from "./middleware/telegram-auth.js";
 import { config } from "./config.js";
 
@@ -59,6 +60,7 @@ export function startServer(port?: number): http.Server {
   goalsRoute(authedRouter);
   strategyRoute(authedRouter);
   energyRoute(authedRouter);
+  settingsRoute(authedRouter);
   app.use("/api", authedRouter);
 
   server = app.listen(listenPort, "0.0.0.0", () => {

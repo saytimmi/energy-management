@@ -1,5 +1,5 @@
 import { getInitData } from "../telegram";
-import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated, MissionData, GoalData, StrategyData, EnergyCheckinResponse, AppConfig } from "./types";
+import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated, MissionData, GoalData, StrategyData, EnergyCheckinResponse, AppConfig, SettingsData, NotificationPrefs } from "./types";
 
 const BASE = "";
 
@@ -116,4 +116,8 @@ export const api = {
     post<{ ok: true; updated: number }>("/api/balance/rate", { ratings }),
   // Config
   appConfig: () => request<AppConfig>("/api/config"),
+  // Settings
+  settings: () => request<SettingsData>("/api/settings"),
+  updateSettings: (data: Partial<{ timezone: string; notificationPrefs: Partial<NotificationPrefs>; vacationUntil: string | null; vacationReason: string | null }>) =>
+    put<SettingsData>("/api/settings", data),
 };

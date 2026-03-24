@@ -5,6 +5,7 @@ import { EnergyDashboard } from "./components/energy/EnergyDashboard";
 import { HabitsScreen } from "./components/habits/HabitsScreen";
 import { BalanceScreen } from "./components/balance/BalanceScreen";
 import { KaizenScreen } from "./components/kaizen/KaizenScreen";
+import { SettingsScreen } from "./components/settings/SettingsScreen";
 import { BottomNav } from "./components/shared/BottomNav";
 import { useEffect } from "preact/hooks";
 import { resetEnergyCache, loadInitialData as loadEnergy } from "./store/energy";
@@ -42,6 +43,7 @@ export function App() {
         {route === "habits" && <HabitsScreen />}
         {route === "balance" && <BalanceScreen param={param} />}
         {route === "kaizen" && <KaizenScreen param={param} />}
+        {route === "settings" && <SettingsScreen />}
       </div>
       <BottomNav />
     </>
