@@ -1,5 +1,5 @@
 import { getInitData } from "../telegram";
-import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated, MissionData, GoalData, StrategyData } from "./types";
+import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated, MissionData, GoalData, StrategyData, EnergyCheckinResponse, AppConfig } from "./types";
 
 const BASE = "";
 
@@ -106,4 +106,14 @@ export const api = {
     post<GoalData>("/api/goals", data),
   updateGoal: (id: number, data: { title?: string; description?: string; status?: string }) =>
     patch<GoalData>(`/api/goals/${id}`, data),
+  // Energy checkin
+  submitEnergy: (data: { physical: number; mental: number; emotional: number; spiritual: number; logType: string }) =>
+    post<EnergyCheckinResponse>("/api/energy", data),
+  submitTriggers: (logId: number, data: { triggers: string[]; context?: string; energyType: string; direction: string }) =>
+    post<{ ok: boolean; observationIds: number[] }>(`/api/energy/${logId}/triggers`, data),
+  // Balance quick rate
+  rateBalance: (ratings: Array<{ area: string; score: number; subScores?: Record<string, number> }>) =>
+    post<{ ok: true; updated: number }>("/api/balance/rate", { ratings }),
+  // Config
+  appConfig: () => request<AppConfig>("/api/config"),
 };

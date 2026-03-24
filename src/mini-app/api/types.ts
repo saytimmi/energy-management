@@ -336,3 +336,33 @@ export interface StrategyData {
   focusAreas: StrategyArea[];
   otherAreas: StrategyArea[];
 }
+
+// --- Energy Checkin ---
+
+export interface SeverityChange {
+  type: string;
+  severity: string;
+  current: number;
+  prev: number;
+  drop: number;
+}
+
+export interface EnergyCheckinResponse {
+  logId: number;
+  severity: {
+    drops: SeverityChange[];
+    improvements: SeverityChange[];
+    stable: boolean;
+  };
+  recommendations: Array<{ name: string; duration: number }>;
+  triggerInfo: {
+    energyType: string;
+    direction: string;
+    triggers: string[];
+  } | null;
+}
+
+export interface AppConfig {
+  botUsername: string;
+  webappUrl: string;
+}
