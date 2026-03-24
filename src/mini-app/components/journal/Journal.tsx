@@ -9,7 +9,7 @@ const entries = signal<Observation[]>([]);
 const journalLoading = signal(true);
 const journalError = signal(false);
 
-const emojiMap: Record<string, string> = { physical: "🏃", mental: "🧠", emotional: "💚", spiritual: "🔮" };
+const emojiMap: Record<string, string> = { physical: "🦾", mental: "🧬", emotional: "🫀", spiritual: "🔮" };
 const typeNames: Record<string, string> = { physical: "Физическая", mental: "Ментальная", emotional: "Эмоциональная", spiritual: "Духовная" };
 const dirNames: Record<string, string> = { drop: "просадка", rise: "рост", low: "низкая", high: "высокая", stable: "стабильно" };
 

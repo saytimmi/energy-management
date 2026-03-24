@@ -1,7 +1,7 @@
 import type { Observation } from "../../api/types";
 import { getTimeAgo } from "./utils";
 
-const emojiMap: Record<string, string> = { physical: "🏃", mental: "🧠", emotional: "💚", spiritual: "🔮" };
+const emojiMap: Record<string, string> = { physical: "🦾", mental: "🧬", emotional: "🫀", spiritual: "🔮" };
 const dirNames: Record<string, string> = { drop: "↓ просадка", rise: "↑ рост", low: "↓ низкая", high: "↑ высокая", stable: "— стабильно" };
 const dirIcons: Record<string, string> = { drop: "🔻", rise: "🔺", low: "🔻", high: "🔺", stable: "➖" };
 

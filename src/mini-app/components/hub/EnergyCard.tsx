@@ -21,9 +21,9 @@ export function EnergyCard() {
   }
 
   const types = [
-    { key: "physical" as const, emoji: "🏃", color: "var(--physical)" },
-    { key: "mental" as const, emoji: "🧠", color: "var(--mental)" },
-    { key: "emotional" as const, emoji: "💚", color: "var(--emotional)" },
+    { key: "physical" as const, emoji: "🦾", color: "var(--physical)" },
+    { key: "mental" as const, emoji: "🧬", color: "var(--mental)" },
+    { key: "emotional" as const, emoji: "🫀", color: "var(--emotional)" },
     { key: "spiritual" as const, emoji: "🔮", color: "var(--spiritual)" },
   ];
 

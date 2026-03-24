@@ -2,9 +2,9 @@ import { useEffect, useRef } from "preact/hooks";
 import type { DashboardData } from "../../api/types";
 
 const types = [
-  { key: "physical", emoji: "🏃", label: "Физическая" },
-  { key: "mental", emoji: "🧠", label: "Ментальная" },
-  { key: "emotional", emoji: "💚", label: "Эмоциональная" },
+  { key: "physical", emoji: "🦾", label: "Физическая" },
+  { key: "mental", emoji: "🧬", label: "Ментальная" },
+  { key: "emotional", emoji: "🫀", label: "Эмоциональная" },
   { key: "spiritual", emoji: "🔮", label: "Духовная" },
 ] as const;
 
