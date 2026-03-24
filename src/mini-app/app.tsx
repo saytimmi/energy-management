@@ -24,11 +24,13 @@ export function App() {
 
   return (
     <>
-      {route === "hub" && <Hub />}
-      {route === "energy" && <EnergyDashboard />}
-      {route === "habits" && <HabitsScreen />}
-      {route === "balance" && <BalanceScreen param={param} />}
-      {route === "kaizen" && <KaizenScreen param={param} />}
+      <div key={route} class="screen-enter">
+        {route === "hub" && <Hub />}
+        {route === "energy" && <EnergyDashboard />}
+        {route === "habits" && <HabitsScreen />}
+        {route === "balance" && <BalanceScreen param={param} />}
+        {route === "kaizen" && <KaizenScreen param={param} />}
+      </div>
       <BottomNav />
     </>
   );
