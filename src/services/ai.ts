@@ -216,6 +216,25 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "save_reflection",
+    description: `Сохранить ежедневную рефлексию. Используй в конце кайдзен-часа, когда пользователь порефлексировал о прошедшем дне.
+AI формулирует summary и insights на основе разговора. Сервер автоматически сохраняет контекст энергии и привычек.
+Upsert: если рефлексия за эту дату уже есть — обновляет.`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        date: { type: "string", description: "Дата рефлексии в формате YYYY-MM-DD (обычно вчера)" },
+        summary: { type: "string", description: "Краткое резюме рефлексии (2-4 предложения). Что было ключевым, что понял." },
+        insights: {
+          type: "array",
+          items: { type: "string" },
+          description: "Ключевые инсайты — конкретные выводы. Например: 'Без перерывов после 4 часов работы ментальная падает ниже 4'",
+        },
+      },
+      required: ["date", "summary", "insights"],
+    },
+  },
+  {
     name: "start_balance_assessment",
     description: "Получить данные для AI-guided оценки баланса. Возвращает по каждой сфере: оценку, привычки, автометрики, цели. Вызови ПЕРЕД оценкой сфер.",
     input_schema: {
@@ -283,6 +302,9 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - delete_habit — удалить привычку
 - start_energy_checkin — запустить ПОЛНУЮ оценку энергии с кнопками. ТОЛЬКО когда пользователь ПРЯМО просит ("запиши энергию", "давай чекин"). НЕ запускай когда человек просто рассказывает о самочувствии — для этого используй DATA-тег.
 - get_user_habits — посмотреть текущие привычки
+- save_algorithm — сохранить персональный алгоритм (протокол, чеклист)
+- get_algorithms — найти алгоритмы из библиотеки знаний
+- save_reflection — сохранить ежедневную рефлексию (кайдзен-час)
 
 РАЗНИЦА МЕЖДУ ЧЕКИНОМ И DATA-ТЕГОМ:
 - Человек говорит "устал после кодинга" → DATA-тег (пассивная заметка), НЕ чекин
@@ -789,6 +811,110 @@ async function executeTool(
 
       return {
         text: `Найдено ${algorithms.length} алгоритм(ов):\n${list}`,
+        actions: [],
+      };
+    }
+
+    case "save_reflection": {
+      const input = toolInput as {
+        date: string;
+        summary: string;
+        insights: string[];
+      };
+
+      // Parse date
+      const reflectionDate = new Date(input.date + "T00:00:00.000Z");
+      if (isNaN(reflectionDate.getTime())) {
+        return { text: "Некорректная дата. Используй формат YYYY-MM-DD.", actions: [] };
+      }
+
+      // Build energy context for that date
+      const dateStart = new Date(input.date + "T00:00:00.000Z");
+      const dateEnd = new Date(input.date + "T23:59:59.999Z");
+
+      const energyLogs = await prisma.energyLog.findMany({
+        where: {
+          userId,
+          createdAt: { gte: dateStart, lte: dateEnd },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+      const energyContext = energyLogs.length > 0
+        ? energyLogs
+            .map(
+              (l) =>
+                `${l.logType}: физ=${l.physical} мент=${l.mental} эмо=${l.emotional} дух=${l.spiritual}`
+            )
+            .join("; ")
+        : "Нет записей энергии за этот день";
+
+      // Build habits context for that date
+      const habitLogs = await prisma.habitLog.findMany({
+        where: {
+          userId,
+          date: dateStart,
+        },
+        include: {
+          habit: { select: { name: true, icon: true } },
+        },
+      });
+
+      const totalHabits = await prisma.habit.count({
+        where: { userId, isActive: true },
+      });
+
+      const habitsContext =
+        habitLogs.length > 0
+          ? `${habitLogs.length}/${totalHabits}: ${habitLogs.map((l) => `${l.habit.icon} ${l.habit.name}`).join(", ")}`
+          : `0/${totalHabits} привычек выполнено`;
+
+      // Get current session ID
+      const activeSession = await prisma.session.findFirst({
+        where: { userId, status: "active" },
+        orderBy: { createdAt: "desc" },
+      });
+
+      // Upsert: create or update reflection for this date
+      const existingReflection = await prisma.reflection.findFirst({
+        where: {
+          userId,
+          date: {
+            gte: dateStart,
+            lte: dateEnd,
+          },
+        },
+      });
+
+      let reflection;
+      if (existingReflection) {
+        reflection = await prisma.reflection.update({
+          where: { id: existingReflection.id },
+          data: {
+            summary: input.summary,
+            insights: input.insights,
+            energyContext,
+            habitsContext,
+            sessionId: activeSession?.id || null,
+          },
+        });
+      } else {
+        reflection = await prisma.reflection.create({
+          data: {
+            userId,
+            date: reflectionDate,
+            summary: input.summary,
+            insights: input.insights,
+            energyContext,
+            habitsContext,
+            sessionId: activeSession?.id || null,
+          },
+        });
+      }
+
+      const insightsCount = input.insights.length;
+      return {
+        text: `Рефлексия за ${input.date} ${existingReflection ? "обновлена" : "сохранена"}. ${insightsCount} инсайт(ов). Энергия: ${energyContext.slice(0, 60)}. Привычки: ${habitsContext.slice(0, 60)}.`,
         actions: [],
       };
     }
