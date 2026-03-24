@@ -113,24 +113,7 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
         </div>
       )}
 
-      {/* Strength bar */}
-      <div class="strength-section">
-        <div class="strength-header">
-          <span class="strength-label">Сила привычки</span>
-          <span class="strength-value">{Math.round(habit.strength ?? 0)}%</span>
-        </div>
-        <div class="strength-bar-bg">
-          <div class="strength-bar-fill" style={{ width: `${Math.min(100, habit.strength ?? 0)}%` }} />
-        </div>
-      </div>
-
-      <div class="detail-stats">
-        <div>🔥 {s?.streakCurrent ?? habit.streakCurrent} дней (лучший: {s?.streakBest ?? habit.streakBest})</div>
-        <div>📊 {s?.consistency30d ?? habit.consistency30d}% за месяц</div>
-        <div>❄️ {s ? s.freezesRemaining : Math.max(0, (habit.gracePeriod ?? 2) - (habit.gracesUsed ?? 0))} пропусков осталось на неделе</div>
-      </div>
-
-      {/* Meaning Framework */}
+      {/* Meaning Framework — always first */}
       <div class="detail-section-title">Зачем это тебе</div>
       <div class="detail-why">
         {editingWhy ? (
@@ -228,6 +211,23 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
             </button>
           </>
         )}
+      </div>
+
+      {/* Strength bar */}
+      <div class="strength-section">
+        <div class="strength-header">
+          <span class="strength-label">Сила привычки</span>
+          <span class="strength-value">{Math.round(habit.strength ?? 0)}%</span>
+        </div>
+        <div class="strength-bar-bg">
+          <div class="strength-bar-fill" style={{ width: `${Math.min(100, habit.strength ?? 0)}%` }} />
+        </div>
+      </div>
+
+      <div class="detail-stats">
+        <div>🔥 {s?.streakCurrent ?? habit.streakCurrent} дней (лучший: {s?.streakBest ?? habit.streakBest})</div>
+        <div>📊 {s?.consistency30d ?? habit.consistency30d}% за месяц</div>
+        <div>❄️ {s ? s.freezesRemaining : Math.max(0, (habit.gracePeriod ?? 2) - (habit.gracesUsed ?? 0))} пропусков осталось на неделе</div>
       </div>
 
       {/* Duration info */}
