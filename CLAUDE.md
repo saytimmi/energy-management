@@ -11,8 +11,8 @@ Telegram бот + Mini App — персональная операционная
 Фаза 1:  docs/superpowers/plans/2026-03-24-phase1-foundation.md   ✅ ЗАВЕРШЕНА
 Фаза 2:  docs/superpowers/plans/2026-03-24-phase2-balance.md      ✅ ЗАВЕРШЕНА
 Фаза 3:  docs/superpowers/plans/2026-03-24-phase3-kaizen.md       ✅ ЗАВЕРШЕНА
-Фаза 4:  docs/superpowers/plans/2026-03-24-phase4-strategy.md     ← СЛЕДУЮЩАЯ
-Фаза 5:  docs/superpowers/plans/2026-03-24-phase5-polish.md
+Фаза 4:  docs/superpowers/plans/2026-03-24-phase4-strategy.md     ✅ ЗАВЕРШЕНА
+Фаза 5:  docs/superpowers/plans/2026-03-24-phase5-polish.md      ← СЛЕДУЮЩАЯ
 ```
 
 **Правила:** Не добавляй ничего от себя. Следуй плану шаг за шагом. Каждая фаза зависит от предыдущей. Прочитай план Phase 4 и выполняй задачи последовательно.
@@ -165,6 +165,12 @@ Railway auto-deploy из main. Порт задаётся через env `PORT` (
 | POST | /api/habits/:id/resume | Возобновить после паузы |
 | GET | /api/habits/:id/stats | Стрик, consistency, strength, heatmap |
 | GET | /api/habits/:id/correlation | Корреляция привычка ↔ энергия |
+| GET | /api/mission | Миссия пользователя |
+| PUT | /api/mission | Обновить миссию (upsert) |
+| GET | /api/goals | Цели (фильтры: lifeArea, timeHorizon, status) |
+| POST | /api/goals | Создать цель |
+| PATCH | /api/goals/:id | Обновить цель |
+| GET | /api/strategy | Стратегия (mission + goals + areas + habits) |
 
 ## AI Bot
 
