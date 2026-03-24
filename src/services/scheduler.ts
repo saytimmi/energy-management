@@ -4,6 +4,7 @@ import { runDailyHabitCron, runWeeklyHabitReset } from "./habit-cron.js";
 import { sendWeeklyDigest } from "./weekly-digest.js";
 import { sendRoutineReminders } from "./habit-cron.js";
 import { checkBalanceAssessment } from "./balance-cron.js";
+import { sendKaizenReminders } from "./kaizen-reminder.js";
 
 const tasks: ScheduledTask[] = [];
 
@@ -69,6 +70,13 @@ export function startScheduler(): void {
   }, { timezone: "Asia/Shanghai" });
   tasks.push(balanceCheck);
   console.log("Balance assessment check scheduled: 0 10 * * * (Asia/Shanghai)");
+
+  // Kaizen morning reminder — daily at 8:00 AM
+  const kaizenReminder = cron.schedule("0 8 * * *", () => {
+    sendKaizenReminders().catch(err => console.error("Kaizen reminder failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(kaizenReminder);
+  console.log("Kaizen reminder scheduled: 0 8 * * * (Asia/Shanghai)");
 }
 
 export function stopScheduler(): void {
