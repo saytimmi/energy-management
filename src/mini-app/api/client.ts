@@ -1,5 +1,5 @@
 import { getInitData } from "../telegram";
-import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation } from "./types";
+import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail } from "./types";
 
 const BASE = "";
 
@@ -61,4 +61,9 @@ export const api = {
   deleteHabit: (id: number) => del<{ ok: boolean }>(`/api/habits/${id}`),
   pauseHabit: (id: number, days: number) => post<HabitData>(`/api/habits/${id}/pause`, { days }),
   resumeHabit: (id: number) => post<HabitData>(`/api/habits/${id}/resume`, {}),
+  balance: () => request<BalanceOverview>("/api/balance"),
+  balanceRadar: () => request<RadarData>("/api/balance/radar"),
+  balanceArea: (area: string) => request<BalanceAreaDetail>(`/api/balance/${area}`),
+  setBalanceGoal: (data: { area: string; targetScore?: number; identity?: string; isFocus?: boolean }) =>
+    post<{ ok: boolean }>("/api/balance/goals", data),
 };
