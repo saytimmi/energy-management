@@ -1,6 +1,7 @@
 import { useEffect } from "preact/hooks";
 import { RadarChart } from "./RadarChart";
 import { BalanceDetail } from "./BalanceDetail";
+import { StrategyScreen } from "./StrategyScreen";
 import {
   balanceOverview, radarData, balanceLoading, balanceError,
   loadBalanceOverview,
@@ -14,6 +15,11 @@ interface BalanceScreenProps {
 }
 
 export function BalanceScreen({ param }: BalanceScreenProps) {
+  // Route to strategy sub-screen
+  if (param === "strategy") {
+    return <StrategyScreen />;
+  }
+
   // If param is an area name, show detail
   const VALID_AREAS = ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"];
   if (param && VALID_AREAS.includes(param)) {
@@ -31,6 +37,11 @@ export function BalanceScreen({ param }: BalanceScreenProps) {
   const handleAreaClick = (area: string) => {
     haptic("light");
     navigate("balance", area);
+  };
+
+  const handleStrategy = () => {
+    haptic("medium");
+    navigate("balance", "strategy");
   };
 
   const handleAssess = () => {
@@ -81,6 +92,12 @@ export function BalanceScreen({ param }: BalanceScreenProps) {
         )}
       </header>
       <main class="views">
+        {/* Strategy button */}
+        <button class="strategy-nav-btn" onClick={handleStrategy}>
+          🧭 Миссия и цели
+          <span style={{ opacity: 0.4, fontSize: "12px" }}>→</span>
+        </button>
+
         {/* Radar Chart */}
         {radar && hasAnyScores ? (
           <div class="balance-radar-card">
