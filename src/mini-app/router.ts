@@ -1,24 +1,39 @@
-import { signal } from "@preact/signals";
+import { signal, computed } from "@preact/signals";
 
-export type Route = "hub" | "energy" | "habits" | "journal";
+export type Route = "hub" | "energy" | "habits" | "journal" | "balance" | "kaizen";
 
-export const currentRoute = signal<Route>("hub");
+const VALID_ROUTES: Route[] = ["hub", "energy", "habits", "journal", "balance", "kaizen"];
 
-export function navigate(route: Route): void {
-  window.location.hash = route;
+export interface ParsedRoute {
+  route: Route;
+  param?: string;
 }
 
-function syncRoute(): void {
-  const hash = window.location.hash.slice(1);
-  if (hash === "timeline") {
-    window.location.hash = "energy";
-    return;
-  }
-  const valid: Route[] = ["hub", "energy", "habits", "journal"];
-  currentRoute.value = valid.includes(hash as Route) ? (hash as Route) : "hub";
+export function parseRoute(hash: string): ParsedRoute {
+  const raw = hash.replace(/^#\/?/, "");
+  if (!raw) return { route: "hub", param: undefined };
+
+  const [first, ...rest] = raw.split("/");
+  const route = VALID_ROUTES.includes(first as Route) ? (first as Route) : "hub";
+  const param = rest.length > 0 ? rest.join("/") : undefined;
+
+  return { route, param };
 }
 
-export function initRouter(): void {
-  syncRoute();
-  window.addEventListener("hashchange", syncRoute);
+export const currentParsedRoute = signal<ParsedRoute>({ route: "hub", param: undefined });
+
+export const currentRoute = computed<Route>(() => currentParsedRoute.value.route);
+export const currentParam = computed<string | undefined>(() => currentParsedRoute.value.param);
+
+export function navigate(route: Route, param?: string) {
+  const hash = param ? `#${route}/${param}` : `#${route}`;
+  window.location.hash = hash;
+}
+
+export function initRouter() {
+  const update = () => {
+    currentParsedRoute.value = parseRoute(window.location.hash);
+  };
+  window.addEventListener("hashchange", update);
+  update();
 }
