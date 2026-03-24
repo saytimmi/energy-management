@@ -198,6 +198,24 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "get_algorithms",
+    description: `Найти персональные алгоритмы пользователя из его библиотеки знаний.
+Используй когда пользователь спрашивает "как делать X?", "у меня был протокол для...", "напомни алгоритм".
+Поиск по названию и контексту. Возвращает топ-5 по релевантности.`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Поисковый запрос. Что ищет пользователь? Например: 'встреча', 'бессонница', 'решения'" },
+        lifeArea: {
+          type: "string",
+          enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"],
+          description: "Фильтр по сфере жизни (опционально).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: "start_balance_assessment",
     description: "Получить данные для AI-guided оценки баланса. Возвращает по каждой сфере: оценку, привычки, автометрики, цели. Вызови ПЕРЕД оценкой сфер.",
     input_schema: {
@@ -719,6 +737,58 @@ async function executeTool(
 
       return {
         text: `Алгоритм сохранён: ${algorithm.icon} "${algorithm.title}" (${input.steps.length} шагов).${input.lifeArea ? ` Сфера: ${input.lifeArea}.` : ""} Доступен в мини-приложении.`,
+        actions: [],
+      };
+    }
+
+    case "get_algorithms": {
+      const input = toolInput as { query?: string; lifeArea?: string };
+
+      const where: Record<string, unknown> = { userId, isActive: true };
+
+      if (input.lifeArea) {
+        where.lifeArea = input.lifeArea;
+      }
+
+      if (input.query && input.query.trim()) {
+        where.OR = [
+          { title: { contains: input.query.trim(), mode: "insensitive" } },
+          { context: { contains: input.query.trim(), mode: "insensitive" } },
+        ];
+      }
+
+      const algorithms = await prisma.algorithm.findMany({
+        where,
+        orderBy: [{ usageCount: "desc" }, { createdAt: "desc" }],
+        take: 5,
+      });
+
+      if (algorithms.length === 0) {
+        return {
+          text: input.query
+            ? `Алгоритмов по запросу "${input.query}" не найдено. Можно создать новый.`
+            : "У пользователя пока нет сохранённых алгоритмов.",
+          actions: [],
+        };
+      }
+
+      // Increment usage for viewed algorithms
+      for (const algo of algorithms) {
+        await prisma.algorithm.update({
+          where: { id: algo.id },
+          data: { usageCount: { increment: 1 }, lastUsedAt: new Date() },
+        });
+      }
+
+      const list = algorithms
+        .map((a) => {
+          const steps = (a.steps as string[]).slice(0, 3).join(", ");
+          return `${a.icon} ${a.title} (${(a.steps as string[]).length} шагов): ${steps}...`;
+        })
+        .join("\n");
+
+      return {
+        text: `Найдено ${algorithms.length} алгоритм(ов):\n${list}`,
         actions: [],
       };
     }
