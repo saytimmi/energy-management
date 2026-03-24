@@ -2181,3 +2181,72 @@ body {
 }
 .trigger-recommendations { margin-bottom: 16px; }
 .trigger-rec-item { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+
+/* ── Settings Screen ── */
+.hub-settings-btn {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; transition: background 0.15s;
+}
+.hub-settings-btn:active { background: var(--surface); }
+.settings-section {
+  background: var(--surface); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px; padding: 16px; margin-bottom: 12px;
+}
+.settings-section-title {
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;
+}
+.settings-toggle-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.settings-toggle-row:last-child { border-bottom: none; }
+.settings-toggle-label { font-size: 14px; font-weight: 500; }
+.settings-toggle-sublabel { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.settings-toggle {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: rgba(255,255,255,0.1); position: relative;
+  transition: background 0.2s;
+}
+.settings-toggle.on { background: var(--accent); }
+.settings-toggle-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: white; position: absolute; top: 2px; left: 2px;
+  transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.settings-toggle.on .settings-toggle-thumb { transform: translateX(18px); }
+.settings-vacation-active {
+  text-align: center; padding: 12px;
+}
+.settings-vacation-badge {
+  font-size: 14px; font-weight: 600; color: #ffa85b;
+  margin-bottom: 8px;
+}
+.settings-vacation-end-btn {
+  background: var(--surface); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); padding: 10px 24px; border-radius: 12px;
+  font-size: 14px; cursor: pointer;
+}
+.settings-vacation-start-btn {
+  width: 100%; background: none; border: 1px dashed rgba(255,255,255,0.1);
+  color: var(--text2); padding: 12px; border-radius: 12px;
+  font-size: 14px; cursor: pointer;
+}
+.settings-vacation-preset-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;
+}
+.settings-vacation-preset-btn {
+  background: var(--surface); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); padding: 10px; border-radius: 10px;
+  font-size: 14px; cursor: pointer;
+}
+.settings-vacation-preset-btn:active { background: rgba(255,255,255,0.1); }
+.settings-vacation-cancel {
+  background: none; border: none; color: var(--text3);
+  font-size: 13px; cursor: pointer; padding: 8px; width: 100%;
+}
+.settings-timezone {
+  font-size: 14px; display: flex; flex-direction: column; gap: 4px;
+}

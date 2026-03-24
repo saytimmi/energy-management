@@ -366,3 +366,22 @@ export interface AppConfig {
   botUsername: string;
   webappUrl: string;
 }
+
+// --- Settings ---
+
+export interface NotificationPrefs {
+  morningBrief: boolean;
+  morningTime: string;
+  afternoonReminder: boolean;
+  eveningReminder: boolean;
+  weeklyDigest: boolean;
+  balanceReminder: boolean;
+  balanceIntervalDays: number;
+}
+
+export interface SettingsData {
+  timezone: string;
+  vacationUntil: string | null;
+  vacationReason: string | null;
+  notificationPrefs: NotificationPrefs;
+}

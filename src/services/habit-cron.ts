@@ -3,6 +3,7 @@
  */
 
 import prisma from "../db.js";
+import { isOnVacation } from "./awareness.js";
 import {
   calculateStreak,
   calculateConsistency30d,
@@ -57,6 +58,27 @@ export async function getMedianCompletionHour(
 export async function runDailyHabitCron(): Promise<void> {
   const today = new Date();
   console.log(`[habit-cron] Daily run started at ${today.toISOString()}`);
+
+  // Auto-resume vacation for users whose vacationUntil has passed
+  try {
+    const expiredVacations = await prisma.user.findMany({
+      where: { vacationUntil: { lte: today, not: null } },
+    });
+    for (const user of expiredVacations) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { vacationUntil: null, vacationReason: null },
+      });
+      // Resume their habits
+      await prisma.habit.updateMany({
+        where: { userId: user.id, isActive: true, pausedAt: { not: null } },
+        data: { pausedAt: null, pausedUntil: null },
+      });
+      console.log(`[habit-cron] Auto-resumed vacation for user ${user.id}`);
+    }
+  } catch (err) {
+    console.error("[habit-cron] Vacation auto-resume failed:", err);
+  }
 
   // Auto-resume paused habits whose pausedUntil has passed
   await prisma.habit.updateMany({
@@ -267,6 +289,7 @@ export async function sendRoutineReminders(slot: "morning" | "afternoon" | "even
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
       await sendRoutineReminder(Number(user.telegramId), user.id, slot);
     } catch (err) {
       console.error(`[habit-cron] Failed to send ${slot} reminder to user ${user.id}:`, err);

@@ -1,8 +1,8 @@
 import { signal, computed } from "@preact/signals";
 
-export type Route = "hub" | "energy" | "habits" | "balance" | "kaizen";
+export type Route = "hub" | "energy" | "habits" | "balance" | "kaizen" | "settings";
 
-const VALID_ROUTES: Route[] = ["hub", "energy", "habits", "balance", "kaizen"];
+const VALID_ROUTES: Route[] = ["hub", "energy", "habits", "balance", "kaizen", "settings"];
 
 export interface ParsedRoute {
   route: Route;
