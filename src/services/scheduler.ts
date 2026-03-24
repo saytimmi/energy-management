@@ -6,6 +6,7 @@ import { sendRoutineReminders } from "./habit-cron.js";
 import { checkBalanceAssessment } from "./balance-cron.js";
 import { sendKaizenReminders } from "./kaizen-reminder.js";
 import { sendQuarterlyReview, sendMissionReview } from "./strategy-cron.js";
+import { sendDailyNudges } from "./smart-nudges.js";
 
 const tasks: ScheduledTask[] = [];
 
@@ -78,6 +79,13 @@ export function startScheduler(): void {
   }, { timezone: "Asia/Shanghai" });
   tasks.push(kaizenReminder);
   console.log("Kaizen reminder scheduled: 0 8 * * * (Asia/Shanghai)");
+
+  // Daily smart nudge — 9:00 (after kaizen reminder)
+  const dailyNudge = cron.schedule("0 9 * * *", () => {
+    sendDailyNudges().catch(err => console.error("Daily nudge failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(dailyNudge);
+  console.log("Daily smart nudge scheduled: 0 9 * * * (Asia/Shanghai)");
 
   // Quarterly goal review — 1st of Jan/Apr/Jul/Oct at 10:00
   const quarterlyReview = cron.schedule("0 10 1 1,4,7,10 *", () => {

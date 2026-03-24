@@ -11,8 +11,10 @@ import { chat } from "./services/ai.js";
 import type { ChatAction } from "./services/ai.js";
 import { transcribeVoice, downloadTelegramFile } from "./services/voice.js";
 import { findOrCreateUser } from "./db.js";
+import prisma from "./db.js";
 import { trackError } from "./services/monitor.js";
 import { handleHabitCallback } from "./handlers/habits.js";
+import { handleGoalCallback } from "./services/smart-nudges.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
@@ -130,6 +132,17 @@ bot.callbackQuery(/^habit_(complete|skip|later):/, handleHabitCallback);
 // Inline keyboard callbacks (weekly digest habit suggestions)
 bot.callbackQuery(/^digest_habit/, async (ctx) => {
   await handleDigestCallback(ctx, ctx.callbackQuery.data);
+});
+
+// Inline keyboard callbacks (goal completion from smart nudges)
+bot.callbackQuery(/^goal_(done|drop):/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const from = ctx.from;
+  if (!from || !ctx.chat) return;
+  const user = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) } });
+  if (user) {
+    await handleGoalCallback(ctx.chat.id, user.id, ctx.callbackQuery.data);
+  }
 });
 
 // Inline keyboard callbacks (checkin flow)
