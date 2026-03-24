@@ -46,7 +46,29 @@ export function strategyRoute(router: Router): void {
         // Fetch habits for this area
         const habits = await prisma.habit.findMany({
           where: { userId, lifeArea: area, isActive: true },
-          select: { id: true, name: true, icon: true, streakCurrent: true, consistency30d: true },
+          select: { id: true, name: true, icon: true, streakCurrent: true, consistency30d: true, goalId: true },
+        });
+
+        // Group habits by goal
+        const habitsByGoal = new Map<number, typeof habits>();
+        const unlinkedHabits: typeof habits = [];
+        for (const h of habits) {
+          if (h.goalId) {
+            const list = habitsByGoal.get(h.goalId) || [];
+            list.push(h);
+            habitsByGoal.set(h.goalId, list);
+          } else {
+            unlinkedHabits.push(h);
+          }
+        }
+
+        const mapGoal = (g: typeof areaGoals[0]) => ({
+          id: g.id, title: g.title, description: g.description, period: g.period, status: g.status,
+          progress: g.progress ?? 0, metric: g.metric ?? null,
+          targetValue: g.targetValue ?? null, currentValue: g.currentValue ?? 0,
+          habits: (habitsByGoal.get(g.id) || []).map(h => ({
+            id: h.id, name: h.name, icon: h.icon, streak: h.streakCurrent, consistency: h.consistency30d,
+          })),
         });
 
         const areaData: StrategyArea = {
@@ -57,13 +79,12 @@ export function strategyRoute(router: Router): void {
           targetScore: bg?.targetScore ?? null,
           identity: bg?.identity ?? null,
           isFocus: bg?.isFocus ?? false,
-          yearGoals: yearGoals.map(g => ({
-            id: g.id, title: g.title, description: g.description, period: g.period, status: g.status,
+          yearGoals: yearGoals.map(mapGoal),
+          quarterGoals: quarterGoals.map(mapGoal),
+          habits: unlinkedHabits.map(h => ({
+            id: h.id, name: h.name, icon: h.icon, streak: h.streakCurrent, consistency: h.consistency30d,
           })),
-          quarterGoals: quarterGoals.map(g => ({
-            id: g.id, title: g.title, description: g.description, period: g.period, status: g.status,
-          })),
-          habits: habits.map(h => ({
+          unlinkedHabits: unlinkedHabits.map(h => ({
             id: h.id, name: h.name, icon: h.icon, streak: h.streakCurrent, consistency: h.consistency30d,
           })),
         };
@@ -95,6 +116,19 @@ export function strategyRoute(router: Router): void {
 
 // --- Helpers ---
 
+interface StrategyGoalData {
+  id: number;
+  title: string;
+  description: string | null;
+  period: string;
+  status: string;
+  progress: number;
+  metric: string | null;
+  targetValue: number | null;
+  currentValue: number;
+  habits: { id: number; name: string; icon: string; streak: number; consistency: number }[];
+}
+
 interface StrategyArea {
   area: string;
   label: string;
@@ -103,9 +137,10 @@ interface StrategyArea {
   targetScore: number | null;
   identity: string | null;
   isFocus: boolean;
-  yearGoals: { id: number; title: string; description: string | null; period: string; status: string }[];
-  quarterGoals: { id: number; title: string; description: string | null; period: string; status: string }[];
+  yearGoals: StrategyGoalData[];
+  quarterGoals: StrategyGoalData[];
   habits: { id: number; name: string; icon: string; streak: number; consistency: number }[];
+  unlinkedHabits: { id: number; name: string; icon: string; streak: number; consistency: number }[];
 }
 
 async function getLatestRatings(userId: number): Promise<{ area: string; score: number }[]> {

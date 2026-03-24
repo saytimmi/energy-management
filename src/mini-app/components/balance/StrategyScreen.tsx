@@ -2,7 +2,7 @@ import { useEffect } from "preact/hooks";
 import { strategyData, strategyLoading, strategyError, loadStrategy } from "../../store/strategy";
 import { navigate } from "../../router";
 import { haptic, openTelegramLink } from "../../telegram";
-import type { StrategyArea } from "../../api/types";
+import type { StrategyArea, StrategyGoal } from "../../api/types";
 
 export function StrategyScreen() {
   useEffect(() => { loadStrategy(); }, []);
@@ -152,6 +152,37 @@ export function StrategyScreen() {
   );
 }
 
+// --- Goal With Progress ---
+
+function GoalWithProgress({ goal }: { goal: StrategyGoal }) {
+  return (
+    <div class="strategy-goal-progress">
+      <div class="strategy-goal-item">{goal.title}</div>
+      <div class="strategy-goal-bar-row">
+        <div class="strategy-goal-bar">
+          <div class="strategy-goal-bar-fill" style={{ width: `${goal.progress}%` }} />
+        </div>
+        <span class="strategy-goal-percent">{goal.progress}%</span>
+      </div>
+      {goal.metric && goal.targetValue && (
+        <div class="strategy-goal-metric">
+          {goal.currentValue}/{goal.targetValue} {goal.metric}
+        </div>
+      )}
+      {goal.habits.length > 0 && (
+        <div class="strategy-goal-habits">
+          {goal.habits.map(h => (
+            <span key={h.id} class="strategy-habit-chip small">
+              {h.icon} {h.name}
+              {h.streak > 0 && <span class="strategy-habit-streak">{h.streak}d</span>}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Focus Area Card (expanded) ---
 
 function FocusAreaCard({ area }: { area: StrategyArea }) {
@@ -159,6 +190,8 @@ function FocusAreaCard({ area }: { area: StrategyArea }) {
     haptic("light");
     navigate("balance", area.area);
   };
+
+  const unlinked = area.unlinkedHabits || area.habits;
 
   return (
     <div class="strategy-focus-card" onClick={handleAreaClick}>
@@ -182,7 +215,7 @@ function FocusAreaCard({ area }: { area: StrategyArea }) {
         <div class="strategy-goals-section">
           <div class="strategy-goals-label">Цель года</div>
           {area.yearGoals.map(g => (
-            <div key={g.id} class="strategy-goal-item">{g.title}</div>
+            <GoalWithProgress key={g.id} goal={g} />
           ))}
         </div>
       )}
@@ -191,17 +224,17 @@ function FocusAreaCard({ area }: { area: StrategyArea }) {
         <div class="strategy-goals-section">
           <div class="strategy-goals-label">Цель квартала</div>
           {area.quarterGoals.map(g => (
-            <div key={g.id} class="strategy-goal-item">{g.title}</div>
+            <GoalWithProgress key={g.id} goal={g} />
           ))}
         </div>
       )}
 
-      {area.habits.length > 0 && (
+      {unlinked.length > 0 && (
         <div class="strategy-habits-chips">
-          {area.habits.map(h => (
+          {unlinked.map(h => (
             <span key={h.id} class="strategy-habit-chip">
               {h.icon} {h.name}
-              {h.streak > 0 && <span class="strategy-habit-streak">🔥{h.streak}</span>}
+              {h.streak > 0 && <span class="strategy-habit-streak">{h.streak}d</span>}
             </span>
           ))}
         </div>
@@ -218,15 +251,18 @@ function CompactAreaCard({ area }: { area: StrategyArea }) {
     navigate("balance", area.area);
   };
 
-  const yearGoalText = area.yearGoals.length > 0 ? area.yearGoals[0].title : null;
+  const yearGoal = area.yearGoals.length > 0 ? area.yearGoals[0] : null;
 
   return (
     <div class="strategy-compact-card" onClick={handleClick}>
       <span class="strategy-compact-icon">{area.icon}</span>
       <div class="strategy-compact-info">
         <div class="strategy-compact-name">{area.label}</div>
-        {yearGoalText && (
-          <div class="strategy-compact-goal">{yearGoalText}</div>
+        {yearGoal && (
+          <div class="strategy-compact-goal">
+            {yearGoal.title}
+            {yearGoal.progress > 0 && <span class="strategy-compact-progress"> {yearGoal.progress}%</span>}
+          </div>
         )}
       </div>
       {area.score !== null && (
@@ -236,4 +272,3 @@ function CompactAreaCard({ area }: { area: StrategyArea }) {
     </div>
   );
 }
-

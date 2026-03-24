@@ -2062,6 +2062,23 @@ body {
   color: var(--text3);
 }
 
+/* Goal Progress in Strategy */
+.strategy-goal-progress { margin-bottom: 8px; }
+.strategy-goal-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.strategy-goal-bar {
+  flex: 1; height: 6px; background: rgba(255,255,255,0.08);
+  border-radius: 3px; overflow: hidden;
+}
+.strategy-goal-bar-fill {
+  height: 100%; background: var(--accent); border-radius: 3px;
+  transition: width 0.3s;
+}
+.strategy-goal-percent { font-size: 11px; color: var(--text3); min-width: 28px; }
+.strategy-goal-metric { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.strategy-goal-habits { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.strategy-habit-chip.small { font-size: 11px; padding: 2px 6px; }
+.strategy-compact-progress { color: var(--accent); font-size: 11px; }
+
 /* Compact Area Card */
 .strategy-compact-card {
   display: flex;
