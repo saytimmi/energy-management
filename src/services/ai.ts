@@ -145,13 +145,15 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "rate_life_area",
-    description: "Сохранить оценку сферы жизни (колесо баланса). Используй когда пользователь оценивает сферу жизни от 1 до 10. Сферы: здоровье, карьера, отношения, финансы, семья, развитие, отдых, среда.",
+    description: "Сохранить оценку сферы жизни (колесо баланса). Используй после обсуждения аспектов сферы. Для AI-guided assessment заполни subScores по каждому аспекту.",
     input_schema: {
       type: "object" as const,
       properties: {
         area: { type: "string", enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"], description: "Сфера жизни" },
-        score: { type: "number", description: "Оценка от 1 до 10" },
-        note: { type: "string", description: "Комментарий пользователя (если есть)" },
+        score: { type: "number", description: "Итоговая оценка от 1 до 10" },
+        note: { type: "string", description: "Комментарий" },
+        subScores: { type: "object", description: "Оценки аспектов (1-10). Здоровье: sleep,activity,nutrition,wellbeing,energy. Карьера: satisfaction,growth,income,skills,influence. И т.д." },
+        assessmentType: { type: "string", enum: ["subjective", "ai_guided"], description: "Тип оценки" },
       },
       required: ["area", "score"],
     },
@@ -479,19 +481,32 @@ async function executeTool(
     }
 
     case "rate_life_area": {
-      const input = toolInput as { area: string; score: number; note?: string };
+      const input = toolInput as { area: string; score: number; note?: string; subScores?: Record<string, number>; assessmentType?: string };
       const AREA_LABELS: Record<string, string> = {
         health: "Здоровье", career: "Карьера", relationships: "Отношения",
         finances: "Финансы", family: "Семья", growth: "Развитие",
         recreation: "Отдых", environment: "Среда",
       };
 
-      await prisma.balanceRating.create({
+      const clampedScore = Math.max(1, Math.min(10, Math.round(input.score)));
+
+      // Clamp subScores values to 1-10
+      let clampedSubScores: Record<string, number> | undefined;
+      if (input.subScores) {
+        clampedSubScores = {};
+        for (const [key, val] of Object.entries(input.subScores)) {
+          clampedSubScores[key] = Math.max(1, Math.min(10, Math.round(val)));
+        }
+      }
+
+      await (prisma.balanceRating.create as any)({
         data: {
           userId,
           area: input.area,
-          score: Math.max(1, Math.min(10, Math.round(input.score))),
+          score: clampedScore,
           note: input.note || null,
+          ...(clampedSubScores ? { subScores: clampedSubScores } : {}),
+          ...(input.assessmentType ? { assessmentType: input.assessmentType } : {}),
         },
       });
 
@@ -508,8 +523,15 @@ async function executeTool(
         }
       }
 
+      // Show subScores in confirmation
+      let subScoresText = "";
+      if (clampedSubScores) {
+        const parts = Object.entries(clampedSubScores).map(([k, v]) => `${k}: ${v}`);
+        subScoresText = `\nАспекты: ${parts.join(", ")}`;
+      }
+
       return {
-        text: `Оценка записана: ${AREA_LABELS[input.area] || input.area} = ${input.score}/10.\n\nТекущий баланс:\n${latestRatings.join("\n") || "Только одна сфера оценена."}`,
+        text: `Оценка записана: ${AREA_LABELS[input.area] || input.area} = ${clampedScore}/10${input.assessmentType === "ai_guided" ? " (AI-guided)" : ""}.${subScoresText}\n\nТекущий баланс:\n${latestRatings.join("\n") || "Только одна сфера оценена."}`,
         actions: [],
       };
     }
