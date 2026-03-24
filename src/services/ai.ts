@@ -173,6 +173,31 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "save_algorithm",
+    description: `Сохранить персональный алгоритм (протокол, чеклист) в библиотеку знаний пользователя.
+Используй когда пользователь описывает рабочий процесс, инструкцию, или в ходе рефлексии формируется набор шагов.
+Примеры: "Как проводить встречу", "Протокол восстановления после бессонницы", "Алгоритм принятия решений".`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        title: { type: "string", description: "Название алгоритма, краткое и понятное: 'Как проводить встречу'" },
+        icon: { type: "string", description: "Эмодзи иконка, подбери по смыслу: 🤝📋🧠💡🔧📝🎯🏃" },
+        lifeArea: {
+          type: "string",
+          enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"],
+          description: "Сфера жизни. Определи автоматически по контексту.",
+        },
+        steps: {
+          type: "array",
+          items: { type: "string" },
+          description: "Шаги алгоритма. Каждый шаг — одно действие. Минимум 2, максимум 10.",
+        },
+        context: { type: "string", description: "Из какой ситуации/рефлексии родился этот алгоритм. Кратко." },
+      },
+      required: ["title", "icon", "steps"],
+    },
+  },
+  {
     name: "start_balance_assessment",
     description: "Получить данные для AI-guided оценки баланса. Возвращает по каждой сфере: оценку, привычки, автометрики, цели. Вызови ПЕРЕД оценкой сфер.",
     input_schema: {
@@ -652,6 +677,48 @@ async function executeTool(
 
       return {
         text: `Цель для ${AREA_LABELS[input.area] || input.area} обновлена: ${parts.join(", ") || "без изменений"}.`,
+        actions: [],
+      };
+    }
+
+    case "save_algorithm": {
+      const input = toolInput as {
+        title: string;
+        icon: string;
+        lifeArea?: string;
+        steps: string[];
+        context?: string;
+      };
+
+      // Check for duplicate title
+      const existingAlgo = await prisma.algorithm.findFirst({
+        where: {
+          userId,
+          title: { equals: input.title, mode: "insensitive" },
+          isActive: true,
+        },
+      });
+
+      if (existingAlgo) {
+        return {
+          text: `Алгоритм "${existingAlgo.title}" уже существует (id: ${existingAlgo.id}). Обновить его или создать с другим названием?`,
+          actions: [],
+        };
+      }
+
+      const algorithm = await prisma.algorithm.create({
+        data: {
+          userId,
+          title: input.title,
+          icon: input.icon,
+          lifeArea: input.lifeArea || null,
+          steps: input.steps,
+          context: input.context || null,
+        },
+      });
+
+      return {
+        text: `Алгоритм сохранён: ${algorithm.icon} "${algorithm.title}" (${input.steps.length} шагов).${input.lifeArea ? ` Сфера: ${input.lifeArea}.` : ""} Доступен в мини-приложении.`,
         actions: [],
       };
     }
