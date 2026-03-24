@@ -5,6 +5,7 @@ import { sendWeeklyDigest } from "./weekly-digest.js";
 import { sendRoutineReminders } from "./habit-cron.js";
 import { checkBalanceAssessment } from "./balance-cron.js";
 import { sendKaizenReminders } from "./kaizen-reminder.js";
+import { sendQuarterlyReview, sendMissionReview } from "./strategy-cron.js";
 
 const tasks: ScheduledTask[] = [];
 
@@ -77,6 +78,20 @@ export function startScheduler(): void {
   }, { timezone: "Asia/Shanghai" });
   tasks.push(kaizenReminder);
   console.log("Kaizen reminder scheduled: 0 8 * * * (Asia/Shanghai)");
+
+  // Quarterly goal review — 1st of Jan/Apr/Jul/Oct at 10:00
+  const quarterlyReview = cron.schedule("0 10 1 1,4,7,10 *", () => {
+    sendQuarterlyReview().catch(err => console.error("Quarterly review failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(quarterlyReview);
+  console.log("Quarterly review scheduled: 0 10 1 1,4,7,10 * (Asia/Shanghai)");
+
+  // Yearly mission review — January 1st at 10:00
+  const yearlyReview = cron.schedule("0 10 1 1 *", () => {
+    sendMissionReview().catch(err => console.error("Mission review failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(yearlyReview);
+  console.log("Yearly mission review scheduled: 0 10 1 1 * (Asia/Shanghai)");
 }
 
 export function stopScheduler(): void {
