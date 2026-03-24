@@ -8,7 +8,7 @@ import { analyticsRoute } from "./api/analytics.js";
 import { observationsRoute } from "./api/observations.js";
 import { checkinTriggerRoute } from "./api/checkin-trigger.js";
 import { habitsRoute } from "./api/habits.js";
-import { kaizenRoute } from "./api/kaizen.js";
+import { diagnosticsRoute } from "./api/diagnostics.js";
 import { telegramAuth } from "./middleware/telegram-auth.js";
 import { config } from "./config.js";
 
@@ -34,7 +34,7 @@ export function startServer(port?: number): http.Server {
 
   // Public API routes (no auth)
   const apiRouter = Router();
-  kaizenRoute(apiRouter);
+  diagnosticsRoute(apiRouter);
   app.use("/api", apiRouter);
 
   // Authenticated API routes

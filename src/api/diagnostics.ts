@@ -1,8 +1,8 @@
 import { Router } from "express";
 import prisma from "../db.js";
 
-export function kaizenRoute(router: Router): void {
-  router.get("/kaizen", async (_req, res) => {
+export function diagnosticsRoute(router: Router): void {
+  router.get("/diagnostics", async (_req, res) => {
     try {
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -95,7 +95,7 @@ export function kaizenRoute(router: Router): void {
         })),
       });
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate kaizen report" });
+      res.status(500).json({ error: "Failed to generate diagnostics report" });
     }
   });
 }

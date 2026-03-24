@@ -26,12 +26,12 @@ export async function kaizenHandler(ctx: CommandContext<Context>): Promise<void>
 async function showDiagnostics(ctx: CommandContext<Context>): Promise<void> {
   try {
     const baseUrl = config.webappUrl || `http://localhost:${config.port}`;
-    const res = await fetch(`${baseUrl}/api/kaizen`);
+    const res = await fetch(`${baseUrl}/api/diagnostics`);
 
     if (!res.ok) {
       // Fallback: call local endpoint
-      const localRes = await fetch(`http://localhost:${config.port}/api/kaizen`);
-      if (!localRes.ok) throw new Error("Kaizen API unavailable");
+      const localRes = await fetch(`http://localhost:${config.port}/api/diagnostics`);
+      if (!localRes.ok) throw new Error("Diagnostics API unavailable");
       var data = await localRes.json();
     } else {
       var data = await res.json();
