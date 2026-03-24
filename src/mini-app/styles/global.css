@@ -1789,3 +1789,30 @@ body {
 .balance-hub-area-name { color: var(--text2); width: 64px; flex-shrink: 0; }
 .balance-hub-bar-container { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
 .balance-hub-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+/* Kaizen Hub Card */
+.kaizen-hub-badge {
+  font-size: 12px; font-weight: 600;
+}
+.kaizen-hub-badge.done { color: var(--physical); }
+.kaizen-hub-badge.pending { color: #ffc832; }
+
+.kaizen-hub-status {
+  font-size: 12px; line-height: 1.4; margin-top: 4px;
+}
+.kaizen-hub-status.pending { color: #ffc832; }
+.kaizen-hub-status.done { color: var(--text2); }
+
+.kaizen-hub-chips {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+}
+
+.kaizen-hub-chip {
+  padding: 2px 8px;
+  background: var(--surface2); border-radius: 6px;
+  font-size: 11px; color: var(--text2); font-weight: 400;
+  white-space: nowrap;
+}
+.kaizen-hub-chip.more {
+  color: var(--text3);
+}
