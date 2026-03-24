@@ -2,18 +2,26 @@
 
 Telegram бот + Mini App — персональная операционная система для управления жизнью.
 
-## СТАТУС ПРОЕКТА
+## ТЕКУЩИЙ ФОКУС
 
-Все 5 фаз реализованы. Проект в режиме итераций и улучшений.
+**v2 Improvements — 4 фазы (6-9).** Выполняй последовательно, начиная с Phase 6.
 
 ```
-Спек:    docs/superpowers/specs/2026-03-23-personal-os-design.md
+Дизайн v1:  docs/superpowers/specs/2026-03-23-personal-os-design.md
+Дизайн v2:  docs/superpowers/specs/2026-03-24-v2-improvements-design.md   ← ТЕКУЩИЙ СПЕК
+
 Фаза 1:  docs/superpowers/plans/2026-03-24-phase1-foundation.md   ✅ ЗАВЕРШЕНА
 Фаза 2:  docs/superpowers/plans/2026-03-24-phase2-balance.md      ✅ ЗАВЕРШЕНА
 Фаза 3:  docs/superpowers/plans/2026-03-24-phase3-kaizen.md       ✅ ЗАВЕРШЕНА
 Фаза 4:  docs/superpowers/plans/2026-03-24-phase4-strategy.md     ✅ ЗАВЕРШЕНА
 Фаза 5:  docs/superpowers/plans/2026-03-24-phase5-polish.md       ✅ ЗАВЕРШЕНА
+Фаза 6:  docs/superpowers/plans/2026-03-24-phase6-seamless-bot-app.md  ⬜ СЛЕДУЮЩАЯ
+Фаза 7:  docs/superpowers/plans/2026-03-24-phase7-smart-awareness.md   ⬜ ОЖИДАЕТ
+Фаза 8:  docs/superpowers/plans/2026-03-24-phase8-meaning-identity.md  ⬜ ОЖИДАЕТ
+Фаза 9:  docs/superpowers/plans/2026-03-24-phase9-living-goals.md      ⬜ ОЖИДАЕТ
 ```
+
+**Правила:** Читай план текущей фазы и выполняй задачи последовательно. Каждая фаза зависит от предыдущей. Не добавляй ничего от себя — следуй плану.
 
 ## Каскад системы (6 слоёв)
 
