@@ -4,6 +4,7 @@ import prisma from "../db.js";
 import { getRecoveryPractices } from "../knowledge/index.js";
 import { EnergyType } from "../knowledge/types.js";
 import { trackError, measured } from "./monitor.js";
+import { getAwarenessContext } from "./awareness.js";
 
 const anthropic = new Anthropic({
   apiKey: config.anthropicApiKey,
@@ -1672,6 +1673,14 @@ async function buildUserContext(userId: number): Promise<string> {
         lines.push(`  ${s.createdAt.toLocaleDateString("ru")}: ${s.summary}`);
       }
     }
+
+    // Awareness gaps — what's empty/stale
+    try {
+      const awarenessContext = await getAwarenessContext(userId);
+      if (awarenessContext) {
+        lines.push("\n" + awarenessContext);
+      }
+    } catch {}
 
     return lines.length > 0 ? lines.join("\n") : "Новый пользователь.";
   } catch {
