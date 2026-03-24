@@ -14,6 +14,7 @@ import { kaizenApiRoutes } from "./api/kaizen-api.js";
 import { missionRoute } from "./api/mission.js";
 import { goalsRoute } from "./api/goals.js";
 import { strategyRoute } from "./api/strategy.js";
+import { digestsRoute } from "./api/digests.js";
 import { energyRoute, configRoute } from "./api/energy.js";
 import { settingsRoute } from "./api/settings.js";
 import { telegramAuth } from "./middleware/telegram-auth.js";
@@ -61,6 +62,7 @@ export function startServer(port?: number): http.Server {
   strategyRoute(authedRouter);
   energyRoute(authedRouter);
   settingsRoute(authedRouter);
+  digestsRoute(authedRouter);
   app.use("/api", authedRouter);
 
   server = app.listen(listenPort, "0.0.0.0", () => {

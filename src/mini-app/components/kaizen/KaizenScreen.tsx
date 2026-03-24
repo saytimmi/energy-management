@@ -1,4 +1,5 @@
 import { useEffect } from "preact/hooks";
+import { useState } from "preact/hooks";
 import { navigate } from "../../router";
 import { haptic, openTelegramLink } from "../../telegram";
 import {
@@ -6,6 +7,7 @@ import {
   algorithms,
   reflections,
   kaizenObservations,
+  digests,
   reflectionStatusLoading,
   algorithmsLoading,
   reflectionsLoading,
@@ -14,15 +16,25 @@ import {
   loadMoreReflections,
 } from "../../store/kaizen";
 import { AlgorithmDetail } from "./AlgorithmDetail";
+import { DigestCard } from "./DigestCard";
+import { DigestDetail } from "./DigestDetail";
+import type { WeeklyDigestData } from "../../api/types";
 
 interface KaizenScreenProps {
   param?: string;
 }
 
 export function KaizenScreen({ param }: KaizenScreenProps) {
+  const [selectedDigest, setSelectedDigest] = useState<WeeklyDigestData | null>(null);
+
   useEffect(() => {
     loadKaizenData();
   }, []);
+
+  // Digest detail view
+  if (selectedDigest) {
+    return <DigestDetail digest={selectedDigest} onBack={() => setSelectedDigest(null)} />;
+  }
 
   // If param is a number, show AlgorithmDetail
   if (param && /^\d+$/.test(param)) {
@@ -73,6 +85,16 @@ export function KaizenScreen({ param }: KaizenScreenProps) {
                   navigate("kaizen", String(algo.id));
                 }}
               />
+            ))}
+          </div>
+        )}
+
+        {/* Weekly Digests */}
+        {digests.value.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div class="section-title">📊 Недельные дайджесты</div>
+            {digests.value.map(d => (
+              <DigestCard key={d.id} digest={d} onTap={setSelectedDigest} />
             ))}
           </div>
         )}

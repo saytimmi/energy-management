@@ -1,6 +1,6 @@
 import { signal, computed } from "@preact/signals";
 import { api } from "../api/client";
-import type { AlgorithmData, ReflectionData, ReflectionStatusData, Observation } from "../api/types";
+import type { AlgorithmData, ReflectionData, ReflectionStatusData, Observation, WeeklyDigestData } from "../api/types";
 
 // Reflection status
 export const reflectionStatus = signal<ReflectionStatusData | null>(null);
@@ -22,6 +22,10 @@ export const reflectionsHasMore = computed(() => {
 
 // Observations (migrated from journal)
 export const kaizenObservations = signal<Observation[]>([]);
+
+// Weekly digests
+export const digests = signal<WeeklyDigestData[]>([]);
+export const digestsLoading = signal(false);
 
 // Errors
 export const kaizenError = signal(false);
@@ -98,6 +102,17 @@ export async function deleteAlgorithm(id: number): Promise<boolean> {
   }
 }
 
+export async function loadDigests(): Promise<void> {
+  digestsLoading.value = true;
+  try {
+    digests.value = await api.digests();
+  } catch (err) {
+    console.error("Failed to load digests:", err);
+  } finally {
+    digestsLoading.value = false;
+  }
+}
+
 export async function loadKaizenData(): Promise<void> {
   kaizenError.value = false;
   try {
@@ -106,6 +121,7 @@ export async function loadKaizenData(): Promise<void> {
       loadAlgorithms(),
       loadReflections(),
       loadObservations(),
+      loadDigests(),
     ]);
   } catch {
     kaizenError.value = true;

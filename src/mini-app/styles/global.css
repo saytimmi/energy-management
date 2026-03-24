@@ -1528,6 +1528,55 @@ body {
 }
 .reflection-algo-chip:active { opacity: 0.7; }
 
+/* Digest Cards */
+.digest-card {
+  padding: 12px 16px; margin-bottom: 8px;
+  background: var(--glass-bg); border-radius: 12px;
+  border: 1px solid var(--glass-border); cursor: pointer;
+  transition: transform 0.15s;
+}
+.digest-card:active { transform: scale(0.98); }
+.digest-card-header { display: flex; align-items: center; gap: 8px; }
+.digest-card-icon { font-size: 16px; }
+.digest-card-dates { flex: 1; font-size: 14px; color: var(--text1); font-weight: 600; }
+.digest-card-arrow { color: var(--text3); font-size: 18px; }
+.digest-card-trends { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.digest-trend { font-size: 12px; color: var(--text2); }
+.digest-trend.up { color: var(--accent); }
+.digest-trend.down { color: #ff6b6b; }
+.digest-card-meta { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+.digest-detail { padding: 0 16px 24px; }
+.digest-detail-header { display: flex; align-items: center; gap: 12px; padding: 16px 0; }
+.digest-detail-header h2 { font-size: 16px; font-weight: 700; margin: 0; }
+.digest-section { margin-bottom: 16px; }
+.digest-section-title { font-size: 13px; font-weight: 600; color: var(--text1); margin-bottom: 8px; }
+.digest-trend-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; font-size: 13px; color: var(--text2);
+}
+.digest-trend-value { font-weight: 600; }
+.digest-trend-value.up { color: var(--accent); }
+.digest-trend-value.down { color: #ff6b6b; }
+.digest-day-item { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.digest-trigger-item {
+  display: flex; justify-content: space-between; padding: 4px 0;
+  font-size: 13px; color: var(--text2);
+}
+.digest-trigger-name { flex: 1; }
+.digest-trigger-count { color: var(--text3); }
+.digest-habit-row {
+  display: flex; justify-content: space-between; padding: 4px 0;
+  font-size: 13px; color: var(--text2);
+}
+.digest-habit-stats { color: var(--text3); }
+.digest-goal-item { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.digest-meta {
+  text-align: center; font-size: 12px; color: var(--text3);
+  margin-top: 20px; padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
 /* Observation Cards */
 .observation-card {
   background: var(--surface); border: 1px solid var(--surface-border);

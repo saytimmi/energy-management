@@ -1,5 +1,5 @@
 import { getInitData } from "../telegram";
-import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated, MissionData, GoalData, StrategyData, EnergyCheckinResponse, AppConfig, SettingsData, NotificationPrefs } from "./types";
+import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated, MissionData, GoalData, StrategyData, EnergyCheckinResponse, AppConfig, SettingsData, NotificationPrefs, WeeklyDigestData } from "./types";
 
 const BASE = "";
 
@@ -108,6 +108,9 @@ export const api = {
     patch<GoalData>(`/api/goals/${id}`, data),
   updateGoalProgress: (id: number, data: { progress?: number; currentValue?: number }) =>
     patch<GoalData>(`/api/goals/${id}`, data),
+  // Digests
+  digests: () => request<WeeklyDigestData[]>("/api/digests"),
+  digestByWeek: (weekStart: string) => request<WeeklyDigestData>(`/api/digests/${weekStart}`),
   // Energy checkin
   submitEnergy: (data: { physical: number; mental: number; emotional: number; spiritual: number; logType: string }) =>
     post<EnergyCheckinResponse>("/api/energy", data),

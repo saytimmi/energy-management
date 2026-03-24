@@ -570,6 +570,33 @@ export async function sendWeeklyDigest(): Promise<void> {
       const text = await formatDigestMessage(insight);
       const chatId = Number(user.telegramId);
 
+      // Save digest to DB
+      const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      weekStart.setHours(0, 0, 0, 0);
+      const wDay = weekStart.getDay();
+      const mondayOffset = wDay === 0 ? 6 : wDay - 1;
+      weekStart.setDate(weekStart.getDate() - mondayOffset);
+
+      try {
+        await prisma.weeklyDigest.upsert({
+          where: {
+            userId_weekStart: { userId: user.id, weekStart },
+          },
+          create: {
+            userId: user.id,
+            weekStart,
+            content: insight as any,
+            summary: text,
+          },
+          update: {
+            content: insight as any,
+            summary: text,
+          },
+        });
+      } catch (err) {
+        console.error(`[weekly-digest] Failed to save digest for user ${user.id}:`, err);
+      }
+
       // Build keyboard with habit suggestions
       const keyboard = new InlineKeyboard();
 

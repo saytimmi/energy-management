@@ -356,6 +356,27 @@ export interface StrategyData {
   otherAreas: StrategyArea[];
 }
 
+// --- Weekly Digest ---
+
+export interface WeeklyDigestData {
+  id: number;
+  weekStart: string;
+  content: {
+    energyTrend?: Record<string, { thisWeek: number; lastWeek: number; delta: number }>;
+    bestDay?: string | null;
+    worstDay?: string | null;
+    totalCheckins?: number;
+    topDropTriggers?: Array<{ trigger: string; count: number; energyTypes: string[] }>;
+    topRiseTriggers?: Array<{ trigger: string; count: number }>;
+    habits?: Array<{ name: string; icon: string; consistency: number; stage: string; strength: number; streak: number }>;
+    correlations?: Array<{ name: string; icon: string; delta: Record<string, number> }>;
+    goalsProgress?: Array<{ lifeArea: string; title: string }>;
+    focusAreas?: Array<{ area: string; score: number | null; identity: string | null }>;
+  };
+  summary: string;
+  createdAt: string;
+}
+
 // --- Energy Checkin ---
 
 export interface SeverityChange {
