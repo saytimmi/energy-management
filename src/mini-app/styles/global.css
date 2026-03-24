@@ -1287,6 +1287,7 @@ body {
 }
 
 /* Kaizen Screen */
+/* ── Kaizen Screen ── */
 .kaizen-ask-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; padding: 12px;
@@ -1296,15 +1297,242 @@ body {
   color: var(--accent); font-size: 14px; font-weight: 600;
   cursor: pointer; margin-bottom: 16px;
   font-family: inherit;
+  transition: transform 0.15s;
 }
 .kaizen-ask-btn:active { transform: scale(0.97); }
+
+.kaizen-empty {
+  text-align: center; padding: 20px;
+  color: var(--text2); font-size: 13px; font-weight: 300;
+}
+
+.kaizen-load-more {
+  display: block; width: 100%; padding: 10px;
+  background: var(--surface); border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xs);
+  color: var(--text2); font-size: 13px; font-weight: 500;
+  cursor: pointer; margin-top: 8px;
+  font-family: inherit;
+}
+.kaizen-load-more:active { transform: scale(0.98); }
+.kaizen-load-more:disabled { opacity: 0.5; cursor: default; }
+
+/* Reflection Status */
+.reflection-status {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 14px; margin-bottom: 16px;
+  animation: cardIn 0.4s ease both;
+}
+.reflection-status.pending {
+  border-left: 3px solid rgba(255, 200, 50, 0.5);
+}
+.reflection-status.done {
+  border-left: 3px solid rgba(91, 224, 122, 0.5);
+}
+
+.reflection-status-badge {
+  font-size: 12px; font-weight: 600;
+  margin-bottom: 6px;
+}
+.reflection-status-badge.pending { color: #ffc832; }
+.reflection-status-badge.done { color: var(--physical); }
+
+.reflection-status-summary {
+  font-size: 13px; color: var(--text2); line-height: 1.45;
+}
+
+.reflection-status-context {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  font-size: 12px; color: var(--text2);
+  margin-top: 4px;
+}
+
+/* Algorithm Cards */
+.algorithms-grid {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.algorithm-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  animation: cardIn 0.4s ease both;
+}
+.algorithm-card:active { transform: scale(0.97); }
+
+.algorithm-icon {
+  font-size: 24px; flex-shrink: 0;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border-radius: 12px;
+}
+
+.algorithm-body { flex: 1; min-width: 0; }
+
+.algorithm-title {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-bottom: 2px;
+}
+
+.algorithm-steps-preview {
+  font-size: 12px; color: var(--text2); line-height: 1.4;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.algorithm-meta {
+  display: flex; gap: 6px; align-items: center;
+  font-size: 11px; color: var(--text3); margin-top: 4px;
+}
+
+.algorithm-area {
+  padding: 1px 6px; border-radius: 4px;
+  background: rgba(200,255,115,0.08); color: var(--accent);
+  font-size: 10px; font-weight: 600;
+}
+
+/* Reflection Cards */
+.reflections-feed {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.reflection-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  animation: cardIn 0.4s ease both;
+}
+
+.reflection-date {
+  font-size: 11px; color: var(--text3); font-weight: 500;
+  margin-bottom: 4px; text-transform: capitalize;
+}
+
+.reflection-summary {
+  font-size: 13px; color: var(--text); line-height: 1.45;
+}
+
+.reflection-insights {
+  margin-top: 6px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+
+.reflection-insight {
+  font-size: 12px; color: var(--text2); line-height: 1.4;
+}
+
+.reflection-algos {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+}
+
+.reflection-algo-chip {
+  padding: 3px 8px;
+  background: rgba(200,255,115,0.08);
+  border: 1px solid rgba(200,255,115,0.12);
+  border-radius: 8px;
+  font-size: 11px; color: var(--accent); font-weight: 500;
+  cursor: pointer;
+}
+.reflection-algo-chip:active { opacity: 0.7; }
+
+/* Observation Cards */
 .observation-card {
   background: var(--surface); border: 1px solid var(--surface-border);
   border-radius: var(--radius-xs); padding: 12px; margin-bottom: 8px;
+  animation: cardIn 0.4s ease both;
 }
 .observation-meta { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
 .observation-trigger { font-size: 13px; color: var(--text); margin-bottom: 2px; }
 .observation-context { font-size: 12px; color: var(--text2); line-height: 1.4; }
+
+/* Algorithm Detail */
+.algo-detail-header {
+  display: flex; align-items: flex-start; gap: 14px;
+  margin-bottom: 20px;
+}
+
+.algo-detail-icon {
+  font-size: 36px; flex-shrink: 0;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border-radius: 16px;
+}
+
+.algo-detail-title {
+  font-size: 18px; font-weight: 700; color: var(--text);
+  margin-bottom: 4px;
+}
+
+.algo-detail-meta {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 12px; color: var(--text3);
+}
+
+.algo-steps {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.algo-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+}
+
+.algo-step-num {
+  width: 24px; height: 24px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(200,255,115,0.1);
+  border-radius: 50%;
+  font-size: 12px; font-weight: 700; color: var(--accent);
+}
+
+.algo-step-text {
+  font-size: 14px; color: var(--text); line-height: 1.45;
+  flex: 1;
+}
+
+.algo-context {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+  font-size: 13px; color: var(--text2); line-height: 1.45;
+  font-style: italic;
+}
+
+.algo-source {
+  margin-top: 12px;
+  font-size: 11px; color: var(--text3);
+}
+
+.algo-delete-btn {
+  display: block; width: 100%; padding: 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 90, 90, 0.2);
+  border-radius: var(--radius-xs);
+  color: #ff6b6b; font-size: 13px; font-weight: 500;
+  cursor: pointer; margin-top: 12px;
+  font-family: inherit;
+}
+.algo-delete-btn:active { background: rgba(255, 90, 90, 0.05); }
+.algo-delete-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Back button */
+.back-btn {
+  background: none; border: none;
+  color: var(--accent); font-size: 14px; font-weight: 500;
+  cursor: pointer; padding: 0;
+  font-family: inherit;
+}
+.back-btn:active { opacity: 0.7; }
 
 /* ── Balance Screen ── */
 .balance-radar-card {
