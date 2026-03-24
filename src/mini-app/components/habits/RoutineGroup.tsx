@@ -11,8 +11,8 @@ interface RoutineGroupProps {
 }
 
 const SLOT_LABELS: Record<string, string> = {
-  morning: "☀️ Утро",
-  afternoon: "🌤 День",
+  morning: "🌅 Утро",
+  afternoon: "☀️ День",
   evening: "🌙 Вечер",
 };
 
