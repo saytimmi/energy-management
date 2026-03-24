@@ -1554,3 +1554,10 @@ body {
   padding: 4px 0;
   font-size: 13px;
 }
+
+/* Hub Balance widget */
+.balance-hub-areas { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.balance-hub-area-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.balance-hub-area-name { color: var(--text2); width: 64px; flex-shrink: 0; }
+.balance-hub-bar-container { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.balance-hub-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
