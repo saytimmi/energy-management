@@ -636,7 +636,7 @@ body {
   background: var(--surface-solid);
   border: 1px solid var(--surface-border);
   border-radius: 20px 20px 0 0;
-  padding: 24px 20px calc(env(safe-area-inset-bottom, 16px) + 20px);
+  padding: 24px 20px calc(env(safe-area-inset-bottom, 16px) + 76px);
   animation: sheetUp 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 @keyframes sheetUp {
