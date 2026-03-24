@@ -2,7 +2,7 @@ import { useEffect } from "preact/hooks";
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { navigate } from "../../router";
-import { haptic } from "../../telegram";
+import { haptic, openTelegramLink } from "../../telegram";
 import { api } from "../../api/client";
 import { deleteAlgorithm } from "../../store/kaizen";
 import type { AlgorithmData } from "../../api/types";
@@ -43,10 +43,7 @@ export function AlgorithmDetail({ id }: AlgorithmDetailProps) {
 
   const handleAskAI = () => {
     haptic("medium");
-    const botUsername = getBotUsername();
-    if (botUsername) {
-      window.open(`https://t.me/${botUsername}`, "_blank");
-    }
+    openTelegramLink("energy_coach_bot");
   };
 
   const handleDelete = async () => {
@@ -160,12 +157,3 @@ export function AlgorithmDetail({ id }: AlgorithmDetailProps) {
   );
 }
 
-function getBotUsername(): string | null {
-  try {
-    return (window as any).Telegram?.WebApp?.initDataUnsafe?.user
-      ? "energy_coach_bot"
-      : null;
-  } catch {
-    return null;
-  }
-}

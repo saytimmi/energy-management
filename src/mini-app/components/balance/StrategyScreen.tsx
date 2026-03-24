@@ -1,7 +1,7 @@
 import { useEffect } from "preact/hooks";
 import { strategyData, strategyLoading, strategyError, loadStrategy } from "../../store/strategy";
 import { navigate } from "../../router";
-import { haptic } from "../../telegram";
+import { haptic, openTelegramLink } from "../../telegram";
 import type { StrategyArea } from "../../api/types";
 
 export function StrategyScreen() {
@@ -14,18 +14,12 @@ export function StrategyScreen() {
 
   const handleEditMission = () => {
     haptic("medium");
-    const botUsername = getBotUsername();
-    if (botUsername) {
-      window.open(`https://t.me/${botUsername}?text=${encodeURIComponent("Хочу определить миссию")}`, "_blank");
-    }
+    openTelegramLink("energy_coach_bot?text=" + encodeURIComponent("Хочу определить миссию"));
   };
 
   const handleSetGoals = () => {
     haptic("medium");
-    const botUsername = getBotUsername();
-    if (botUsername) {
-      window.open(`https://t.me/${botUsername}?text=${encodeURIComponent("Поставить цели")}`, "_blank");
-    }
+    openTelegramLink("energy_coach_bot?text=" + encodeURIComponent("Поставить цели"));
   };
 
   if (strategyLoading.value) {
@@ -243,10 +237,3 @@ function CompactAreaCard({ area }: { area: StrategyArea }) {
   );
 }
 
-function getBotUsername(): string | null {
-  try {
-    return (window as any).Telegram?.WebApp?.initDataUnsafe?.user ? "energy_coach_bot" : null;
-  } catch {
-    return null;
-  }
-}
