@@ -1,5 +1,5 @@
 import { useEffect } from "preact/hooks";
-import { strategyData, strategyLoading, strategyError, loadStrategy } from "../../store/strategy";
+import { strategyData, strategyLoading, strategyError, loadStrategy, botUsername } from "../../store/strategy";
 import { navigate } from "../../router";
 import { haptic, openTelegramLink } from "../../telegram";
 import type { StrategyArea, StrategyGoal } from "../../api/types";
@@ -14,12 +14,12 @@ export function StrategyScreen() {
 
   const handleEditMission = () => {
     haptic("medium");
-    openTelegramLink("energy_coach_bot?text=" + encodeURIComponent("Хочу определить миссию"));
+    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent("Хочу определить миссию"));
   };
 
   const handleSetGoals = () => {
     haptic("medium");
-    openTelegramLink("energy_coach_bot?text=" + encodeURIComponent("Поставить цели"));
+    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent("Поставить цели"));
   };
 
   if (strategyLoading.value) {

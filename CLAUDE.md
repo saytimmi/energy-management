@@ -18,7 +18,8 @@ Telegram бот + Mini App — персональная операционная
 Фаза 6:  docs/superpowers/plans/2026-03-24-phase6-seamless-bot-app.md  ✅ ЗАВЕРШЕНА
 Фаза 7:  docs/superpowers/plans/2026-03-24-phase7-smart-awareness.md   ✅ ЗАВЕРШЕНА
 Фаза 8:  docs/superpowers/plans/2026-03-24-phase8-meaning-identity.md  ✅ ЗАВЕРШЕНА
-Фаза 9:  docs/superpowers/plans/2026-03-24-phase9-living-goals.md      ⬜ СЛЕДУЮЩАЯ
+Фаза 9:  docs/superpowers/plans/2026-03-24-phase9-living-goals.md      ✅ ЗАВЕРШЕНА
+Фаза 10: docs/superpowers/plans/2026-03-24-phase10-qa-fixes.md        ⬜ СЛЕДУЮЩАЯ
 ```
 
 **Правила:** Читай план текущей фазы и выполняй задачи последовательно. Каждая фаза зависит от предыдущей. Не добавляй ничего от себя — следуй плану.

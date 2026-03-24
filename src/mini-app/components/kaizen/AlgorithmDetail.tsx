@@ -5,6 +5,7 @@ import { navigate } from "../../router";
 import { haptic, openTelegramLink } from "../../telegram";
 import { api } from "../../api/client";
 import { deleteAlgorithm } from "../../store/kaizen";
+import { botUsername } from "../../store/strategy";
 import type { AlgorithmData } from "../../api/types";
 
 const algorithmData = signal<AlgorithmData | null>(null);
@@ -43,7 +44,7 @@ export function AlgorithmDetail({ id }: AlgorithmDetailProps) {
 
   const handleAskAI = () => {
     haptic("medium");
-    openTelegramLink("energy_coach_bot");
+    openTelegramLink(botUsername.value);
   };
 
   const handleDelete = async () => {

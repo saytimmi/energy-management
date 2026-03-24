@@ -97,8 +97,9 @@ export async function analyzeEnergyHistory(
     }
   }
 
-  // Chronic lows: 7-day average below 5
-  const sevenDaysAgo = new Date();
+  // Chronic lows: 7-day average below 5 (relative to latest log)
+  const latestDate = logs.length > 0 ? logs[0].createdAt : new Date();
+  const sevenDaysAgo = new Date(latestDate);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const recentLogs = logs.filter((l) => l.createdAt >= sevenDaysAgo);
 

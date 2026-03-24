@@ -5,6 +5,14 @@ import type { StrategyData, MissionData } from "../api/types";
 export const strategyData = signal<StrategyData | null>(null);
 export const strategyLoading = signal(false);
 export const strategyError = signal(false);
+export const botUsername = signal<string>("energy_coach_bot");
+
+export async function loadAppConfig() {
+  try {
+    const cfg = await api.appConfig();
+    botUsername.value = cfg.botUsername;
+  } catch {}
+}
 
 export async function loadStrategy() {
   strategyLoading.value = true;

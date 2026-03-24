@@ -1430,7 +1430,7 @@ export async function chat(
   // Build context
   const context = await buildUserContext(user.id);
   const now = new Date();
-  const TZ = user.timezone || "Asia/Shanghai";
+  const TZ = user.timezone || "UTC";
   const dateStr = now.toLocaleDateString("ru-RU", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: TZ });
   const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
   // Calculate UTC offset for ISO string

@@ -39,7 +39,7 @@ export async function sendScheduledCheckins(): Promise<void> {
 
   for (const user of users) {
     try {
-      const tz = user.timezone || "Asia/Shanghai";
+      const tz = user.timezone || "UTC";
       const now = new Date();
       const localHour = parseInt(
         now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: tz }),

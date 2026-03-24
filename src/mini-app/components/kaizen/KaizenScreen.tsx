@@ -15,6 +15,7 @@ import {
   loadKaizenData,
   loadMoreReflections,
 } from "../../store/kaizen";
+import { botUsername } from "../../store/strategy";
 import { AlgorithmDetail } from "./AlgorithmDetail";
 import { DigestCard } from "./DigestCard";
 import { DigestDetail } from "./DigestDetail";
@@ -43,7 +44,7 @@ export function KaizenScreen({ param }: KaizenScreenProps) {
 
   const handleAskAI = () => {
     haptic("medium");
-    openTelegramLink("energy_coach_bot");
+    openTelegramLink(botUsername.value);
   };
 
   const status = reflectionStatus.value;

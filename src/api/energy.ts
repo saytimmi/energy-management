@@ -101,8 +101,12 @@ export function energyRoute(router: Router): void {
   // POST /api/energy/:logId/triggers — save triggers/observations
   router.post("/energy/:logId/triggers", async (req: Request, res: Response) => {
     const userId = (req as any).userId as number;
-    const logId = parseInt(req.params.logId, 10);
+    const logId = parseInt(req.params.logId as string, 10);
     if (isNaN(logId)) { res.status(400).json({ error: "invalid_logId" }); return; }
+
+    // Ownership check
+    const log = await prisma.energyLog.findFirst({ where: { id: logId, userId } });
+    if (!log) { res.status(404).json({ error: "log_not_found" }); return; }
 
     const { triggers, context, energyType, direction } = req.body as {
       triggers: string[];
@@ -115,9 +119,15 @@ export function energyRoute(router: Router): void {
       res.status(400).json({ error: "triggers required" }); return;
     }
 
+    // Filter empty/whitespace triggers
+    const validTriggers = triggers.map(t => t.trim()).filter(Boolean);
+    if (validTriggers.length === 0) {
+      res.status(400).json({ error: "triggers required" }); return;
+    }
+
     try {
       const observationIds: number[] = [];
-      for (const trigger of triggers) {
+      for (const trigger of validTriggers) {
         const obs = await prisma.observation.create({
           data: {
             userId,

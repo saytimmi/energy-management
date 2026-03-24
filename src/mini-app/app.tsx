@@ -11,12 +11,14 @@ import { useEffect } from "preact/hooks";
 import { resetEnergyCache, loadInitialData as loadEnergy } from "./store/energy";
 import { resetBalanceCache, loadBalanceOverview } from "./store/balance";
 import { loadHabits } from "./store/habits";
+import { loadAppConfig } from "./store/strategy";
 
 export function App() {
   useEffect(() => {
     initTelegram();
     syncTheme();
     initRouter();
+    loadAppConfig();
 
     // Reload data when returning from Telegram
     onActivated(() => {
