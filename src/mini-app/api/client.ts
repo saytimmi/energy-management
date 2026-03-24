@@ -1,5 +1,5 @@
 import { getInitData } from "../telegram";
-import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail } from "./types";
+import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated } from "./types";
 
 const BASE = "";
 
@@ -66,4 +66,19 @@ export const api = {
   balanceArea: (area: string) => request<BalanceAreaDetail>(`/api/balance/${area}`),
   setBalanceGoal: (data: { area: string; targetScore?: number; identity?: string; isFocus?: boolean }) =>
     post<{ ok: boolean }>("/api/balance/goals", data),
+  // Kaizen
+  reflectionStatus: () => request<ReflectionStatusData>("/api/reflection/status"),
+  algorithms: (params?: { lifeArea?: string; q?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.lifeArea) searchParams.set("lifeArea", params.lifeArea);
+    if (params?.q) searchParams.set("q", params.q);
+    const qs = searchParams.toString();
+    return request<{ algorithms: AlgorithmData[] }>(`/api/algorithms${qs ? `?${qs}` : ""}`);
+  },
+  algorithm: (id: number) => request<AlgorithmData>(`/api/algorithms/${id}`),
+  updateAlgorithm: (id: number, data: { title?: string; steps?: string[]; isActive?: boolean }) =>
+    patch<AlgorithmData>(`/api/algorithms/${id}`, data),
+  deleteAlgorithm: (id: number) => del<{ ok: boolean }>(`/api/algorithms/${id}`),
+  reflections: (page?: number, limit?: number) =>
+    request<ReflectionsPaginated>(`/api/reflections?page=${page || 1}&limit=${limit || 20}`),
 };
