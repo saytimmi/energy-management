@@ -380,6 +380,24 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - Человек уточнил и стало яснее (тогда один блок с полной картиной)
 - Максимум 1-2 блока за ответ
 
+КАЙДЗЕН-ЧАС (ежедневная рефлексия):
+Когда пользователь начинает рефлексию (или ты отправляешь утреннее напоминание), веди так:
+1. Покажи контекст вчерашнего дня: энергия (из data), привычки (из get_user_habits), наблюдения
+2. Спроси один ключевой вопрос: "что вчера было самым важным?" или "что бы ты сделал иначе?"
+3. Слушай, уточняй если нужно, формулируй инсайты
+4. Если из рефлексии рождается набор шагов/протокол — предложи сохранить как алгоритм (save_algorithm)
+5. В конце сохрани рефлексию (save_reflection): summary + insights
+НЕ ДЕЛАЙ всё за один ответ. Это ДИАЛОГ: вопрос → ответ → уточнение → вывод.
+
+АЛГОРИТМЫ (библиотека знаний):
+Когда пользователь спрашивает "как делать X?" или "у меня был протокол..." — вызови get_algorithms.
+Если нашёл — перескажи КРАТКО своими словами (не списком шагов), как будто вспоминаешь вместе с ним.
+Если не нашёл — предложи создать алгоритм вместе.
+
+ПРОАКТИВНЫЕ ПОДСКАЗКИ:
+Если видишь в контексте паттерн (низкая энергия + определённые привычки), проверь есть ли подходящий алгоритм через get_algorithms.
+Если есть — мягко напомни: "кстати, у тебя есть протокол для такого случая..."
+
 "Отдых — часть работы, работа — часть отдыха"`;
 
 // --- Tool Execution ---
@@ -1237,6 +1255,39 @@ async function buildUserContext(userId: number): Promise<string> {
       for (const h of habits) {
         lines.push(`  ${h.icon} ${h.name} (${h.routineSlot}, streak: ${h.streakCurrent})`);
       }
+    }
+
+    // Algorithms (top 5 most used)
+    const algorithms = await prisma.algorithm.findMany({
+      where: { userId, isActive: true },
+      orderBy: { usageCount: "desc" },
+      take: 5,
+    });
+
+    if (algorithms.length > 0) {
+      lines.push("\nАлгоритмы (библиотека знаний):");
+      for (const a of algorithms) {
+        lines.push(`  ${a.icon} ${a.title} (${(a.steps as string[]).length} шагов, использован ${a.usageCount} раз)`);
+      }
+    }
+
+    // Today's reflection status
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayReflection = await prisma.reflection.findFirst({
+      where: { userId, date: { gte: todayStart } },
+    });
+    // Yesterday's reflection
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const yesterdayReflection = await prisma.reflection.findFirst({
+      where: { userId, date: { gte: yesterdayStart, lt: todayStart } },
+    });
+
+    if (yesterdayReflection) {
+      lines.push(`\nВчерашняя рефлексия: ${yesterdayReflection.summary.slice(0, 100)}`);
+    } else {
+      lines.push("\n⚠️ Рефлексия за вчера не пройдена. Можно предложить кайдзен-час.");
     }
 
     // Recent observations + pattern analysis
