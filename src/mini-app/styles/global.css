@@ -1816,3 +1816,217 @@ body {
 .kaizen-hub-chip.more {
   color: var(--text3);
 }
+
+/* Strategy Screen */
+.strategy-mission-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.strategy-mission-statement {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.5;
+  font-style: italic;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(200,255,115,0.04);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+}
+.strategy-mission-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.strategy-mission-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.strategy-mission-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.strategy-mission-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+.strategy-mission-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+.strategy-edit-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-xs);
+  color: var(--text3);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.strategy-edit-btn:active { opacity: 0.7; }
+.strategy-empty-mission {
+  text-align: center;
+  padding: 20px 0;
+}
+.strategy-cta-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,255,115,0.15), rgba(200,255,115,0.05));
+  border: 1px solid rgba(200,255,115,0.2);
+  border-radius: var(--radius-xs);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.strategy-cta-btn:active { transform: scale(0.97); }
+
+/* Focus Area Card */
+.strategy-focus-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.strategy-focus-card:active { transform: scale(0.99); }
+.strategy-focus-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.strategy-focus-icon { font-size: 20px; }
+.strategy-focus-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+.strategy-focus-score {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 500;
+}
+.strategy-focus-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(200,255,115,0.12);
+  color: var(--accent);
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.strategy-identity {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--radius-xs);
+}
+.strategy-goals-section { margin-bottom: 6px; }
+.strategy-goals-label {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.strategy-goal-item {
+  font-size: 13px;
+  color: var(--text);
+  padding: 2px 0;
+}
+.strategy-habits-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.strategy-habit-chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+}
+.strategy-habit-streak {
+  margin-left: 3px;
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* Compact Area Card */
+.strategy-compact-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.strategy-compact-card:active { transform: scale(0.99); }
+.strategy-compact-icon { font-size: 18px; }
+.strategy-compact-info { flex: 1; min-width: 0; }
+.strategy-compact-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.strategy-compact-goal {
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.strategy-compact-score {
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 500;
+}
+.strategy-compact-arrow {
+  color: var(--text3);
+  font-size: 16px;
+}
+
+/* Strategy nav button on Balance screen */
+.strategy-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(200,255,115,0.08), rgba(200,255,115,0.02));
+  border: 1px solid rgba(200,255,115,0.12);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+  font-family: inherit;
+}
+.strategy-nav-btn:active { transform: scale(0.98); }
