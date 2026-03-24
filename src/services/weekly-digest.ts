@@ -41,6 +41,8 @@ interface WeeklyInsight {
   habitSuggestions: HabitSuggestion[];
   correlations: HabitInsight[];
   habits: Array<{ name: string; icon: string; consistency: number; stage: string; strength: number; streak: number }>;
+  goalsProgress: { lifeArea: string; title: string; timeHorizon: string; period: string }[];
+  focusAreas: { area: string; score: number | null; identity: string | null }[];
 }
 
 interface HabitSuggestion {
@@ -247,6 +249,35 @@ async function analyzeWeeklyPatterns(userId: number): Promise<WeeklyInsight | nu
     }
   }
 
+  // --- Goals progress ---
+  const activeGoals = await prisma.goal.findMany({
+    where: { userId, status: "active" },
+    orderBy: [{ timeHorizon: "asc" }, { lifeArea: "asc" }],
+  });
+
+  const goalsProgress = activeGoals.map(g => ({
+    lifeArea: g.lifeArea,
+    title: g.title,
+    timeHorizon: g.timeHorizon,
+    period: g.period,
+  }));
+
+  // --- Focus areas with balance scores ---
+  let focusAreas: { area: string; score: number | null; identity: string | null }[] = [];
+  try {
+    const balanceGoals = await prisma.balanceGoal.findMany({
+      where: { userId, isFocus: true },
+    });
+    focusAreas = await Promise.all(balanceGoals.map(async (bg) => {
+      const latest = await prisma.balanceRating.findFirst({
+        where: { userId, area: bg.area },
+        orderBy: { createdAt: "desc" },
+        select: { score: true },
+      });
+      return { area: bg.area, score: latest?.score ?? null, identity: bg.identity };
+    }));
+  } catch {}
+
   return {
     topDropTriggers: dropPatterns.slice(0, 5),
     topRiseTriggers: risePatterns.slice(0, 3),
@@ -257,6 +288,8 @@ async function analyzeWeeklyPatterns(userId: number): Promise<WeeklyInsight | nu
     habitSuggestions: habitSuggestions.slice(0, 3),
     correlations,
     habits: habits.map(h => ({ name: h.name, icon: h.icon, consistency: h.consistency30d, stage: h.stage, strength: h.strength, streak: h.streakCurrent })),
+    goalsProgress,
+    focusAreas,
   };
 }
 
@@ -278,6 +311,8 @@ async function generateAIInsights(insight: WeeklyInsight): Promise<string | null
         stage: c.stage, strength: c.strength,
         energyDelta: c.delta,
       })),
+      goals: insight.goalsProgress,
+      focusAreas: insight.focusAreas,
     });
 
     const response = await anthropic.messages.create({
@@ -375,6 +410,36 @@ async function formatDigestMessage(insight: WeeklyInsight): Promise<string> {
         const bar = strengthBar(h.strength);
         lines.push(`${h.icon} ${h.name} ${bar} ${Math.round(h.strength)}%`);
       }
+    }
+  }
+
+  // Goals progress
+  if (insight.goalsProgress.length > 0) {
+    const AREA_LABELS: Record<string, string> = {
+      health: "Здоровье", career: "Карьера", relationships: "Отношения",
+      finances: "Финансы", family: "Семья", growth: "Развитие",
+      recreation: "Отдых", environment: "Среда",
+    };
+    lines.push("\n*🎯 Цели:*");
+    for (const g of insight.goalsProgress.slice(0, 5)) {
+      const areaLabel = AREA_LABELS[g.lifeArea] || g.lifeArea;
+      const horizonLabel = g.timeHorizon === "year" ? "Год" : "Квартал";
+      lines.push(`— ${areaLabel} (${horizonLabel}): ${g.title}`);
+    }
+  }
+
+  // Focus areas
+  if (insight.focusAreas.length > 0) {
+    const AREA_LABELS: Record<string, string> = {
+      health: "Здоровье", career: "Карьера", relationships: "Отношения",
+      finances: "Финансы", family: "Семья", growth: "Развитие",
+      recreation: "Отдых", environment: "Среда",
+    };
+    lines.push("\n*⚖️ Фокус-сферы:*");
+    for (const fa of insight.focusAreas) {
+      const areaLabel = AREA_LABELS[fa.area] || fa.area;
+      const score = fa.score !== null ? `${fa.score}/10` : "?";
+      lines.push(`— ${areaLabel}: ${score}${fa.identity ? ` (${fa.identity})` : ""}`);
     }
   }
 
