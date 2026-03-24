@@ -8,8 +8,9 @@ import {
   calculateConsistency30d,
   determineStage,
   shouldAutoFreeze,
+  calculateStrength,
 } from "./habit-streaks.js";
-import { sendMissedDayNudge } from "../handlers/habits.js";
+import { sendMissedDayNudge, sendRoutineReminder } from "../handlers/habits.js";
 
 /**
  * Phase D intelligence: compute median completion hour for a user's habits
@@ -57,8 +58,18 @@ export async function runDailyHabitCron(): Promise<void> {
   const today = new Date();
   console.log(`[habit-cron] Daily run started at ${today.toISOString()}`);
 
+  // Auto-resume paused habits whose pausedUntil has passed
+  await prisma.habit.updateMany({
+    where: {
+      isActive: true,
+      pausedUntil: { lte: today },
+      pausedAt: { not: null },
+    },
+    data: { pausedAt: null, pausedUntil: null },
+  });
+
   const habits = await prisma.habit.findMany({
-    where: { isActive: true },
+    where: { isActive: true, pausedAt: null },
     include: {
       logs: {
         where: {
@@ -66,7 +77,7 @@ export async function runDailyHabitCron(): Promise<void> {
             gte: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30),
           },
         },
-        select: { date: true },
+        select: { date: true, status: true },
       },
     },
   });
@@ -76,11 +87,11 @@ export async function runDailyHabitCron(): Promise<void> {
 
   for (const habit of habits) {
     const logs = habit.logs;
+    const completedLogs = logs.filter(l => l.status === "completed" || l.status === "frozen");
 
-    // Auto-freeze check — must run before streak calc so the freeze
-    // can preserve the streak by inserting a "frozen" log for yesterday.
+    // Auto-freeze check with grace period
     let freezeApplied = false;
-    if (shouldAutoFreeze(logs, habit.freezesUsedThisWeek, today)) {
+    if (shouldAutoFreeze(completedLogs, habit.gracesUsed, today, habit.gracePeriod)) {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
@@ -95,19 +106,37 @@ export async function runDailyHabitCron(): Promise<void> {
       });
       await prisma.habit.update({
         where: { id: habit.id },
-        data: { freezesUsedThisWeek: habit.freezesUsedThisWeek + 1 },
+        data: { gracesUsed: habit.gracesUsed + 1 },
       });
 
-      // Add the frozen day to logs for streak calculation
-      logs.push({ date: yesterday });
+      completedLogs.push({ date: yesterday, status: "frozen" });
       freezeApplied = true;
       frozen++;
     }
 
-    // Recalculate
-    const streak = calculateStreak(logs, today);
+    // Check if yesterday was completed
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+    const yesterdayLog = logs.find(l => {
+      const d = new Date(l.date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` === yKey;
+    });
+    const completedYesterday = yesterdayLog?.status === "completed";
+
+    // Calculate strength
+    const newStrength = calculateStrength(
+      habit.strength,
+      completedYesterday,
+      freezeApplied,
+      habit.stage,
+    );
+
+    // Recalculate streak & consistency
+    const streak = calculateStreak(completedLogs, today);
     const consistency = calculateConsistency30d(
-      logs,
+      completedLogs,
       habit.frequency,
       habit.customDays ?? undefined,
       today,
@@ -118,6 +147,7 @@ export async function runDailyHabitCron(): Promise<void> {
       streakCurrent: streak,
       streakBest: Math.max(habit.streakBest, streak),
       consistency30d: consistency,
+      strength: Math.round(newStrength * 10) / 10,
     };
 
     if (newStage !== habit.stage) {
@@ -134,16 +164,16 @@ export async function runDailyHabitCron(): Promise<void> {
     updated++;
 
     if (freezeApplied) {
-      console.log(`[habit-cron] Habit ${habit.id} "${habit.name}": auto-freeze applied`);
+      console.log(`[habit-cron] Habit ${habit.id} "${habit.name}": grace freeze applied (${habit.gracesUsed + 1}/${habit.gracePeriod})`);
     }
   }
 
   // --- Missed-day nudges ---
   let nudgesSent = 0;
 
-  // Re-fetch habits with user relation for telegramId
+  // Re-fetch habits with user relation for telegramId (skip paused)
   const habitsForNudge = await prisma.habit.findMany({
-    where: { isActive: true },
+    where: { isActive: true, pausedAt: null },
     include: {
       user: { select: { telegramId: true } },
       logs: {
@@ -214,8 +244,34 @@ export async function runWeeklyHabitReset(): Promise<void> {
 
   const result = await prisma.habit.updateMany({
     where: { isActive: true },
-    data: { freezesUsedThisWeek: 0 },
+    data: { freezesUsedThisWeek: 0, gracesUsed: 0 },
   });
 
   console.log(`[habit-cron] Weekly reset done: ${result.count} habits reset`);
+}
+
+/**
+ * Send routine reminders for a given slot to all users with pending habits.
+ */
+export async function sendRoutineReminders(slot: "morning" | "afternoon" | "evening"): Promise<void> {
+  console.log(`[habit-cron] Sending ${slot} routine reminders`);
+
+  const users = await prisma.user.findMany({
+    where: {
+      habits: {
+        some: { isActive: true, routineSlot: slot, pausedAt: null },
+      },
+    },
+    select: { id: true, telegramId: true },
+  });
+
+  for (const user of users) {
+    try {
+      await sendRoutineReminder(Number(user.telegramId), user.id, slot);
+    } catch (err) {
+      console.error(`[habit-cron] Failed to send ${slot} reminder to user ${user.id}:`, err);
+    }
+  }
+
+  console.log(`[habit-cron] ${slot} reminders sent to ${users.length} user(s)`);
 }

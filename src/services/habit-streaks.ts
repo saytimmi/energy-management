@@ -142,23 +142,54 @@ export function determineStage(
   return stage;
 }
 
-// ─── Auto-freeze ─────────────────────────────────────────────────────
+// ─── Auto-freeze (grace period) ─────────────────────────────────────
 
 /**
  * Should we auto-freeze? True when:
  *  - yesterday was NOT completed
- *  - fewer than 1 freeze used this week
+ *  - fewer than gracePeriod freezes used this week
  */
 export function shouldAutoFreeze(
   logs: { date: Date }[],
   freezesUsedThisWeek: number,
   today: Date = new Date(),
+  gracePeriod: number = 2,
 ): boolean {
-  if (freezesUsedThisWeek >= 1) return false;
+  if (freezesUsedThisWeek >= gracePeriod) return false;
 
   const yesterday = subDays(today, 1);
   const yesterdayKey = toDateKey(yesterday);
   const completed = new Set(logs.map((l) => toDateKey(new Date(l.date))));
 
   return !completed.has(yesterdayKey);
+}
+
+// ─── Habit Strength ─────────────────────────────────────────────────
+
+/**
+ * Calculate "habit strength" (0-100) — a forgiving metric that grows
+ * slowly with consistency and decays gently on misses.
+ *
+ * Rules:
+ *  - Completed day: +3 (seed), +2 (growth), +1.5 (autopilot)
+ *  - Missed day: -5 (seed), -3 (growth), -2 (autopilot)
+ *  - Frozen/skipped day: no change
+ *  - Clamped to 0-100
+ */
+export function calculateStrength(
+  currentStrength: number,
+  completedToday: boolean,
+  wasFrozen: boolean,
+  stage: string,
+): number {
+  if (wasFrozen) return currentStrength; // grace day — no change
+
+  const gains: Record<string, number> = { seed: 3, growth: 2, autopilot: 1.5 };
+  const losses: Record<string, number> = { seed: -5, growth: -3, autopilot: -2 };
+
+  const delta = completedToday
+    ? (gains[stage] ?? 2)
+    : (losses[stage] ?? -3);
+
+  return Math.max(0, Math.min(100, currentStrength + delta));
 }

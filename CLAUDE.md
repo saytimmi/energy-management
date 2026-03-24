@@ -54,8 +54,8 @@ src/
       hub/       Hub.tsx, EnergyCard.tsx, HabitsCard.tsx
       energy/    EnergyDashboard.tsx, EnergyRings.tsx, Observations.tsx, Analytics.tsx, utils.ts
       habits/    HabitsScreen.tsx, HabitCard.tsx, HabitCreate.tsx, HabitDetail.tsx,
-                 RoutineGroup.tsx, DayProgress.tsx, WeekHeatmap.tsx, StageIndicator.tsx,
-                 CorrelationCard.tsx, MilestoneToast.tsx
+                 RoutineGroup.tsx, RoutineFlow.tsx, DayProgress.tsx, WeekHeatmap.tsx,
+                 StageIndicator.tsx, CorrelationCard.tsx, MilestoneToast.tsx
       timeline/  Timeline.tsx (Chart.js, внутри EnergyDashboard)
       journal/   Journal.tsx
       shared/    Card.tsx, BottomNav.tsx, Loading.tsx
@@ -73,6 +73,18 @@ prisma/
 **Meaning Framework** (обязателен при создании) — Step 2 wizard:
 - Build: 4 вопроса (whyToday, whyMonth, whyYear, whyIdentity)
 - Break: 3 вопроса (isItBeneficial, breakTrigger, replacement)
+
+**Forgiving Streaks** — grace period (2 пропуска/неделю без потери стрика). "Сила привычки" (strength 0-100) растёт медленно, падает мягко. Stage-aware: seed +3/-5, growth +2/-3, autopilot +1.5/-2.
+
+**Routine Stacking** — кнопка "▶ Рутина" в RoutineGroup → fullscreen RoutineFlow с пошаговым таймером. Summary в конце.
+
+**Pause Mode** — поставить привычку на паузу (3/7/14/30 дней). Стрик замораживается. Auto-resume по дате.
+
+**Minimal Dose** — опциональное поле minimalDose ("5 мин растяжки"). Показывается в RoutineFlow.
+
+**Inline Bot Actions** — 3 кнопки в Telegram: ✅ Сделал / ⏭ Скип / ⏰ Позже. Скип использует grace day. Позже = напоминание через 1 час. Routine reminders: 7:30/13:00/20:30.
+
+**Weekly AI Insights** — Claude Haiku анализирует корреляции привычка↔энергия, находит паттерны, предсказывает stage transitions. Strength bars в дайджесте.
 
 ## Навигация
 
@@ -122,7 +134,9 @@ Railway auto-deploy из main. Порт задаётся через env `PORT` (
 | POST | /api/habits/:id/start | Начать длительную привычку |
 | POST | /api/habits/:id/complete | Завершить привычку |
 | DELETE | /api/habits/:id/complete | Отменить выполнение |
-| GET | /api/habits/:id/stats | Стрик, consistency, heatmap |
+| POST | /api/habits/:id/pause | Поставить на паузу (body: {days}) |
+| POST | /api/habits/:id/resume | Возобновить после паузы |
+| GET | /api/habits/:id/stats | Стрик, consistency, strength, heatmap |
 | GET | /api/habits/:id/correlation | Корреляция привычка ↔ энергия |
 
 ## AI Bot

@@ -122,6 +122,12 @@ model Habit {
   streakBest      Int        @default(0)
   consistency30d  Float      @default(0)
   freezesUsedThisWeek Int    @default(0)
+  strength        Float    @default(0)     // "habit strength" 0-100, grows slowly, decays gently
+  gracePeriod     Int      @default(2)     // max skips per week without losing streak
+  gracesUsed      Int      @default(0)     // skips used this week
+  minimalDose     String?                  // e.g. "5 мин растяжки" — reduced version for low energy
+  pausedAt        DateTime?
+  pausedUntil     DateTime?
   microActionId   String?
   isActive        Boolean    @default(true)
   logs            HabitLog[]

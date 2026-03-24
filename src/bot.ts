@@ -117,8 +117,8 @@ bot.callbackQuery("action:report", async (ctx) => {
   await reportHandler(ctx);
 });
 
-// Inline keyboard callbacks (habit completion/skip)
-bot.callbackQuery(/^habit_(complete|skip):/, handleHabitCallback);
+// Inline keyboard callbacks (habit completion/skip/later)
+bot.callbackQuery(/^habit_(complete|skip|later):/, handleHabitCallback);
 
 // Inline keyboard callbacks (weekly digest habit suggestions)
 bot.callbackQuery(/^digest_habit/, async (ctx) => {

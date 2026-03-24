@@ -50,10 +50,16 @@ export interface HabitData {
   streakBest: number;
   consistency30d: number;
   freezesUsedThisWeek: number;
+  strength: number;
+  gracePeriod: number;
+  gracesUsed: number;
   isDuration: boolean;
   completedToday: boolean;
   inProgress?: boolean;
   startedAt?: string | null;
+  isPaused?: boolean;
+  pausedUntil?: string | null;
+  minimalDose?: string | null;
   whyToday: string | null;
   whyMonth: string | null;
   whyYear: string | null;
@@ -63,6 +69,7 @@ export interface HabitData {
   replacement: string | null;
   triggerAction: string | null;
   microActionId: string | null;
+  sortOrder: number;
   stageUpdatedAt: string;
   createdAt: string;
 }
@@ -72,7 +79,12 @@ export interface HabitStats {
   streakBest: number;
   consistency30d: number;
   freezesRemaining: number;
+  gracePeriod: number;
+  gracesUsed: number;
+  strength: number;
   stage: string;
+  pausedAt: string | null;
+  pausedUntil: string | null;
   heatmap: { date: string; completed: boolean }[];
 }
 
@@ -94,6 +106,7 @@ export interface CreateHabitPayload {
   breakTrigger?: string;
   replacement?: string;
   microActionId?: string;
+  minimalDose?: string;
 }
 
 export interface HabitsGrouped {

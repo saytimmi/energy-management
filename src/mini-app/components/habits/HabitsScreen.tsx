@@ -4,6 +4,7 @@ import { habitsData, habitsLoading, habitsError, todayProgress, loadHabits } fro
 import { DayProgress } from "./DayProgress";
 import { WeekHeatmap } from "./WeekHeatmap";
 import { RoutineGroup } from "./RoutineGroup";
+import { RoutineFlow } from "./RoutineFlow";
 import { HabitCreate } from "./HabitCreate";
 import { HabitDetail } from "./HabitDetail";
 import { MilestoneToast } from "./MilestoneToast";
@@ -15,6 +16,7 @@ const showCreate = signal(false);
 const selectedHabit = signal<HabitData | null>(null);
 const milestoneMessage = signal<string | null>(null);
 const showConfetti = signal(false);
+const routineFlowSlot = signal<string | null>(null);
 
 function parseSuggestParam() {
   const params = new URLSearchParams(window.location.search);
@@ -81,6 +83,23 @@ export function HabitsScreen() {
     parseSuggestParam();
     loadHabits();
   }, []);
+
+  // Routine Flow mode
+  if (routineFlowSlot.value && data) {
+    const slotHabits = data[routineFlowSlot.value as keyof typeof data] ?? [];
+    const slotLabels: Record<string, string> = {
+      morning: "☀️ Утренняя рутина",
+      afternoon: "🌤 Дневная рутина",
+      evening: "🌙 Вечерняя рутина",
+    };
+    return (
+      <RoutineFlow
+        habits={slotHabits}
+        slotLabel={slotLabels[routineFlowSlot.value] ?? "Рутина"}
+        onFinish={() => { routineFlowSlot.value = null; loadHabits(); }}
+      />
+    );
+  }
 
   if (selectedHabit.value) {
     return (
@@ -165,9 +184,9 @@ export function HabitsScreen() {
         </div>
       ) : (
         <>
-          <RoutineGroup slot="morning" habits={data!.morning} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
-          <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
-          <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} />
+          <RoutineGroup slot="morning" habits={data!.morning} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={(s) => { routineFlowSlot.value = s; }} />
+          <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={(s) => { routineFlowSlot.value = s; }} />
+          <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={(s) => { routineFlowSlot.value = s; }} />
         </>
       )}
 

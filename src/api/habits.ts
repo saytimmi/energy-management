@@ -158,11 +158,14 @@ export function habitsRoute(router: Router): void {
       for (const h of habits) {
         const slot = h.routineSlot as string;
         const todayLog = h.logs[0] ?? null;
+        const isPaused = !!h.pausedAt;
         const entry = {
           ...h,
           completedToday: todayLog?.status === "completed",
           inProgress: todayLog?.status === "started",
           startedAt: todayLog?.startedAt ?? null,
+          isPaused,
+          pausedUntil: h.pausedUntil?.toISOString() ?? null,
           logs: undefined,
         };
         if (grouped[slot]) {
@@ -186,7 +189,7 @@ export function habitsRoute(router: Router): void {
     try {
       const { name, icon, type, routineSlot, duration, isDuration, energyType, lifeArea, triggerAction,
         whyToday, whyMonth, whyYear, whyIdentity, isItBeneficial,
-        breakTrigger, replacement, microActionId, frequency, customDays } = req.body;
+        breakTrigger, replacement, microActionId, frequency, customDays, minimalDose } = req.body;
 
       if (!name || !icon || !type || !routineSlot) {
         res.status(400).json({ error: "Обязательные поля: name, icon, type, routineSlot" });
@@ -235,6 +238,7 @@ export function habitsRoute(router: Router): void {
           breakTrigger: breakTrigger ?? null,
           replacement: replacement ?? null,
           microActionId: microActionId ?? null,
+          minimalDose: minimalDose ?? null,
           frequency: frequency ?? "daily",
           customDays: customDays ?? null,
           stage: "seed",
@@ -265,7 +269,7 @@ export function habitsRoute(router: Router): void {
         "name", "icon", "type", "routineSlot", "sortOrder", "duration",
         "energyType", "lifeArea", "triggerAction", "whyToday", "whyMonth", "whyYear",
         "whyIdentity", "isItBeneficial", "breakTrigger", "replacement",
-        "microActionId", "frequency", "customDays", "stage",
+        "microActionId", "frequency", "customDays", "stage", "minimalDose",
       ];
 
       const data: Record<string, any> = {};
@@ -465,6 +469,58 @@ export function habitsRoute(router: Router): void {
     }
   });
 
+  // POST /api/habits/:id/pause — pause a habit
+  router.post("/habits/:id/pause", async (req: Request, res: Response) => {
+    const userId = (req as any).userId as number;
+    const habitId = parseInt(req.params.id as string, 10);
+
+    try {
+      const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+      if (!habit || habit.userId !== userId) {
+        res.status(404).json({ error: "Привычка не найдена" });
+        return;
+      }
+
+      const days = parseInt(req.body?.days, 10) || 7;
+      const pausedUntil = new Date();
+      pausedUntil.setDate(pausedUntil.getDate() + days);
+
+      const updated = await prisma.habit.update({
+        where: { id: habitId },
+        data: { pausedAt: new Date(), pausedUntil },
+      });
+
+      res.json(updated);
+    } catch (err) {
+      console.error("Habits pause API error:", err);
+      res.status(500).json({ error: "internal_error" });
+    }
+  });
+
+  // POST /api/habits/:id/resume — resume a paused habit
+  router.post("/habits/:id/resume", async (req: Request, res: Response) => {
+    const userId = (req as any).userId as number;
+    const habitId = parseInt(req.params.id as string, 10);
+
+    try {
+      const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+      if (!habit || habit.userId !== userId) {
+        res.status(404).json({ error: "Привычка не найдена" });
+        return;
+      }
+
+      const updated = await prisma.habit.update({
+        where: { id: habitId },
+        data: { pausedAt: null, pausedUntil: null },
+      });
+
+      res.json(updated);
+    } catch (err) {
+      console.error("Habits resume API error:", err);
+      res.status(500).json({ error: "internal_error" });
+    }
+  });
+
   // GET /api/habits/:id/correlation — habit-energy correlation
   router.get("/habits/:id/correlation", async (req: Request, res: Response) => {
     const userId = (req as any).userId as number;
@@ -528,16 +584,20 @@ export function habitsRoute(router: Router): void {
       // Consistency = completed days / 30
       const consistency30d = logs.length / 30;
 
-      // Freezes: 1 per week, calculate used this week
-      const freezesRemaining = Math.max(0, 1 - habit.freezesUsedThisWeek);
+      const gracesRemaining = Math.max(0, habit.gracePeriod - habit.gracesUsed);
 
       res.json({
         streakCurrent: habit.streakCurrent,
         streakBest: habit.streakBest,
         consistency30d: Math.round(consistency30d * 100) / 100,
-        freezesRemaining,
+        freezesRemaining: gracesRemaining,
+        gracePeriod: habit.gracePeriod,
+        gracesUsed: habit.gracesUsed,
+        strength: habit.strength,
         stage: habit.stage,
         stageUpdatedAt: habit.stageUpdatedAt.toISOString(),
+        pausedAt: habit.pausedAt?.toISOString() ?? null,
+        pausedUntil: habit.pausedUntil?.toISOString() ?? null,
         heatmap,
       });
     } catch (err) {

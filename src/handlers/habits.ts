@@ -28,7 +28,7 @@ function checkAndIncrementLimit(telegramId: number): boolean {
 }
 
 /**
- * Callback handler for habit_complete: and habit_skip: buttons.
+ * Callback handler for habit_complete:, habit_skip:, and habit_later: buttons.
  */
 export async function handleHabitCallback(ctx: Context): Promise<void> {
   const data = ctx.callbackQuery?.data;
@@ -55,7 +55,6 @@ export async function handleHabitCallback(ctx: Context): Promise<void> {
       return;
     }
 
-    // Create today's log (upsert to avoid duplicates)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -73,7 +72,6 @@ export async function handleHabitCallback(ctx: Context): Promise<void> {
       },
     });
 
-    // Update streak inline
     const logs = await prisma.habitLog.findMany({
       where: {
         habitId,
@@ -83,7 +81,6 @@ export async function handleHabitCallback(ctx: Context): Promise<void> {
       orderBy: { date: "desc" },
     });
 
-    // Simple streak: count consecutive days from today backwards
     let streak = 0;
     const check = new Date(today);
     for (let i = 0; i < 60; i++) {
@@ -106,26 +103,97 @@ export async function handleHabitCallback(ctx: Context): Promise<void> {
       },
     });
 
-    const streakText = streak > 1 ? ` (${streak} дней подряд!)` : "";
-    await ctx.answerCallbackQuery({ text: `${habit.icon} ${habit.name}${streakText}` });
+    const streakText = streak > 1 ? ` 🔥${streak}` : "";
+    await ctx.answerCallbackQuery({ text: `✅ ${habit.name}${streakText}` });
 
-    // Update the message to show completion
     try {
       const originalText = ctx.callbackQuery?.message?.text ?? "";
-      const completedLine = `${habit.icon} ${habit.name}`;
-      const updatedText = originalText.replace(completedLine, `${completedLine}`);
-      // Just append a checkmark note
       await ctx.editMessageText(
-        originalText + `\n\n${habit.icon} ${habit.name} ${streakText}`,
+        originalText + `\n\n✅ ${habit.icon} ${habit.name}${streakText}`,
       );
-    } catch {
-      // Message might not be editable, that's ok
-    }
+    } catch {}
+
   } else if (data.startsWith("habit_skip:")) {
     const habitId = parseInt(data.replace("habit_skip:", ""), 10);
     if (isNaN(habitId)) return;
 
-    await ctx.answerCallbackQuery({ text: "Не сегодня" });
+    // Use a grace day — create a "frozen" log so streak is preserved
+    const from = ctx.from;
+    if (!from) return;
+
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(from.id) },
+    });
+    if (!user) {
+      await ctx.answerCallbackQuery({ text: "Не сегодня ⏭" });
+      return;
+    }
+
+    const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+    if (!habit || habit.userId !== user.id) {
+      await ctx.answerCallbackQuery({ text: "⏭" });
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Insert a frozen log if grace budget allows
+    if (habit.gracesUsed < habit.gracePeriod) {
+      await prisma.habitLog.upsert({
+        where: { habitId_date: { habitId, date: today } },
+        create: { habitId, userId: user.id, date: today, status: "frozen" },
+        update: { status: "frozen" },
+      });
+      await prisma.habit.update({
+        where: { id: habitId },
+        data: { gracesUsed: habit.gracesUsed + 1 },
+      });
+      const remaining = habit.gracePeriod - habit.gracesUsed - 1;
+      await ctx.answerCallbackQuery({
+        text: `⏭ Пропуск (осталось ${remaining} на неделе)`,
+      });
+    } else {
+      await ctx.answerCallbackQuery({ text: "⏭ Пропуск (лимит исчерпан)" });
+    }
+
+  } else if (data.startsWith("habit_later:")) {
+    const habitId = parseInt(data.replace("habit_later:", ""), 10);
+    if (isNaN(habitId)) return;
+
+    const from = ctx.from;
+    if (!from) return;
+
+    await ctx.answerCallbackQuery({ text: "⏰ Напомню через час" });
+
+    // Schedule reminder in 1 hour
+    const chatId = from.id;
+    setTimeout(async () => {
+      try {
+        const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+        if (!habit || !habit.isActive) return;
+
+        // Check if already completed today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const existing = await prisma.habitLog.findUnique({
+          where: { habitId_date: { habitId, date: today } },
+        });
+        if (existing?.status === "completed") return;
+
+        const keyboard = new InlineKeyboard()
+          .text("✅ Сделал", `habit_complete:${habitId}`)
+          .text("⏭ Скип", `habit_skip:${habitId}`);
+
+        await bot.api.sendMessage(
+          chatId,
+          `⏰ Напоминание: ${habit.icon} ${habit.name}`,
+          { reply_markup: keyboard },
+        );
+      } catch (err) {
+        console.error(`[habits] Later reminder failed:`, err);
+      }
+    }, 60 * 60 * 1000); // 1 hour
   }
 }
 
@@ -135,7 +203,7 @@ export async function handleHabitCallback(ctx: Context): Promise<void> {
 export async function sendRoutineReminder(
   chatId: number,
   userId: number,
-  slot: "morning" | "evening",
+  slot: "morning" | "afternoon" | "evening",
 ): Promise<void> {
   if (!checkAndIncrementLimit(chatId)) return;
 
@@ -169,12 +237,19 @@ export async function sendRoutineReminder(
   const pending = habits.filter((h) => !completedIds.has(h.id));
   if (pending.length === 0) return;
 
-  const greeting =
-    slot === "morning" ? "Утренние привычки:" : "Вечерние привычки:";
+  const slotLabels: Record<string, string> = {
+    morning: "🌅 Утренние привычки",
+    afternoon: "☀️ Дневные привычки",
+    evening: "🌙 Вечерние привычки",
+  };
+  const greeting = slotLabels[slot] ?? "Привычки";
 
   const keyboard = new InlineKeyboard();
   for (const habit of pending) {
-    keyboard.text(`${habit.icon} ${habit.name}`, `habit_complete:${habit.id}`);
+    keyboard
+      .text(`✅ ${habit.icon} ${habit.name}`, `habit_complete:${habit.id}`)
+      .text("⏭", `habit_skip:${habit.id}`)
+      .text("⏰", `habit_later:${habit.id}`);
     keyboard.row();
   }
 
@@ -235,8 +310,9 @@ export async function sendMissedDayNudge(
   }
 
   const keyboard = new InlineKeyboard()
-    .text("Сделал", `habit_complete:${habit.id}`)
-    .text("Не сегодня", `habit_skip:${habit.id}`);
+    .text("✅ Сделал", `habit_complete:${habit.id}`)
+    .text("⏭ Скип", `habit_skip:${habit.id}`)
+    .text("⏰ Позже", `habit_later:${habit.id}`);
 
   try {
     await bot.api.sendMessage(chatId, message, {

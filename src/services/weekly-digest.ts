@@ -8,6 +8,8 @@ import prisma from "../db.js";
 import { bot } from "../bot.js";
 import { trackError } from "./monitor.js";
 import { InlineKeyboard } from "grammy";
+import { getHabitEnergyCorrelation } from "./habit-correlation.js";
+import Anthropic from "@anthropic-ai/sdk";
 
 // --- Types ---
 
@@ -19,6 +21,16 @@ interface TriggerPattern {
   details: string[]; // specific user-described situations
 }
 
+interface HabitInsight {
+  name: string;
+  icon: string;
+  consistency: number;
+  stage: string;
+  strength: number;
+  streak: number;
+  delta?: Record<string, number>;
+}
+
 interface WeeklyInsight {
   topDropTriggers: TriggerPattern[];
   topRiseTriggers: TriggerPattern[];
@@ -27,6 +39,8 @@ interface WeeklyInsight {
   bestDay: string | null;
   totalCheckins: number;
   habitSuggestions: HabitSuggestion[];
+  correlations: HabitInsight[];
+  habits: Array<{ name: string; icon: string; consistency: number; stage: string; strength: number; streak: number }>;
 }
 
 interface HabitSuggestion {
@@ -211,6 +225,28 @@ async function analyzeWeeklyPatterns(userId: number): Promise<WeeklyInsight | nu
     });
   }
 
+  // --- Habit-energy correlations ---
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, pausedAt: null },
+    select: { id: true, name: true, icon: true, consistency30d: true, stage: true, strength: true, streakCurrent: true },
+  });
+
+  const correlations: Array<{ name: string; icon: string; consistency: number; stage: string; strength: number; streak: number; delta: Record<string, number> }> = [];
+  for (const h of habits) {
+    const corr = await getHabitEnergyCorrelation(h.id, userId);
+    if (corr) {
+      correlations.push({
+        name: h.name,
+        icon: h.icon,
+        consistency: h.consistency30d,
+        stage: h.stage,
+        strength: h.strength,
+        streak: h.streakCurrent,
+        delta: { physical: corr.physical, mental: corr.mental, emotional: corr.emotional, spiritual: corr.spiritual },
+      });
+    }
+  }
+
   return {
     topDropTriggers: dropPatterns.slice(0, 5),
     topRiseTriggers: risePatterns.slice(0, 3),
@@ -219,12 +255,55 @@ async function analyzeWeeklyPatterns(userId: number): Promise<WeeklyInsight | nu
     bestDay,
     totalCheckins: thisWeekLogs.length,
     habitSuggestions: habitSuggestions.slice(0, 3),
+    correlations,
+    habits: habits.map(h => ({ name: h.name, icon: h.icon, consistency: h.consistency30d, stage: h.stage, strength: h.strength, streak: h.streakCurrent })),
   };
+}
+
+// --- AI Insights ---
+
+async function generateAIInsights(insight: WeeklyInsight): Promise<string | null> {
+  try {
+    const anthropic = new Anthropic();
+
+    const dataContext = JSON.stringify({
+      energyTrend: insight.energyTrend,
+      bestDay: insight.bestDay,
+      worstDay: insight.worstDay,
+      topDrops: insight.topDropTriggers.slice(0, 3).map(t => ({ trigger: t.trigger, count: t.count, types: t.energyTypes })),
+      topRises: insight.topRiseTriggers.slice(0, 3).map(t => ({ trigger: t.trigger, count: t.count })),
+      habits: insight.habits,
+      correlations: insight.correlations.map(c => ({
+        name: c.name, icon: c.icon, consistency: c.consistency,
+        stage: c.stage, strength: c.strength,
+        energyDelta: c.delta,
+      })),
+    });
+
+    const response = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 400,
+      messages: [{
+        role: "user",
+        content: `Ты — аналитик энергии. Проанализируй недельные данные и выдай 2-3 коротких инсайта с конкретными числами.
+
+Данные: ${dataContext}
+
+Формат: каждый инсайт на отдельной строке, начинается с эмодзи. Максимум 3 строки. Пиши по-русски, кратко, как друг в Telegram. Без заголовков, без списков. Если есть корреляция привычка↔энергия с дельтой > 0.5 — упомяни обязательно. Если привычка близка к переходу на следующий stage — упомяни.`,
+      }],
+    });
+
+    const text = response.content[0];
+    return text.type === "text" ? text.text : null;
+  } catch (err) {
+    console.error("[weekly-digest] AI insights generation failed:", err);
+    return null;
+  }
 }
 
 // --- Format & Send ---
 
-function formatDigestMessage(insight: WeeklyInsight): string {
+async function formatDigestMessage(insight: WeeklyInsight): Promise<string> {
   const lines: string[] = ["📊 *Недельный дайджест энергии*\n"];
 
   // Energy trend
@@ -280,9 +359,33 @@ function formatDigestMessage(insight: WeeklyInsight): string {
     }
   }
 
+  // AI Insights with correlations
+  const aiInsights = await generateAIInsights(insight);
+  if (aiInsights) {
+    lines.push("\n*🤖 AI-анализ:*");
+    lines.push(aiInsights);
+  }
+
+  // Habit strength summary
+  if (insight.habits.length > 0) {
+    const growing = insight.habits.filter(h => h.strength >= 50);
+    if (growing.length > 0) {
+      lines.push("\n*💪 Сила привычек:*");
+      for (const h of growing.sort((a, b) => b.strength - a.strength).slice(0, 3)) {
+        const bar = strengthBar(h.strength);
+        lines.push(`${h.icon} ${h.name} ${bar} ${Math.round(h.strength)}%`);
+      }
+    }
+  }
+
   lines.push(`\n_${insight.totalCheckins} чекинов за неделю_`);
 
   return lines.join("\n");
+}
+
+function strengthBar(strength: number): string {
+  const filled = Math.round(strength / 10);
+  return "█".repeat(filled) + "░".repeat(10 - filled);
 }
 
 // --- Create habit from suggestion ---
@@ -397,7 +500,7 @@ export async function sendWeeklyDigest(): Promise<void> {
       const insight = await analyzeWeeklyPatterns(user.id);
       if (!insight) continue; // Not enough data
 
-      const text = formatDigestMessage(insight);
+      const text = await formatDigestMessage(insight);
       const chatId = Number(user.telegramId);
 
       // Build keyboard with habit suggestions

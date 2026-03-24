@@ -162,9 +162,14 @@ describe("shouldAutoFreeze", () => {
     expect(shouldAutoFreeze(logs, 0, TODAY)).toBe(false);
   });
 
-  it("returns false when freeze already used this week", () => {
+  it("returns false when grace period exhausted", () => {
     const logs = [{ date: daysAgo(0) }]; // yesterday missed
-    expect(shouldAutoFreeze(logs, 1, TODAY)).toBe(false);
+    // With default gracePeriod=2, 1 used still allows freeze
+    expect(shouldAutoFreeze(logs, 1, TODAY, 2)).toBe(true);
+    // But 2 used exhausts the budget
+    expect(shouldAutoFreeze(logs, 2, TODAY, 2)).toBe(false);
+    // Legacy: gracePeriod=1 with 1 used = exhausted
+    expect(shouldAutoFreeze(logs, 1, TODAY, 1)).toBe(false);
   });
 
   it("returns true with empty logs and no freezes used", () => {

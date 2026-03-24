@@ -143,11 +143,15 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
     }
   }
 
-  const iconGradient = done
-    ? DONE_GRADIENT
-    : inProgress
-      ? PROGRESS_GRADIENT
-      : (AREA_GRADIENTS[habit.lifeArea ?? ""] ?? DEFAULT_GRADIENT);
+  const isPaused = habit.isPaused;
+
+  const iconGradient = isPaused
+    ? "linear-gradient(135deg, rgba(128,128,128,0.15), rgba(128,128,128,0.05))"
+    : done
+      ? DONE_GRADIENT
+      : inProgress
+        ? PROGRESS_GRADIENT
+        : (AREA_GRADIENTS[habit.lifeArea ?? ""] ?? DEFAULT_GRADIENT);
 
   // Status label
   let statusLabel: string | null = null;
@@ -162,11 +166,11 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
   return (
     <>
       <div
-        class={`habit-card-v2${done ? " completed" : ""}${inProgress ? " in-progress" : ""} ${completing ? "completing-card" : ""}`}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-        onTouchMove={onTouchMove}
-        onMouseUp={() => { if (!didLongPress.current) handleTap(); }}
+        class={`habit-card-v2${done ? " completed" : ""}${inProgress ? " in-progress" : ""}${isPaused ? " paused" : ""} ${completing ? `completing-card completing-${habit.stage}` : ""}`}
+        onTouchStart={isPaused ? undefined : onTouchStart}
+        onTouchEnd={isPaused ? undefined : onTouchEnd}
+        onTouchMove={isPaused ? undefined : onTouchMove}
+        onMouseUp={isPaused ? undefined : () => { if (!didLongPress.current) handleTap(); }}
       >
         {/* Icon */}
         <div class="habit-icon-wrap" style={{ background: iconGradient }}>
@@ -200,6 +204,7 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
             )}
             {habit.stage === "growth" && <span class="habit-stage-pill">🌿</span>}
             {habit.stage === "autopilot" && <span class="habit-stage-pill">🌳</span>}
+            {isPaused && <span class="habit-paused-pill">⏸</span>}
           </div>
         </div>
 

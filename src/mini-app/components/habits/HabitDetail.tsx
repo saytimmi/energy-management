@@ -3,7 +3,7 @@ import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import type { HabitData, HabitStats } from "../../api/types";
 import { api } from "../../api/client";
-import { updateHabit, deleteHabit, loadHabits } from "../../store/habits";
+import { updateHabit, deleteHabit, pauseHabit, resumeHabit, loadHabits } from "../../store/habits";
 import { haptic, hapticSuccess } from "../../telegram";
 import { StageIndicator } from "./StageIndicator";
 import { CorrelationCard } from "./CorrelationCard";
@@ -21,6 +21,8 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showPauseOptions, setShowPauseOptions] = useState(false);
+  const [pausing, setPausing] = useState(false);
 
   // Meaning fields (build)
   const [whyToday, setWhyToday] = useState(habit.whyToday || "");
@@ -98,10 +100,33 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
 
       <StageIndicator stage={habit.stage} createdAt={habit.createdAt} />
 
+      {/* Pause banner */}
+      {habit.isPaused && (
+        <div class="pause-banner">
+          <span>⏸ На паузе{habit.pausedUntil ? ` до ${new Date(habit.pausedUntil).toLocaleDateString("ru")}` : ""}</span>
+          <button class="pause-resume-btn" onClick={async () => {
+            haptic("medium");
+            await resumeHabit(habit.id);
+            onBack();
+          }}>▶ Возобновить</button>
+        </div>
+      )}
+
+      {/* Strength bar */}
+      <div class="strength-section">
+        <div class="strength-header">
+          <span class="strength-label">Сила привычки</span>
+          <span class="strength-value">{Math.round(habit.strength ?? 0)}%</span>
+        </div>
+        <div class="strength-bar-bg">
+          <div class="strength-bar-fill" style={{ width: `${Math.min(100, habit.strength ?? 0)}%` }} />
+        </div>
+      </div>
+
       <div class="detail-stats">
         <div>🔥 {s?.streakCurrent ?? habit.streakCurrent} дней (лучший: {s?.streakBest ?? habit.streakBest})</div>
         <div>📊 {s?.consistency30d ?? habit.consistency30d}% за месяц</div>
-        <div>❄️ {s?.freezesRemaining ?? (1 - habit.freezesUsedThisWeek)} freeze осталось</div>
+        <div>❄️ {s ? s.freezesRemaining : Math.max(0, (habit.gracePeriod ?? 2) - (habit.gracesUsed ?? 0))} пропусков осталось на неделе</div>
       </div>
 
       {/* Meaning Framework */}
@@ -223,6 +248,40 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
       )}
 
       <CorrelationCard habitId={habit.id} />
+
+      {/* Pause */}
+      {!habit.isPaused && (
+        <div class="habit-pause-section">
+          {showPauseOptions ? (
+            <div class="pause-options">
+              <div class="pause-options-title">На сколько дней?</div>
+              <div class="pause-options-btns">
+                {[3, 7, 14, 30].map(days => (
+                  <button
+                    key={days}
+                    class="pause-option-btn"
+                    disabled={pausing}
+                    onClick={async () => {
+                      setPausing(true);
+                      haptic("medium");
+                      await pauseHabit(habit.id, days);
+                      setPausing(false);
+                      onBack();
+                    }}
+                  >
+                    {days}д
+                  </button>
+                ))}
+              </div>
+              <button class="pause-cancel-btn" onClick={() => setShowPauseOptions(false)}>Отмена</button>
+            </div>
+          ) : (
+            <button class="habit-pause-btn" onClick={() => { haptic("light"); setShowPauseOptions(true); }}>
+              ⏸ Поставить на паузу
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Delete */}
       <div class="habit-delete-section">

@@ -59,4 +59,6 @@ export const api = {
   habitCorrelation: (id: number) => request<HabitCorrelation>(`/api/habits/${id}/correlation`),
   updateHabit: (id: number, data: Partial<CreateHabitPayload>) => patch<HabitData>(`/api/habits/${id}`, data),
   deleteHabit: (id: number) => del<{ ok: boolean }>(`/api/habits/${id}`),
+  pauseHabit: (id: number, days: number) => post<HabitData>(`/api/habits/${id}/pause`, { days }),
+  resumeHabit: (id: number) => post<HabitData>(`/api/habits/${id}/resume`, {}),
 };

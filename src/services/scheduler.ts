@@ -3,6 +3,7 @@ import { config } from "../config.js";
 import { sendCheckInToAll } from "./checkin-sender.js";
 import { runDailyHabitCron, runWeeklyHabitReset } from "./habit-cron.js";
 import { sendWeeklyDigest } from "./weekly-digest.js";
+import { sendRoutineReminders } from "./habit-cron.js";
 
 const tasks: ScheduledTask[] = [];
 
@@ -40,6 +41,23 @@ export function startScheduler(): void {
   }, { timezone: "Asia/Shanghai" });
   tasks.push(habitWeekly);
   console.log("Weekly habit reset scheduled: 0 0 * * 1 (Asia/Shanghai)");
+
+  // Habit routine reminders: morning 7:30, afternoon 13:00, evening 20:30
+  const morningHabits = cron.schedule("30 7 * * *", () => {
+    sendRoutineReminders("morning").catch(err => console.error("Morning habit reminder failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(morningHabits);
+
+  const afternoonHabits = cron.schedule("0 13 * * *", () => {
+    sendRoutineReminders("afternoon").catch(err => console.error("Afternoon habit reminder failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(afternoonHabits);
+
+  const eveningHabits = cron.schedule("30 20 * * *", () => {
+    sendRoutineReminders("evening").catch(err => console.error("Evening habit reminder failed:", err));
+  }, { timezone: "Asia/Shanghai" });
+  tasks.push(eveningHabits);
+  console.log("Habit routine reminders scheduled: 7:30/13:00/20:30 (Asia/Shanghai)");
 
   // Weekly energy digest — Sunday 20:00
   const weeklyDigest = cron.schedule("0 20 * * 0", () => {

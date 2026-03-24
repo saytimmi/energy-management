@@ -74,10 +74,32 @@ export async function deleteHabit(id: number): Promise<boolean> {
 export async function updateHabit(id: number, data: Partial<CreateHabitPayload>): Promise<HabitData | null> {
   try {
     const habit = await api.updateHabit(id, data);
-    await loadHabits(); // refresh
+    await loadHabits();
     return habit;
   } catch (err) {
     console.error("Failed to update habit:", err);
     return null;
+  }
+}
+
+export async function pauseHabit(id: number, days: number): Promise<boolean> {
+  try {
+    await api.pauseHabit(id, days);
+    await loadHabits();
+    return true;
+  } catch (err) {
+    console.error("Failed to pause habit:", err);
+    return false;
+  }
+}
+
+export async function resumeHabit(id: number): Promise<boolean> {
+  try {
+    await api.resumeHabit(id);
+    await loadHabits();
+    return true;
+  } catch (err) {
+    console.error("Failed to resume habit:", err);
+    return false;
   }
 }
