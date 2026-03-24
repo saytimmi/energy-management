@@ -1,5 +1,5 @@
 import { getInitData } from "../telegram";
-import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated } from "./types";
+import type { DashboardData, ObservationsResponse, HistoryPoint, AnalyticsData, HabitData, HabitsGrouped, HabitStats, HeatmapDay, CreateHabitPayload, HabitCorrelation, BalanceOverview, RadarData, BalanceAreaDetail, AlgorithmData, ReflectionStatusData, ReflectionsPaginated, MissionData, GoalData, StrategyData } from "./types";
 
 const BASE = "";
 
@@ -17,6 +17,15 @@ async function patch<T>(path: string, body: unknown): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (initData) headers["Authorization"] = `tma ${initData}`;
   const res = await fetch(`${BASE}${path}`, { method: "PATCH", headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
+  return res.json();
+}
+
+async function put<T>(path: string, body: unknown): Promise<T> {
+  const initData = getInitData();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (initData) headers["Authorization"] = `tma ${initData}`;
+  const res = await fetch(`${BASE}${path}`, { method: "PUT", headers, body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
   return res.json();
 }
@@ -81,4 +90,20 @@ export const api = {
   deleteAlgorithm: (id: number) => del<{ ok: boolean }>(`/api/algorithms/${id}`),
   reflections: (page?: number, limit?: number) =>
     request<ReflectionsPaginated>(`/api/reflections?page=${page || 1}&limit=${limit || 20}`),
+  // Strategy
+  strategy: () => request<StrategyData>("/api/strategy"),
+  mission: () => request<MissionData>("/api/mission"),
+  updateMission: (data: Partial<MissionData>) => put<MissionData>("/api/mission", data),
+  goals: (params?: { lifeArea?: string; timeHorizon?: string; status?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.lifeArea) qs.set("lifeArea", params.lifeArea);
+    if (params?.timeHorizon) qs.set("timeHorizon", params.timeHorizon);
+    if (params?.status) qs.set("status", params.status);
+    const query = qs.toString();
+    return request<GoalData[]>(`/api/goals${query ? `?${query}` : ""}`);
+  },
+  createGoal: (data: { lifeArea: string; title: string; description?: string; timeHorizon: string; period: string }) =>
+    post<GoalData>("/api/goals", data),
+  updateGoal: (id: number, data: { title?: string; description?: string; status?: string }) =>
+    patch<GoalData>(`/api/goals/${id}`, data),
 };

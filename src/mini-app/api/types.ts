@@ -279,3 +279,60 @@ export interface ReflectionsPaginated {
     pages: number;
   };
 }
+
+// --- Strategy types ---
+
+export interface MissionData {
+  identity: string | null;
+  purpose: string | null;
+  legacy: string | null;
+  statement: string | null;
+  updatedAt?: string;
+}
+
+export interface GoalData {
+  id: number;
+  lifeArea: string;
+  title: string;
+  description: string | null;
+  timeHorizon: "year" | "quarter";
+  period: string;
+  status: "active" | "completed" | "dropped";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StrategyHabit {
+  id: number;
+  name: string;
+  icon: string;
+  streak: number;
+  consistency: number;
+}
+
+export interface StrategyGoal {
+  id: number;
+  title: string;
+  description: string | null;
+  period: string;
+  status: string;
+}
+
+export interface StrategyArea {
+  area: string;
+  label: string;
+  icon: string;
+  score: number | null;
+  targetScore: number | null;
+  identity: string | null;
+  isFocus: boolean;
+  yearGoals: StrategyGoal[];
+  quarterGoals: StrategyGoal[];
+  habits: StrategyHabit[];
+}
+
+export interface StrategyData {
+  mission: MissionData | null;
+  focusAreas: StrategyArea[];
+  otherAreas: StrategyArea[];
+}
