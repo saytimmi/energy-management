@@ -94,6 +94,33 @@ export function calculateConsistency30d(
   return Math.round((completedDays / expectedDays) * 100);
 }
 
+/**
+ * Weekly target consistency: completions this week / targetPerWeek * 100.
+ */
+export function calculateWeeklyTargetConsistency(
+  logs: { date: Date }[],
+  targetPerWeek: number,
+  today: Date = new Date(),
+): number {
+  if (targetPerWeek <= 0) return 0;
+
+  const todayMidnight = new Date(today);
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  const dow = todayMidnight.getDay();
+  const mondayOffset = dow === 0 ? 6 : dow - 1;
+  const weekStart = new Date(todayMidnight);
+  weekStart.setDate(weekStart.getDate() - mondayOffset);
+
+  const completedThisWeek = logs.filter(l => {
+    const d = new Date(l.date);
+    d.setHours(0, 0, 0, 0);
+    return d >= weekStart && d <= todayMidnight;
+  }).length;
+
+  return Math.min(100, Math.round((completedThisWeek / targetPerWeek) * 100));
+}
+
 // ─── Stage transitions ──────────────────────────────────────────────
 
 export type HabitStage = "seed" | "growth" | "autopilot";

@@ -278,18 +278,43 @@ export async function runWeeklyHabitReset(): Promise<void> {
 export async function sendRoutineReminders(slot: "morning" | "afternoon" | "evening"): Promise<void> {
   console.log(`[habit-cron] Sending ${slot} routine reminders`);
 
+  const today = new Date();
+  const dow = today.getDay() === 0 ? 7 : today.getDay(); // ISO day-of-week
+
   const users = await prisma.user.findMany({
     where: {
       habits: {
         some: { isActive: true, routineSlot: slot, pausedAt: null },
       },
     },
-    select: { id: true, telegramId: true },
+    select: {
+      id: true,
+      telegramId: true,
+      habits: {
+        where: { isActive: true, routineSlot: slot, pausedAt: null },
+        select: { id: true, frequency: true, customDays: true },
+      },
+    },
   });
 
   for (const user of users) {
+    if (isOnVacation(user as any)) continue;
+
+    // Filter habits scheduled for today
+    const scheduledHabits = user.habits.filter(h => {
+      if (h.frequency === "daily") return true;
+      if (h.frequency === "custom" && h.customDays) {
+        try {
+          const days: number[] = JSON.parse(h.customDays);
+          return days.includes(dow);
+        } catch { return true; }
+      }
+      return true; // "weekly" with targetPerWeek — always show
+    });
+
+    if (scheduledHabits.length === 0) continue;
+
     try {
-      if (isOnVacation(user as any)) continue;
       await sendRoutineReminder(Number(user.telegramId), user.id, slot);
     } catch (err) {
       console.error(`[habit-cron] Failed to send ${slot} reminder to user ${user.id}:`, err);
