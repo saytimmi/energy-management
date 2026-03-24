@@ -208,3 +208,74 @@ export interface BalanceAreaDetail {
   autoMetrics: Record<string, number | null>;
   history: BalanceHistoryEntry[];
 }
+
+// --- Kaizen ---
+
+export interface AlgorithmData {
+  id: number;
+  title: string;
+  icon: string;
+  lifeArea: string | null;
+  steps: string[];
+  context: string | null;
+  usageCount: number;
+  lastUsedAt: string | null;
+  createdAt: string;
+  sourceReflection?: {
+    id: number;
+    date: string;
+    summary: string;
+  } | null;
+}
+
+export interface ReflectionData {
+  id: number;
+  date: string;
+  summary: string;
+  insights: string[] | null;
+  energyContext?: string | null;
+  habitsContext?: string | null;
+  algorithms: { id: number; title: string; icon: string }[];
+  createdAt: string;
+}
+
+export interface ReflectionStatusData {
+  done: boolean;
+  reflection: {
+    id: number;
+    summary: string;
+    insights: string[] | null;
+    createdAt: string;
+  } | null;
+  context: {
+    date: string;
+    energy: {
+      physical: number;
+      mental: number;
+      emotional: number;
+      spiritual: number;
+      logType: string;
+      createdAt: string;
+    }[];
+    habits: {
+      completed: { name: string; icon: string; slot: string }[];
+      total: number;
+    };
+    observations: {
+      energyType: string;
+      direction: string;
+      trigger: string | null;
+      context: string | null;
+    }[];
+  };
+}
+
+export interface ReflectionsPaginated {
+  reflections: ReflectionData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
