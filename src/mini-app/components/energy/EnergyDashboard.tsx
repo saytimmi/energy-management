@@ -1,16 +1,16 @@
 import { useEffect } from "preact/hooks";
 import { signal } from "@preact/signals";
-import { dashboardData, observations, analyticsData, loadInitialData, isLoading, hasError, hasNoData } from "../../store/energy";
+import { dashboardData, observations, analyticsData, loadInitialData, isLoading, hasError, hasNoData, resetEnergyCache } from "../../store/energy";
 import { EnergyRings } from "./EnergyRings";
+import { EnergyCheckinOverlay } from "./EnergyCheckinOverlay";
 import { Observations } from "./Observations";
 import { Analytics } from "./Analytics";
 import { Timeline } from "../timeline/Timeline";
 import { LoadingScreen, WelcomeScreen, ErrorScreen } from "../shared/Loading";
 import { getDayWord } from "./utils";
-import { api } from "../../api/client";
 import { haptic, getTelegramUser } from "../../telegram";
 
-const checkinState = signal<"idle" | "sending" | "sent">("idle");
+const showCheckin = signal(false);
 
 export function EnergyDashboard() {
   useEffect(() => { loadInitialData(); }, []);
@@ -28,15 +28,10 @@ export function EnergyDashboard() {
   const hour = now.getHours();
   const greeting = hour < 6 ? "Доброй ночи," : hour < 12 ? "Доброе утро," : hour < 18 ? "Добрый день," : "Добрый вечер,";
 
-  const handleCheckin = async () => {
-    if (checkinState.value !== "idle") return;
-    haptic("medium");
-    checkinState.value = "sending";
-    try {
-      await api.triggerCheckin();
-      checkinState.value = "sent";
-      setTimeout(() => { checkinState.value = "idle"; }, 30000);
-    } catch { checkinState.value = "idle"; }
+  const handleCheckinComplete = () => {
+    showCheckin.value = false;
+    resetEnergyCache();
+    loadInitialData();
   };
 
   return (
@@ -64,11 +59,19 @@ export function EnergyDashboard() {
           </details>
           <Observations observations={obs} />
           {analytics && <Analytics data={analytics} />}
-          <button class="quick-checkin-btn" onClick={handleCheckin} disabled={checkinState.value !== "idle"}>
-            {checkinState.value === "sending" ? "Отправляю..." : checkinState.value === "sent" ? "✓ Бот напишет тебе" : "⚡ Записать энергию"}
+          <button class="quick-checkin-btn" onClick={() => { haptic("medium"); showCheckin.value = true; }}>
+            ⚡ Записать энергию
           </button>
         </section>
       </main>
+
+      {showCheckin.value && (
+        <EnergyCheckinOverlay
+          onClose={() => { showCheckin.value = false; }}
+          onComplete={handleCheckinComplete}
+          initialValues={data ? { physical: data.physical, mental: data.mental, emotional: data.emotional, spiritual: data.spiritual } : undefined}
+        />
+      )}
     </div>
   );
 }
