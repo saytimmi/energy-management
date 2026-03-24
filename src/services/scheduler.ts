@@ -1,4 +1,5 @@
 import cron, { type ScheduledTask } from "node-cron";
+import prisma from "../db.js";
 import { sendScheduledCheckins } from "./checkin-sender.js";
 import { runDailyHabitCron, runWeeklyHabitReset } from "./habit-cron.js";
 import { sendWeeklyDigest } from "./weekly-digest.js";
@@ -10,96 +11,114 @@ import { sendDailyNudges } from "./smart-nudges.js";
 
 const tasks: ScheduledTask[] = [];
 
+/**
+ * Get users whose local hour matches the target.
+ * Uses IANA timezone from user.timezone.
+ */
+async function getUsersByLocalHour(targetHour: number, targetMinute: number = 0): Promise<number[]> {
+  const users = await prisma.user.findMany({ select: { id: true, timezone: true } });
+  const matching: number[] = [];
+
+  for (const user of users) {
+    try {
+      const tz = user.timezone || "Asia/Shanghai";
+      const now = new Date();
+      const localTime = now.toLocaleString("en-US", { timeZone: tz, hour: "numeric", minute: "numeric", hour12: false });
+      const [h, m] = localTime.split(":").map(Number);
+      if (h === targetHour && (targetMinute === 0 || m === targetMinute)) {
+        matching.push(user.id);
+      }
+    } catch {
+      // Invalid timezone — skip
+    }
+  }
+
+  return matching;
+}
+
 export function startScheduler(): void {
   console.log("Scheduler started");
 
-  // Heartbeat every 15 min — proves scheduler is alive without spamming logs
+  // Heartbeat every 15 min
   const heartbeat = cron.schedule("*/15 * * * *", () => {
     console.log(`Scheduler heartbeat: ${new Date().toISOString()}`);
   });
   tasks.push(heartbeat);
 
-  // Per-user timezone-aware checkins — runs every hour at :00
-  // Checks each user's local time and sends morning (9:00) or evening (21:00)
+  // Per-user timezone-aware checkins — already hourly
   const checkins = cron.schedule("0 * * * *", () => {
     sendScheduledCheckins().catch(err => console.error("Scheduled checkin failed:", err));
   });
   tasks.push(checkins);
   console.log("Timezone-aware checkins scheduled: every hour at :00");
 
-  // Daily habit maintenance at midnight UTC
+  // Daily habit maintenance at midnight UTC (internal, not user-facing)
   const habitDaily = cron.schedule("0 0 * * *", () => {
     runDailyHabitCron().catch(err => console.error("Daily habit cron failed:", err));
   });
   tasks.push(habitDaily);
-  console.log("Daily habit cron scheduled: 0 0 * * *");
 
-  // Weekly freeze reset Monday midnight UTC
+  // Weekly freeze reset Monday midnight UTC (internal)
   const habitWeekly = cron.schedule("0 0 * * 1", () => {
     runWeeklyHabitReset().catch(err => console.error("Weekly habit reset failed:", err));
   });
   tasks.push(habitWeekly);
-  console.log("Weekly habit reset scheduled: 0 0 * * 1");
 
-  // Habit routine reminders: morning 7:30, afternoon 13:00, evening 20:30
-  // TODO: make these per-user timezone aware too
-  const morningHabits = cron.schedule("30 7 * * *", () => {
-    sendRoutineReminders("morning").catch(err => console.error("Morning habit reminder failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(morningHabits);
+  // === TIMEZONE-AWARE USER-FACING CRONS (hourly poll) ===
 
-  const afternoonHabits = cron.schedule("0 13 * * *", () => {
-    sendRoutineReminders("afternoon").catch(err => console.error("Afternoon habit reminder failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(afternoonHabits);
+  // Every hour at :30 — check for habit reminders + other timed events
+  const hourlyUserCrons = cron.schedule("0 * * * *", async () => {
+    try {
+      // Morning habits (local 7:00)
+      const morning7 = await getUsersByLocalHour(7);
+      if (morning7.length > 0) {
+        sendRoutineReminders("morning").catch(err => console.error("Morning habit reminder failed:", err));
+      }
 
-  const eveningHabits = cron.schedule("30 20 * * *", () => {
-    sendRoutineReminders("evening").catch(err => console.error("Evening habit reminder failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(eveningHabits);
-  console.log("Habit routine reminders scheduled: 7:30/13:00/20:30 (Asia/Shanghai)");
+      // Kaizen reminder (local 8:00)
+      sendKaizenReminders().catch(err => console.error("Kaizen reminder failed:", err));
 
-  // Weekly energy digest — Sunday 20:00
-  const weeklyDigest = cron.schedule("0 20 * * 0", () => {
-    sendWeeklyDigest().catch(err => console.error("Weekly digest failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(weeklyDigest);
-  console.log("Weekly digest scheduled: 0 20 * * 0 (Asia/Shanghai)");
+      // Smart nudge (local 9:00)
+      sendDailyNudges().catch(err => console.error("Daily nudge failed:", err));
 
-  // Balance assessment check — daily at 10:00, sends if >=14 days since last
-  const balanceCheck = cron.schedule("0 10 * * *", () => {
-    checkBalanceAssessment().catch(err => console.error("Balance assessment check failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(balanceCheck);
-  console.log("Balance assessment check scheduled: 0 10 * * * (Asia/Shanghai)");
+      // Balance check (local 10:00)
+      checkBalanceAssessment().catch(err => console.error("Balance check failed:", err));
 
-  // Kaizen morning reminder — daily at 8:00 AM
-  const kaizenReminder = cron.schedule("0 8 * * *", () => {
-    sendKaizenReminders().catch(err => console.error("Kaizen reminder failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(kaizenReminder);
-  console.log("Kaizen reminder scheduled: 0 8 * * * (Asia/Shanghai)");
+      // Afternoon habits (local 13:00)
+      const afternoon = await getUsersByLocalHour(13);
+      if (afternoon.length > 0) {
+        sendRoutineReminders("afternoon").catch(err => console.error("Afternoon habit reminder failed:", err));
+      }
 
-  // Daily smart nudge — 9:00 (after kaizen reminder)
-  const dailyNudge = cron.schedule("0 9 * * *", () => {
-    sendDailyNudges().catch(err => console.error("Daily nudge failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(dailyNudge);
-  console.log("Daily smart nudge scheduled: 0 9 * * * (Asia/Shanghai)");
+      // Evening habits (local 20:00)
+      const evening = await getUsersByLocalHour(20);
+      if (evening.length > 0) {
+        sendRoutineReminders("evening").catch(err => console.error("Evening habit reminder failed:", err));
+      }
 
-  // Quarterly goal review — 1st of Jan/Apr/Jul/Oct at 10:00
-  const quarterlyReview = cron.schedule("0 10 1 1,4,7,10 *", () => {
-    sendQuarterlyReview().catch(err => console.error("Quarterly review failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(quarterlyReview);
-  console.log("Quarterly review scheduled: 0 10 1 1,4,7,10 * (Asia/Shanghai)");
+      // Weekly digest Sunday 20:00
+      const now = new Date();
+      if (now.getDay() === 0) {
+        sendWeeklyDigest().catch(err => console.error("Weekly digest failed:", err));
+      }
 
-  // Yearly mission review — January 1st at 10:00
-  const yearlyReview = cron.schedule("0 10 1 1 *", () => {
-    sendMissionReview().catch(err => console.error("Mission review failed:", err));
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(yearlyReview);
-  console.log("Yearly mission review scheduled: 0 10 1 1 * (Asia/Shanghai)");
+      // Quarterly review (1st of quarter months)
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+      if ([1, 4, 7, 10].includes(month) && day === 1) {
+        sendQuarterlyReview().catch(err => console.error("Quarterly review failed:", err));
+      }
+
+      // Yearly mission review (Jan 1)
+      if (month === 1 && day === 1) {
+        sendMissionReview().catch(err => console.error("Mission review failed:", err));
+      }
+    } catch (err) {
+      console.error("Hourly user crons failed:", err);
+    }
+  });
+  tasks.push(hourlyUserCrons);
+  console.log("Timezone-aware user crons scheduled: every hour at :00");
 }
 
 export function stopScheduler(): void {
