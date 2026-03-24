@@ -1,9 +1,10 @@
-import { currentRoute, initRouter } from "./router";
+import { currentRoute, currentParam, initRouter } from "./router";
 import { initTelegram, syncTheme } from "./telegram";
 import { Hub } from "./components/hub/Hub";
 import { EnergyDashboard } from "./components/energy/EnergyDashboard";
 import { HabitsScreen } from "./components/habits/HabitsScreen";
-import { Journal } from "./components/journal/Journal";
+import { BalanceScreen } from "./components/balance/BalanceScreen";
+import { KaizenScreen } from "./components/kaizen/KaizenScreen";
 import { BottomNav } from "./components/shared/BottomNav";
 import { useEffect } from "preact/hooks";
 
@@ -15,6 +16,7 @@ export function App() {
   }, []);
 
   const route = currentRoute.value;
+  const param = currentParam.value;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -25,7 +27,8 @@ export function App() {
       {route === "hub" && <Hub />}
       {route === "energy" && <EnergyDashboard />}
       {route === "habits" && <HabitsScreen />}
-      {route === "journal" && <Journal />}
+      {route === "balance" && <BalanceScreen param={param} />}
+      {route === "kaizen" && <KaizenScreen param={param} />}
       <BottomNav />
     </>
   );
