@@ -1238,6 +1238,10 @@ body {
 }
 .routine-flow-emoji { font-size: 56px; margin-bottom: 12px; }
 .routine-flow-name { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.routine-flow-why {
+  font-size: 12px; color: var(--text2); margin: 2px 0 8px;
+  max-width: 280px; line-height: 1.4;
+}
 .routine-flow-duration { font-size: 14px; color: var(--text3); }
 
 .routine-flow-timer {

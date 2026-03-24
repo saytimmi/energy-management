@@ -146,6 +146,9 @@ export function RoutineFlow({ habits, slotLabel, onFinish }: RoutineFlowProps) {
       <div class="routine-flow-card">
         <div class="routine-flow-emoji">{current.icon}</div>
         <h3 class="routine-flow-name">{current.name}</h3>
+        {current.whyToday && (
+          <p class="routine-flow-why">{current.whyToday}</p>
+        )}
         {current.duration && !current.isDuration && (
           <p class="routine-flow-duration">{current.duration} мин</p>
         )}
