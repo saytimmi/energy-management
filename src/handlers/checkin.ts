@@ -811,9 +811,11 @@ export async function sendCheckInMessage(
 
   pendingCheckIns.set(chatId, { logType });
 
-  // Smart time logic — warn at night
+  // Smart time logic — warn at night (use user's timezone)
   const now = new Date();
-  const hour = parseInt(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Shanghai" }), 10);
+  const user = await prisma.user.findFirst({ where: { telegramId: BigInt(chatId) } });
+  const tz = user?.timezone || "Asia/Shanghai";
+  const hour = parseInt(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: tz }), 10);
 
   let timeNote = "";
   if (hour >= 0 && hour < 6) {

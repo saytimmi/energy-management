@@ -143,7 +143,7 @@ bot.on("message:photo", async (ctx) => {
   await ctx.reply("Пока не умею смотреть фото 📷 Опиши текстом или отправь голосовое — я пойму!");
 });
 
-// Voice messages — transcribe via Groq Whisper, then buffer as text
+// Voice messages — transcribe via Groq Whisper, then route to checkin or buffer
 bot.on("message:voice", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
@@ -173,6 +173,14 @@ bot.on("message:voice", async (ctx) => {
         api_error: "Не удалось расшифровать голосовое 😔 Напиши текстом — я на связи!",
       };
       await ctx.reply(errorMessages[result.reason] || errorMessages.api_error);
+      return;
+    }
+
+    // If user is in checkin flow (custom reason or detail), route transcribed text there
+    if (isAwaitingTextInput(from.id)) {
+      // Fake a text message context for the checkin handler
+      (ctx.message as any).text = result.text;
+      await handleTextInput(ctx);
       return;
     }
 

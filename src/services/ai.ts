@@ -94,7 +94,19 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "start_energy_checkin",
-    description: "Запустить оценку энергии с интерактивными кнопками (InlineKeyboard). Используй ВМЕСТО текстовых вопросов про уровень энергии. Когда хочешь узнать как у человека с энергией — вызови этот инструмент.",
+    description: `Запустить ПОЛНУЮ оценку энергии с кнопками 1-10 по 4 типам.
+
+КОГДА ВЫЗЫВАТЬ:
+- Пользователь ПРЯМО просит: "запиши энергию", "давай чекин", "оцени энергию"
+- Пользователь сам предлагает: "хочу записать как я себя чувствую"
+
+КОГДА НЕ ВЫЗЫВАТЬ:
+- Пользователь просто рассказывает о самочувствии ("устал", "стало лучше после прогулки") → используй DATA-тег для пассивной заметки
+- Пользователь пишет что-то не про энергию
+- Ты хочешь "проверить" как дела → просто спроси текстом, не запускай чекин
+- Пользователь только что завершил чекин
+
+Чекин — это 4 вопроса подряд с кнопками, это нагрузка. Не запускай его без явного запроса.`,
     input_schema: {
       type: "object" as const,
       properties: {},
@@ -108,6 +120,27 @@ const TOOLS: Anthropic.Tool[] = [
       type: "object" as const,
       properties: {},
       required: [],
+    },
+  },
+  {
+    name: "set_timezone",
+    description: `Установить часовой пояс пользователя. Вызывай когда пользователь упоминает своё местоположение или город.
+
+Примеры:
+- "я в Москве" → timezone: "Europe/Moscow"
+- "я в Гуанчжоу" / "я в Китае" → timezone: "Asia/Shanghai"
+- "переехал в Дубай" → timezone: "Asia/Dubai"
+- "я в Ташкенте" → timezone: "Asia/Tashkent"
+- "вернулся в Алматы" → timezone: "Asia/Almaty"
+
+Используй стандартные IANA timezone identifiers.`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        timezone: { type: "string", description: "IANA timezone, например: Asia/Shanghai, Europe/Moscow, Asia/Dubai" },
+        city: { type: "string", description: "Город который упомянул пользователь" },
+      },
+      required: ["timezone"],
     },
   },
   {
@@ -178,8 +211,14 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - create_habit — создать привычку
 - update_habit — изменить существующую привычку (название, время, смысл)
 - delete_habit — удалить привычку
-- start_energy_checkin — запустить оценку энергии с кнопками (НЕ спрашивай текстом!)
+- start_energy_checkin — запустить ПОЛНУЮ оценку энергии с кнопками. ТОЛЬКО когда пользователь ПРЯМО просит ("запиши энергию", "давай чекин"). НЕ запускай когда человек просто рассказывает о самочувствии — для этого используй DATA-тег.
 - get_user_habits — посмотреть текущие привычки
+
+РАЗНИЦА МЕЖДУ ЧЕКИНОМ И DATA-ТЕГОМ:
+- Человек говорит "устал после кодинга" → DATA-тег (пассивная заметка), НЕ чекин
+- Человек говорит "прогулялся, стало лучше" → DATA-тег, НЕ чекин
+- Человек говорит "давай запишем энергию" → start_energy_checkin
+- Человек говорит "хочу оценить энергию" → start_energy_checkin
 
 СОЗДАНИЕ ПРИВЫЧКИ — ПАРСИ ВСЁ ИЗ СООБЩЕНИЯ:
 Когда пользователь описывает привычку (текстом, голосом, или структурированно) — ИЗВЛЕКИ ВСЕ данные и СРАЗУ вызови create_habit с максимумом заполненных полей.
@@ -420,6 +459,25 @@ async function executeTool(
       };
     }
 
+    case "set_timezone": {
+      const input = toolInput as { timezone: string; city?: string };
+      // Validate timezone
+      try {
+        new Date().toLocaleString("en-US", { timeZone: input.timezone });
+      } catch {
+        return { text: `Неизвестный часовой пояс: ${input.timezone}`, actions: [] };
+      }
+      await prisma.user.update({
+        where: { id: userId },
+        data: { timezone: input.timezone },
+      });
+      const nowLocal = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: input.timezone });
+      return {
+        text: `Часовой пояс обновлён: ${input.timezone}${input.city ? ` (${input.city})` : ""}. Сейчас у пользователя ${nowLocal}. Утренний чекин в 09:00, вечерний в 21:00 по местному.`,
+        actions: [],
+      };
+    }
+
     case "rate_life_area": {
       const input = toolInput as { area: string; score: number; note?: string };
       const AREA_LABELS: Record<string, string> = {
@@ -595,10 +653,12 @@ export async function chat(
   // Build context
   const context = await buildUserContext(user.id);
   const now = new Date();
-  const TZ = "Asia/Shanghai";
+  const TZ = user.timezone || "Asia/Shanghai";
   const dateStr = now.toLocaleDateString("ru-RU", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: TZ });
   const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
-  const isoNow = now.toLocaleString("sv-SE", { timeZone: TZ }).replace(" ", "T") + "+08:00";
+  // Calculate UTC offset for ISO string
+  const offsetMinutes = -new Date(now.toLocaleString("en-US", { timeZone: TZ })).getTimezoneOffset();
+  const isoNow = now.toLocaleString("sv-SE", { timeZone: TZ }).replace(" ", "T");
 
   const voiceNote = messageType === "voice"
     ? "\nПоследнее сообщение — расшифровка голосового (Whisper). Могут быть неточности в именах, терминах. Если смысл неясен — переспроси."
@@ -664,8 +724,14 @@ export async function chat(
         return "";
       }
       if (!text) {
-        // No text and no actions — force a non-empty response
-        // This should rarely happen; "👍" was causing user frustration
+        return "";
+      }
+
+      // Filter out useless emoji-only or ultra-short responses (e.g. "👍")
+      // These pollute history and cause self-reinforcing loops
+      const stripped = text.replace(/<!--DATA:.*?-->/gs, "").replace(/\s+/g, "").replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "");
+      if (stripped.length < 2 && !text.includes("<!--DATA:")) {
+        // AI gave a useless response like "👍" — don't save it, force retry
         return "";
       }
       return text;
@@ -674,10 +740,13 @@ export async function chat(
     // Extract observations and clean reply
     const cleanReply = await extractAndSaveObservations(rawReply, user.id, sessionId);
 
-    // Save clean reply to DB
-    await prisma.message.create({
-      data: { userId: user.id, role: "assistant", content: cleanReply, sessionId },
-    });
+    // Don't save empty/useless replies to history — they pollute context
+    // and cause self-reinforcing loops where AI keeps repeating the pattern
+    if (cleanReply.trim()) {
+      await prisma.message.create({
+        data: { userId: user.id, role: "assistant", content: cleanReply, sessionId },
+      });
+    }
 
     return { text: cleanReply, actions: allActions };
   } catch (error) {

@@ -1,6 +1,5 @@
 import cron, { type ScheduledTask } from "node-cron";
-import { config } from "../config.js";
-import { sendCheckInToAll } from "./checkin-sender.js";
+import { sendScheduledCheckins } from "./checkin-sender.js";
 import { runDailyHabitCron, runWeeklyHabitReset } from "./habit-cron.js";
 import { sendWeeklyDigest } from "./weekly-digest.js";
 import { sendRoutineReminders } from "./habit-cron.js";
@@ -16,33 +15,30 @@ export function startScheduler(): void {
   });
   tasks.push(heartbeat);
 
-  const morningCheckin = cron.schedule(config.morningCheckinCron, () => {
-    sendCheckInToAll("morning");
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(morningCheckin);
-  console.log(`Morning check-in scheduled: ${config.morningCheckinCron} (Asia/Shanghai)`);
+  // Per-user timezone-aware checkins — runs every hour at :00
+  // Checks each user's local time and sends morning (9:00) or evening (21:00)
+  const checkins = cron.schedule("0 * * * *", () => {
+    sendScheduledCheckins().catch(err => console.error("Scheduled checkin failed:", err));
+  });
+  tasks.push(checkins);
+  console.log("Timezone-aware checkins scheduled: every hour at :00");
 
-  const eveningCheckin = cron.schedule(config.eveningCheckinCron, () => {
-    sendCheckInToAll("evening");
-  }, { timezone: "Asia/Shanghai" });
-  tasks.push(eveningCheckin);
-  console.log(`Evening check-in scheduled: ${config.eveningCheckinCron} (Asia/Shanghai)`);
-
-  // Daily habit maintenance at midnight
+  // Daily habit maintenance at midnight UTC
   const habitDaily = cron.schedule("0 0 * * *", () => {
     runDailyHabitCron().catch(err => console.error("Daily habit cron failed:", err));
-  }, { timezone: "Asia/Shanghai" });
+  });
   tasks.push(habitDaily);
-  console.log("Daily habit cron scheduled: 0 0 * * * (Asia/Shanghai)");
+  console.log("Daily habit cron scheduled: 0 0 * * *");
 
-  // Weekly freeze reset Monday midnight
+  // Weekly freeze reset Monday midnight UTC
   const habitWeekly = cron.schedule("0 0 * * 1", () => {
     runWeeklyHabitReset().catch(err => console.error("Weekly habit reset failed:", err));
-  }, { timezone: "Asia/Shanghai" });
+  });
   tasks.push(habitWeekly);
-  console.log("Weekly habit reset scheduled: 0 0 * * 1 (Asia/Shanghai)");
+  console.log("Weekly habit reset scheduled: 0 0 * * 1");
 
   // Habit routine reminders: morning 7:30, afternoon 13:00, evening 20:30
+  // TODO: make these per-user timezone aware too
   const morningHabits = cron.schedule("30 7 * * *", () => {
     sendRoutineReminders("morning").catch(err => console.error("Morning habit reminder failed:", err));
   }, { timezone: "Asia/Shanghai" });
