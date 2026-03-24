@@ -1,6 +1,25 @@
 import { Router, Request, Response } from "express";
 import prisma from "../db.js";
 
+function mapGoal(g: any) {
+  return {
+    id: g.id,
+    lifeArea: g.lifeArea,
+    title: g.title,
+    description: g.description,
+    timeHorizon: g.timeHorizon,
+    period: g.period,
+    status: g.status,
+    progress: g.progress ?? 0,
+    metric: g.metric ?? null,
+    targetValue: g.targetValue ?? null,
+    currentValue: g.currentValue ?? 0,
+    milestones: g.milestones ?? null,
+    createdAt: g.createdAt.toISOString(),
+    updatedAt: g.updatedAt.toISOString(),
+  };
+}
+
 export function goalsRoute(router: Router): void {
   // GET /api/goals — list goals with optional filters
   router.get("/goals", async (req: Request, res: Response) => {
@@ -14,7 +33,6 @@ export function goalsRoute(router: Router): void {
       if (status && typeof status === "string") {
         where.status = status;
       } else {
-        // Default: only active goals
         where.status = "active";
       }
 
@@ -23,17 +41,7 @@ export function goalsRoute(router: Router): void {
         orderBy: [{ timeHorizon: "asc" }, { lifeArea: "asc" }, { createdAt: "desc" }],
       });
 
-      res.json(goals.map(g => ({
-        id: g.id,
-        lifeArea: g.lifeArea,
-        title: g.title,
-        description: g.description,
-        timeHorizon: g.timeHorizon,
-        period: g.period,
-        status: g.status,
-        createdAt: g.createdAt.toISOString(),
-        updatedAt: g.updatedAt.toISOString(),
-      })));
+      res.json(goals.map(mapGoal));
     } catch (err) {
       console.error("[goals] GET error:", err);
       res.status(500).json({ error: "Failed to get goals" });
@@ -44,7 +52,7 @@ export function goalsRoute(router: Router): void {
   router.post("/goals", async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { lifeArea, title, description, timeHorizon, period } = req.body;
+      const { lifeArea, title, description, timeHorizon, period, metric, targetValue } = req.body;
 
       if (!lifeArea || !title || !timeHorizon || !period) {
         return res.status(400).json({ error: "lifeArea, title, timeHorizon, period required" });
@@ -68,20 +76,12 @@ export function goalsRoute(router: Router): void {
           description: description || null,
           timeHorizon,
           period,
+          metric: metric || null,
+          targetValue: targetValue ? parseFloat(targetValue) : null,
         },
       });
 
-      res.json({
-        id: goal.id,
-        lifeArea: goal.lifeArea,
-        title: goal.title,
-        description: goal.description,
-        timeHorizon: goal.timeHorizon,
-        period: goal.period,
-        status: goal.status,
-        createdAt: goal.createdAt.toISOString(),
-        updatedAt: goal.updatedAt.toISOString(),
-      });
+      res.json(mapGoal(goal));
     } catch (err) {
       console.error("[goals] POST error:", err);
       res.status(500).json({ error: "Failed to create goal" });
@@ -100,7 +100,7 @@ export function goalsRoute(router: Router): void {
       });
       if (!existing) return res.status(404).json({ error: "Goal not found" });
 
-      const { title, description, status } = req.body;
+      const { title, description, status, progress, currentValue, milestones, metric, targetValue } = req.body;
       const updateData: Record<string, unknown> = {};
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
@@ -111,6 +111,17 @@ export function goalsRoute(router: Router): void {
         }
         updateData.status = status;
       }
+      if (progress !== undefined) {
+        const p = parseInt(progress, 10);
+        if (isNaN(p) || p < 0 || p > 100) {
+          return res.status(400).json({ error: "progress must be 0-100" });
+        }
+        updateData.progress = p;
+      }
+      if (currentValue !== undefined) updateData.currentValue = parseFloat(currentValue);
+      if (milestones !== undefined) updateData.milestones = milestones;
+      if (metric !== undefined) updateData.metric = metric;
+      if (targetValue !== undefined) updateData.targetValue = parseFloat(targetValue);
 
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: "No fields to update" });
@@ -121,17 +132,7 @@ export function goalsRoute(router: Router): void {
         data: updateData,
       });
 
-      res.json({
-        id: goal.id,
-        lifeArea: goal.lifeArea,
-        title: goal.title,
-        description: goal.description,
-        timeHorizon: goal.timeHorizon,
-        period: goal.period,
-        status: goal.status,
-        createdAt: goal.createdAt.toISOString(),
-        updatedAt: goal.updatedAt.toISOString(),
-      });
+      res.json(mapGoal(goal));
     } catch (err) {
       console.error("[goals] PATCH error:", err);
       res.status(500).json({ error: "Failed to update goal" });
