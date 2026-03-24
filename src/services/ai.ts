@@ -58,6 +58,41 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "update_habit",
+    description: "Изменить существующую привычку. Используй когда пользователь просит переименовать, изменить время, обновить смысл или другие параметры привычки. Сначала вызови get_user_habits чтобы узнать ID.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        habitId: { type: "number", description: "ID привычки (получи через get_user_habits)" },
+        name: { type: "string", description: "Новое название (если меняется)" },
+        icon: { type: "string", description: "Новая иконка (если меняется)" },
+        routineSlot: { type: "string", enum: ["morning", "afternoon", "evening"], description: "Новое время дня" },
+        duration: { type: "number", description: "Новая длительность в минутах" },
+        isDuration: { type: "boolean", description: "С таймером или мгновенная" },
+        triggerAction: { type: "string", description: "Новый триггер" },
+        minimalDose: { type: "string", description: "Минимальная версия" },
+        whyToday: { type: "string" },
+        whyMonth: { type: "string" },
+        whyYear: { type: "string" },
+        whyIdentity: { type: "string" },
+        lifeArea: { type: "string", enum: ["health", "career", "relationships", "finances", "family", "growth", "recreation", "environment"] },
+        energyType: { type: "string", enum: ["physical", "mental", "emotional", "spiritual"] },
+      },
+      required: ["habitId"],
+    },
+  },
+  {
+    name: "delete_habit",
+    description: "Удалить привычку. Используй когда пользователь просит удалить привычку. Сначала вызови get_user_habits чтобы узнать ID.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        habitId: { type: "number", description: "ID привычки для удаления" },
+      },
+      required: ["habitId"],
+    },
+  },
+  {
     name: "start_energy_checkin",
     description: "Запустить оценку энергии с интерактивными кнопками (InlineKeyboard). Используй ВМЕСТО текстовых вопросов про уровень энергии. Когда хочешь узнать как у человека с энергией — вызови этот инструмент.",
     input_schema: {
@@ -116,23 +151,35 @@ const SYSTEM_PROMPT = `Ты — тёплый, живой собеседник и
 - Запоминай контекст, ссылайся на прошлое.
 - Русский язык.
 
-АНТИ-GPT СТИЛЬ — ЭТО КРИТИЧЕСКИ ВАЖНО:
-- НИКОГДА не начинай с "Отлично!", "Замечательно!", "Понимаю!", "Хороший вопрос!", "Конечно!" — это звучит как робот.
-- НИКОГДА не используй маркированные списки (•, -, 1.) в обычном разговоре. Пиши текстом.
-- НИКОГДА не пиши "Важно помнить, что...", "Стоит отметить, что...", "Давай разберёмся..." — это канцелярит.
-- НЕ ставь восклицательные знаки после каждого предложения.
-- НЕ повторяй то, что человек только что сказал ("Я вижу, что ты устал...").
-- НЕ используй слова: "безусловно", "определённо", "рекомендую", "предлагаю", "давай попробуем".
-- Пиши как человек в телеграме: короткие фразы, можно без заглавных, можно фрагментами.
-- Если даёшь совет — говори прямо: "ляг поспи 20 минут" а не "Рекомендую рассмотреть возможность короткого отдыха".
-- Можно начать с "слушай", "так", "ну смотри", "короче", "а знаешь что" — как обычный человек.
-- Тон: заботливый друг, который говорит как есть. Не коуч, не терапевт, не ассистент.
+АНТИ-GPT СТИЛЬ — ЭТО САМОЕ ВАЖНОЕ ПРАВИЛО:
+
+Ты пишешь РОВНО как живой человек в телеграме. Не как AI. Не как ассистент. Как друг.
+
+ЗАПРЕЩЁННЫЕ ПАТТЕРНЫ (используешь = провал):
+- Маркированные списки (•, -, *, 1.) — ВООБЩЕ НИКОГДА. Пиши текстом через запятые или отдельными предложениями.
+- Жирный текст (**слово**) — не используй, в телеграме так не пишут друзья.
+- "Отлично!", "Замечательно!", "Понимаю!", "Хороший вопрос!", "Конечно!" — это робот.
+- "Важно помнить", "Стоит отметить", "Давай разберёмся", "Ключевой момент" — канцелярит.
+- "Безусловно", "определённо", "рекомендую", "предлагаю", "давай попробуем" — занудство.
+- Повторение слов пользователя ("Я вижу что ты устал") — раздражает.
+- Структура "заголовок → пункты → вывод" — это эссе, а не сообщение.
+- Несколько абзацев с разными темами — один абзац, одна мысль.
+- Восклицательные знаки через предложение — максимум один на сообщение.
+
+КАК НАДО ПИСАТЬ:
+"слушай, похоже сон опять подвёл. попробуй сегодня лечь до 12, а телефон убери из спальни"
+"ну тройка по физической это ожидаемо после вчерашнего. главное сейчас вода и прогулка минут 20"
+"о, духовная поднялась! что-то хорошее случилось?"
+
+Пиши строчными буквами когда это уместно. Без точек в конце коротких фраз. Фрагментами. Как в реальном чате.
 
 ВАЖНО — ИНСТРУМЕНТЫ:
 У тебя есть инструменты для РЕАЛЬНЫХ действий. ИСПОЛЬЗУЙ ИХ:
-- create_habit — создать привычку в системе (она реально появится в приложении)
+- create_habit — создать привычку
+- update_habit — изменить существующую привычку (название, время, смысл)
+- delete_habit — удалить привычку
 - start_energy_checkin — запустить оценку энергии с кнопками (НЕ спрашивай текстом!)
-- get_user_habits — посмотреть текущие привычки пользователя
+- get_user_habits — посмотреть текущие привычки
 
 СОЗДАНИЕ ПРИВЫЧКИ — ПАРСИ ВСЁ ИЗ СООБЩЕНИЯ:
 Когда пользователь описывает привычку (текстом, голосом, или структурированно) — ИЗВЛЕКИ ВСЕ данные и СРАЗУ вызови create_habit с максимумом заполненных полей.
@@ -292,6 +339,53 @@ async function executeTool(
       const details = fields.length > 0 ? ` (${fields.join(", ")})` : "";
       return {
         text: `Привычка создана! "${habit.name}" ${habit.icon}, ${habit.routineSlot}${details}.${!meaningFilled ? " ВНИМАНИЕ: смысл не заполнен — спроси пользователя 'зачем эта привычка?'" : ""}`,
+        actions: [],
+      };
+    }
+
+    case "update_habit": {
+      const input = toolInput as { habitId: number } & Record<string, unknown>;
+      const habit = await prisma.habit.findFirst({
+        where: { id: input.habitId, userId, isActive: true },
+      });
+      if (!habit) {
+        return { text: `Привычка с ID ${input.habitId} не найдена.`, actions: [] };
+      }
+
+      const updateData: Record<string, unknown> = {};
+      const allowedFields = [
+        "name", "icon", "routineSlot", "duration", "isDuration", "triggerAction",
+        "minimalDose", "whyToday", "whyMonth", "whyYear", "whyIdentity",
+        "lifeArea", "energyType",
+      ];
+      for (const field of allowedFields) {
+        if (input[field] !== undefined) updateData[field] = input[field];
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return { text: "Нет полей для обновления.", actions: [] };
+      }
+
+      await prisma.habit.update({ where: { id: habit.id }, data: updateData });
+      const changedFields = Object.keys(updateData).join(", ");
+      return {
+        text: `Привычка "${habit.name}" обновлена (${changedFields}).`,
+        actions: [],
+      };
+    }
+
+    case "delete_habit": {
+      const input = toolInput as { habitId: number };
+      const habit = await prisma.habit.findFirst({
+        where: { id: input.habitId, userId, isActive: true },
+      });
+      if (!habit) {
+        return { text: `Привычка с ID ${input.habitId} не найдена.`, actions: [] };
+      }
+
+      await prisma.habit.update({ where: { id: habit.id }, data: { isActive: false } });
+      return {
+        text: `Привычка "${habit.name}" ${habit.icon} удалена.`,
         actions: [],
       };
     }

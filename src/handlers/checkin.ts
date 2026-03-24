@@ -352,18 +352,28 @@ async function processCompletedCheckin(
     );
 
     if (!result.allGood) {
-      const grouped = new Map<string, typeof result.recommendations>();
-      for (const rec of result.recommendations) {
-        if (!grouped.has(rec.energyType)) grouped.set(rec.energyType, []);
-        grouped.get(rec.energyType)!.push(rec);
+      // Split into quick (≤15 min) and day-long recommendations
+      const quick = result.recommendations.filter(r => r.duration <= 15);
+      const dayLong = result.recommendations.filter(r => r.duration > 15);
+
+      if (quick.length > 0) {
+        followUp += "\n\n⚡ Прямо сейчас (до 15 мин):";
+        for (const action of quick.slice(0, 3)) {
+          followUp += `\n  → ${action.name}, ${action.duration} мин`;
+        }
       }
 
-      // For critical: show more recommendations
-      const maxRecs = criticals.length > 0 ? 3 : 2;
-      followUp += "\n\nЧто поможет:";
-      for (const [type, actions] of grouped) {
-        const limited = actions.slice(0, maxRecs);
-        for (const action of limited) {
+      if (dayLong.length > 0) {
+        followUp += "\n\n📅 На сегодня:";
+        for (const action of dayLong.slice(0, 2)) {
+          followUp += `\n  → ${action.name}, ${action.duration} мин`;
+        }
+      }
+
+      // If all recs are same duration, just show generic
+      if (quick.length === 0 && dayLong.length === 0) {
+        followUp += "\n\nЧто поможет:";
+        for (const action of result.recommendations.slice(0, 3)) {
           followUp += `\n  → ${action.name}, ${action.duration} мин`;
         }
       }
@@ -788,6 +798,11 @@ export async function sendCheckInMessage(
   chatId: number,
   logType: "morning" | "evening" | "manual",
 ): Promise<void> {
+  // Prevent duplicate checkins — if already in progress, ignore
+  if (pendingCheckIns.has(chatId)) {
+    return;
+  }
+
   const greetings: Record<string, string> = {
     morning: "Доброе утро! Как твои энергии сегодня? Оцени каждую от 1 до 10.",
     evening: "Добрый вечер! Подведём итоги дня. Как твои энергии сейчас?",
@@ -796,10 +811,21 @@ export async function sendCheckInMessage(
 
   pendingCheckIns.set(chatId, { logType });
 
+  // Smart time logic — warn at night
+  const now = new Date();
+  const hour = parseInt(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Shanghai" }), 10);
+
+  let timeNote = "";
+  if (hour >= 0 && hour < 6) {
+    timeNote = "\n\n⏰ Сейчас ночь — оценка может быть занижена из-за усталости. Может, лучше утром?";
+  } else if (hour >= 23) {
+    timeNote = "\n\n🌙 Поздновато — учитывай что вечерняя усталость влияет на оценку.";
+  }
+
   const firstEnergy = ENERGY_ORDER[0];
   const label = ENERGY_LABELS[firstEnergy];
 
-  await bot.api.sendMessage(chatId, `${greetings[logType]}\n\n${label} энергия: оцени от 1 до 10`, {
+  await bot.api.sendMessage(chatId, `${greetings[logType]}\n\n${label} энергия: оцени от 1 до 10${timeNote}`, {
     reply_markup: buildRatingKeyboard(logType, firstEnergy),
   });
 }
