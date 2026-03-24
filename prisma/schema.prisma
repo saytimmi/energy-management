@@ -31,6 +31,7 @@ model User {
   goals          Goal[]
   algorithms     Algorithm[]
   reflections    Reflection[]
+  digests        WeeklyDigest[]
 }
 
 model EnergyLog {
@@ -139,6 +140,9 @@ model Habit {
   pausedAt            DateTime?
   pausedUntil         DateTime?
   microActionId       String?
+  goalId              Int?
+  goal                Goal?      @relation(fields: [goalId], references: [id])
+  targetPerWeek       Int?
   isActive            Boolean    @default(true)
   logs                HabitLog[]
   createdAt           DateTime   @default(now())
@@ -187,17 +191,23 @@ model Mission {
 }
 
 model Goal {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  lifeArea    String
-  title       String
-  description String?
-  timeHorizon String
-  period      String
-  status      String   @default("active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  lifeArea     String
+  title        String
+  description  String?
+  timeHorizon  String
+  period       String
+  status       String   @default("active")
+  progress     Int?     @default(0)
+  metric       String?
+  targetValue  Float?
+  currentValue Float?   @default(0)
+  milestones   Json?
+  habits       Habit[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([userId, lifeArea, status])
 }
@@ -249,4 +259,16 @@ model Reflection {
   createdAt     DateTime    @default(now())
 
   @@unique([userId, date])
+}
+
+model WeeklyDigest {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  weekStart DateTime
+  content   Json
+  summary   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, weekStart])
 }
