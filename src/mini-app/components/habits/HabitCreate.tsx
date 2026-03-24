@@ -1,7 +1,9 @@
-import { useState } from "preact/hooks";
+import { useState, useEffect } from "preact/hooks";
 import { createHabit } from "../../store/habits";
 import { haptic, hapticSuccess } from "../../telegram";
-import type { CreateHabitPayload, HabitData } from "../../api/types";
+import { api } from "../../api/client";
+import { FrequencyPicker } from "./FrequencyPicker";
+import type { CreateHabitPayload, HabitData, GoalData } from "../../api/types";
 
 // Auto-pick icon based on habit name keywords
 const ICON_MAP: Array<[string[], string]> = [
@@ -75,8 +77,21 @@ export function HabitCreate({ onClose, microActionId }: Props) {
   const [breakTrigger, setBreakTrigger] = useState("");
   const [replacement, setReplacement] = useState("");
 
+  // Goal link
+  const [goalId, setGoalId] = useState<number | null>(null);
+  const [availableGoals, setAvailableGoals] = useState<GoalData[]>([]);
+
+  // Frequency
+  const [frequency, setFrequency] = useState<string>("daily");
+  const [customDays, setCustomDays] = useState<number[]>([]);
+  const [targetPerWeek, setTargetPerWeek] = useState<number | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.goals({ status: "active" }).then(setAvailableGoals).catch(() => {});
+  }, []);
 
   const icon = pickIcon(name);
 
@@ -106,6 +121,10 @@ export function HabitCreate({ onClose, microActionId }: Props) {
       isDuration,
       ...(durationMin ? { duration: durationMin } : {}),
       ...(microActionId ? { microActionId } : {}),
+      ...(goalId ? { goalId } : {}),
+      ...(frequency !== "daily" ? { frequency } : {}),
+      ...(frequency === "custom" && customDays.length > 0 ? { customDays: JSON.stringify(customDays) } : {}),
+      ...(frequency === "weekly" && targetPerWeek ? { targetPerWeek } : {}),
     };
 
     if (type === "build") {
@@ -250,6 +269,46 @@ export function HabitCreate({ onClose, microActionId }: Props) {
               ))}
             </div>
           </div>
+
+          {/* Frequency */}
+          <div class="form-group">
+            <label class="form-label">Как часто</label>
+            <FrequencyPicker
+              frequency={frequency}
+              customDays={customDays}
+              targetPerWeek={targetPerWeek}
+              onFrequencyChange={setFrequency}
+              onCustomDaysChange={setCustomDays}
+              onTargetPerWeekChange={setTargetPerWeek}
+            />
+          </div>
+
+          {/* Goal link */}
+          {availableGoals.filter(g => !lifeArea || g.lifeArea === lifeArea).length > 0 && (
+            <div class="form-group">
+              <label class="form-label">Для какой цели?</label>
+              <div class="create-goals-list">
+                <button
+                  class={`create-goal-btn${goalId === null ? " active" : ""}`}
+                  onClick={() => { setGoalId(null); haptic("light"); }}
+                >
+                  Без цели
+                </button>
+                {availableGoals
+                  .filter(g => !lifeArea || g.lifeArea === lifeArea)
+                  .map(g => (
+                    <button
+                      key={g.id}
+                      class={`create-goal-btn${goalId === g.id ? " active" : ""}`}
+                      onClick={() => { setGoalId(g.id); haptic("light"); }}
+                    >
+                      🎯 {g.title}
+                      {g.progress > 0 && <span class="goal-progress-badge">{g.progress}%</span>}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

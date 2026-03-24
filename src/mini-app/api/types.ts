@@ -69,6 +69,10 @@ export interface HabitData {
   replacement: string | null;
   triggerAction: string | null;
   microActionId: string | null;
+  goalId: number | null;
+  frequency: string;
+  customDays: string | null;
+  targetPerWeek: number | null;
   sortOrder: number;
   stageUpdatedAt: string;
   createdAt: string;
@@ -107,6 +111,10 @@ export interface CreateHabitPayload {
   replacement?: string;
   microActionId?: string;
   minimalDose?: string;
+  goalId?: number;
+  frequency?: string;
+  customDays?: string;
+  targetPerWeek?: number;
 }
 
 export interface HabitsGrouped {
@@ -298,6 +306,11 @@ export interface GoalData {
   timeHorizon: "year" | "quarter";
   period: string;
   status: "active" | "completed" | "dropped";
+  progress: number;
+  metric: string | null;
+  targetValue: number | null;
+  currentValue: number;
+  milestones: Array<{ title: string; done: boolean }> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -316,6 +329,11 @@ export interface StrategyGoal {
   description: string | null;
   period: string;
   status: string;
+  progress: number;
+  metric: string | null;
+  targetValue: number | null;
+  currentValue: number;
+  habits: StrategyHabit[];
 }
 
 export interface StrategyArea {
@@ -329,6 +347,7 @@ export interface StrategyArea {
   yearGoals: StrategyGoal[];
   quarterGoals: StrategyGoal[];
   habits: StrategyHabit[];
+  unlinkedHabits?: StrategyHabit[];
 }
 
 export interface StrategyData {

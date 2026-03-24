@@ -101,6 +101,9 @@ export function HabitDetail({ habit, onBack }: HabitDetailProps) {
 
       <StageIndicator stage={habit.stage} createdAt={habit.createdAt} />
 
+      {/* Linked Goal */}
+      {habit.goalId && <GoalLink goalId={habit.goalId} />}
+
       {/* Pause banner */}
       {habit.isPaused && (
         <div class="pause-banner">
@@ -355,6 +358,32 @@ function MeaningField({ label, placeholder, value, onInput }: {
         onInput={(e) => onInput((e.target as HTMLInputElement).value)}
         placeholder={placeholder}
       />
+    </div>
+  );
+}
+
+function GoalLink({ goalId }: { goalId: number }) {
+  const [goal, setGoal] = useState<{ title: string; progress: number } | null>(null);
+
+  useEffect(() => {
+    api.goals({ status: "active" }).then(goals => {
+      const found = goals.find(g => g.id === goalId);
+      if (found) setGoal({ title: found.title, progress: found.progress });
+    }).catch(() => {});
+  }, [goalId]);
+
+  if (!goal) return null;
+
+  return (
+    <div class="detail-goal-link">
+      <span class="detail-goal-icon">🎯</span>
+      <div class="goal-link-info">
+        <div class="goal-link-title">{goal.title}</div>
+        <div class="goal-link-progress-bar">
+          <div class="goal-link-progress-fill" style={{ width: `${goal.progress}%` }} />
+        </div>
+      </div>
+      <span class="goal-link-percent">{goal.progress}%</span>
     </div>
   );
 }

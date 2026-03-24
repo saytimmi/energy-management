@@ -189,7 +189,7 @@ export function habitsRoute(router: Router): void {
     try {
       const { name, icon, type, routineSlot, duration, isDuration, energyType, lifeArea, triggerAction,
         whyToday, whyMonth, whyYear, whyIdentity, isItBeneficial,
-        breakTrigger, replacement, microActionId, frequency, customDays, minimalDose } = req.body;
+        breakTrigger, replacement, microActionId, frequency, customDays, minimalDose, goalId, targetPerWeek } = req.body;
 
       if (!name || !icon || !type || !routineSlot) {
         res.status(400).json({ error: "Обязательные поля: name, icon, type, routineSlot" });
@@ -241,6 +241,8 @@ export function habitsRoute(router: Router): void {
           minimalDose: minimalDose ?? null,
           frequency: frequency ?? "daily",
           customDays: customDays ?? null,
+          goalId: goalId ? parseInt(goalId, 10) : null,
+          targetPerWeek: targetPerWeek ? parseInt(targetPerWeek, 10) : null,
           stage: "seed",
           stageUpdatedAt: new Date(),
         },
@@ -269,7 +271,7 @@ export function habitsRoute(router: Router): void {
         "name", "icon", "type", "routineSlot", "sortOrder", "duration",
         "energyType", "lifeArea", "triggerAction", "whyToday", "whyMonth", "whyYear",
         "whyIdentity", "isItBeneficial", "breakTrigger", "replacement",
-        "microActionId", "frequency", "customDays", "stage", "minimalDose",
+        "microActionId", "frequency", "customDays", "stage", "minimalDose", "goalId", "targetPerWeek",
       ];
 
       const data: Record<string, any> = {};

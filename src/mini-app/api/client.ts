@@ -104,7 +104,9 @@ export const api = {
   },
   createGoal: (data: { lifeArea: string; title: string; description?: string; timeHorizon: string; period: string }) =>
     post<GoalData>("/api/goals", data),
-  updateGoal: (id: number, data: { title?: string; description?: string; status?: string }) =>
+  updateGoal: (id: number, data: { title?: string; description?: string; status?: string; progress?: number; currentValue?: number }) =>
+    patch<GoalData>(`/api/goals/${id}`, data),
+  updateGoalProgress: (id: number, data: { progress?: number; currentValue?: number }) =>
     patch<GoalData>(`/api/goals/${id}`, data),
   // Energy checkin
   submitEnergy: (data: { physical: number; mental: number; emotional: number; spiritual: number; logType: string }) =>

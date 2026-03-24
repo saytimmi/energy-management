@@ -47,6 +47,10 @@ const TOOLS: Anthropic.Tool[] = [
         isDuration: { type: "boolean", description: "true если привычка длительная (с таймером старт→стоп): сон, медитация, тренировка. false для мгновенных: выпить воду, записать мысль" },
         triggerAction: { type: "string", description: "Триггер — что запускает привычку. Например: 'После пробуждения', 'После обеда', 'Перед сном'" },
         minimalDose: { type: "string", description: "Минимальная версия для тяжёлых дней. Например: если привычка '30 мин зарядки', минимум = '5 мин растяжки'" },
+        goalId: { type: "number", description: "ID цели, к которой привязана привычка (опционально, получи через get_goals)" },
+        frequency: { type: "string", enum: ["daily", "weekly", "custom"], description: "Частота: daily (по умолчанию), weekly (N раз в неделю), custom (конкретные дни)" },
+        customDays: { type: "string", description: "Дни недели в формате JSON array [1,3,5] где 1=Пн, 7=Вс. Только для frequency='custom'." },
+        targetPerWeek: { type: "number", description: "Сколько раз в неделю. Для frequency='weekly' с targetPerWeek > 1." },
         whyToday: { type: "string", description: "Для build: конкретная выгода сегодня. Заполни сам если пользователь не сказал: сформулируй от его лица." },
         whyMonth: { type: "string", description: "Для build: что изменится через месяц" },
         whyYear: { type: "string", description: "Для build: что изменится через год" },
@@ -529,6 +533,10 @@ async function executeTool(
         isDuration?: boolean;
         triggerAction?: string;
         minimalDose?: string;
+        goalId?: number;
+        frequency?: string;
+        customDays?: string;
+        targetPerWeek?: number;
         whyToday?: string;
         whyMonth?: string;
         whyYear?: string;
@@ -572,7 +580,10 @@ async function executeTool(
           isDuration: input.isDuration ?? (input.duration ? input.duration >= 10 : false),
           triggerAction: input.triggerAction || null,
           minimalDose: input.minimalDose || null,
-          frequency: "daily",
+          frequency: input.frequency || "daily",
+          customDays: input.customDays || null,
+          targetPerWeek: input.targetPerWeek || null,
+          goalId: input.goalId || null,
           whyToday: input.whyToday || null,
           whyMonth: input.whyMonth || null,
           whyYear: input.whyYear || null,
@@ -593,6 +604,11 @@ async function executeTool(
       if (habit.minimalDose) fields.push(`минимум: ${habit.minimalDose}`);
       const meaningFilled = input.whyToday || input.isItBeneficial;
       if (meaningFilled) fields.push("смысл заполнен");
+      if (input.goalId) {
+        const linkedGoal = await prisma.goal.findUnique({ where: { id: input.goalId }, select: { title: true } });
+        if (linkedGoal) fields.push(`цель: ${linkedGoal.title}`);
+      }
+      if (input.frequency && input.frequency !== "daily") fields.push(`частота: ${input.frequency}`);
 
       const details = fields.length > 0 ? ` (${fields.join(", ")})` : "";
       return {
