@@ -27,6 +27,13 @@
   --spiritual: #c77dff;
   --spiritual-glow: rgba(199, 125, 255, 0.2);
 
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Text aliases */
+  --text1: var(--text);
+
   /* Layout */
   --radius: 20px;
   --radius-sm: 14px;
@@ -69,6 +76,13 @@
   --emotional-glow: rgba(232, 85, 15, 0.15);
   --spiritual: #a14de0;
   --spiritual-glow: rgba(161, 77, 224, 0.15);
+
+  /* Glass — light */
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.08);
+
+  /* Text aliases — light */
+  --text1: var(--text);
 
   /* Telegram theme mapping */
   --tg-bg: var(--bg);

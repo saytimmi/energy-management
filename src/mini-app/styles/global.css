@@ -859,7 +859,7 @@ body {
   color: var(--text2); cursor: pointer; transition: all 0.2s;
 }
 .freq-option.active {
-  background: rgba(200, 255, 115, 0.15); border-color: var(--accent); color: var(--text1);
+  background: var(--accent-glow); border-color: var(--accent); color: var(--text);
 }
 .frequency-days { display: flex; gap: 4px; margin-top: 8px; }
 .freq-day-btn {
@@ -868,7 +868,7 @@ body {
   color: var(--text2); cursor: pointer; transition: all 0.2s;
 }
 .freq-day-btn.active {
-  background: rgba(200, 255, 115, 0.2); border-color: var(--accent); color: var(--text1);
+  background: var(--accent-glow); border-color: var(--accent); color: var(--text);
 }
 .frequency-target { margin-top: 8px; }
 .freq-target-label { font-size: 12px; color: var(--text3); }
@@ -879,7 +879,7 @@ body {
   color: var(--text2); cursor: pointer; transition: all 0.2s;
 }
 .freq-target-btn.active {
-  background: rgba(200, 255, 115, 0.2); border-color: var(--accent); color: var(--text1);
+  background: var(--accent-glow); border-color: var(--accent); color: var(--text);
 }
 
 /* Goal Link in HabitCreate */
@@ -891,7 +891,7 @@ body {
 }
 .create-goal-btn.active {
   background: rgba(200, 255, 115, 0.15); border-color: var(--accent);
-  color: var(--text1);
+  color: var(--text);
 }
 .goal-progress-badge {
   margin-left: 4px; font-size: 10px; opacity: 0.6;
@@ -906,9 +906,9 @@ body {
 }
 .detail-goal-icon { font-size: 16px; }
 .goal-link-info { flex: 1; }
-.goal-link-title { font-size: 13px; color: var(--text1); margin-bottom: 4px; }
+.goal-link-title { font-size: 13px; color: var(--text); margin-bottom: 4px; }
 .goal-link-progress-bar {
-  height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;
+  height: 4px; background: var(--glass-border); border-radius: 2px; overflow: hidden;
 }
 .goal-link-progress-fill {
   height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s;
@@ -1538,7 +1538,7 @@ body {
 .digest-card:active { transform: scale(0.98); }
 .digest-card-header { display: flex; align-items: center; gap: 8px; }
 .digest-card-icon { font-size: 16px; }
-.digest-card-dates { flex: 1; font-size: 14px; color: var(--text1); font-weight: 600; }
+.digest-card-dates { flex: 1; font-size: 14px; color: var(--text); font-weight: 600; }
 .digest-card-arrow { color: var(--text3); font-size: 18px; }
 .digest-card-trends { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .digest-trend { font-size: 12px; color: var(--text2); }
@@ -1550,7 +1550,7 @@ body {
 .digest-detail-header { display: flex; align-items: center; gap: 12px; padding: 16px 0; }
 .digest-detail-header h2 { font-size: 16px; font-weight: 700; margin: 0; }
 .digest-section { margin-bottom: 16px; }
-.digest-section-title { font-size: 13px; font-weight: 600; color: var(--text1); margin-bottom: 8px; }
+.digest-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
 .digest-trend-row {
   display: flex; justify-content: space-between; align-items: center;
   padding: 6px 0; font-size: 13px; color: var(--text2);
@@ -2115,7 +2115,7 @@ body {
 .strategy-goal-progress { margin-bottom: 8px; }
 .strategy-goal-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .strategy-goal-bar {
-  flex: 1; height: 6px; background: rgba(255,255,255,0.08);
+  flex: 1; height: 6px; background: var(--glass-border);
   border-radius: 3px; overflow: hidden;
 }
 .strategy-goal-bar-fill {
