@@ -43,8 +43,9 @@ export function KaizenScreen({ param }: KaizenScreenProps) {
   }
 
   const handleAskAI = () => {
+    if (!botUsername.value) return;
     haptic("medium");
-    openTelegramLink(botUsername.value);
+    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent("Давай проведём рефлексию"));
   };
 
   const status = reflectionStatus.value;

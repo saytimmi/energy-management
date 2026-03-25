@@ -43,8 +43,10 @@ export function AlgorithmDetail({ id }: AlgorithmDetailProps) {
   };
 
   const handleAskAI = () => {
+    if (!botUsername.value) return;
     haptic("medium");
-    openTelegramLink(botUsername.value);
+    const algoTitle = algorithmData.value?.title ?? "алгоритм";
+    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent(`Хочу обсудить алгоритм "${algoTitle}"`));
   };
 
   const handleDelete = async () => {

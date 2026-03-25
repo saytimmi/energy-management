@@ -1,4 +1,4 @@
-import { config } from "./config.js";
+import { config, resolveBotUsername } from "./config.js";
 import prisma from "./db.js";
 import { bot, setupBot } from "./bot.js";
 import { startScheduler, stopScheduler } from "./services/scheduler.js";
@@ -9,6 +9,9 @@ async function main() {
 
   await prisma.$connect();
   console.log("Database connected");
+
+  // Resolve bot username from Telegram API
+  await resolveBotUsername(config.telegramBotToken);
 
   // Start HTTP server first — Mini App must be available
   startServer();

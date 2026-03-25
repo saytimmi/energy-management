@@ -13,13 +13,15 @@ export function StrategyScreen() {
   };
 
   const handleEditMission = () => {
+    if (!botUsername.value) return;
     haptic("medium");
     openTelegramLink(botUsername.value + "?text=" + encodeURIComponent("Хочу определить миссию"));
   };
 
   const handleSetGoals = () => {
+    if (!botUsername.value) return;
     haptic("medium");
-    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent("Поставить цели"));
+    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent("Хочу поставить цели"));
   };
 
   if (strategyLoading.value) {
