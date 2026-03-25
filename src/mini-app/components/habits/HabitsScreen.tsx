@@ -85,15 +85,21 @@ export function HabitsScreen() {
   useEffect(() => {
     parseSuggestParam();
     loadHabits();
-    // Fetch identity map for RoutineFlow identity card
-    api.strategy().then(data => {
-      const map: Record<string, string | null> = {};
-      for (const area of [...data.focusAreas, ...data.otherAreas]) {
-        if (area.identity) map[area.area] = area.identity;
-      }
-      identityMap.value = map;
-    }).catch(() => { /* non-critical */ });
   }, []);
+
+  // Lazy load identity map only when RoutineFlow is triggered
+  function startRoutine(slot: string) {
+    routineFlowSlot.value = slot;
+    if (Object.keys(identityMap.value).length === 0) {
+      api.strategy().then(data => {
+        const map: Record<string, string | null> = {};
+        for (const area of [...data.focusAreas, ...data.otherAreas]) {
+          if (area.identity) map[area.area] = area.identity;
+        }
+        identityMap.value = map;
+      }).catch(() => {});
+    }
+  }
 
   // Routine Flow mode
   if (routineFlowSlot.value && data) {
@@ -201,9 +207,9 @@ export function HabitsScreen() {
         </div>
       ) : (
         <>
-          <RoutineGroup slot="morning" habits={data!.morning} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={(s) => { routineFlowSlot.value = s; }} />
-          <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={(s) => { routineFlowSlot.value = s; }} />
-          <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={(s) => { routineFlowSlot.value = s; }} />
+          <RoutineGroup slot="morning" habits={data!.morning} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={startRoutine} />
+          <RoutineGroup slot="afternoon" habits={data!.afternoon} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={startRoutine} />
+          <RoutineGroup slot="evening" habits={data!.evening} onOpenDetail={(h) => { selectedHabit.value = h; }} onCompleted={handleHabitCompleted} onStartRoutine={startRoutine} />
         </>
       )}
 

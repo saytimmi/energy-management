@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "preact/hooks";
+import { useState, useEffect } from "preact/hooks";
 import type { HabitData } from "../../api/types";
 import { toggleComplete, startDurationHabit } from "../../store/habits";
 import { haptic } from "../../telegram";
@@ -47,8 +47,6 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
   const isDuration = habit.isDuration;
   const [completing, setCompleting] = useState(false);
   const [elapsed, setElapsed] = useState("");
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didLongPress = useRef(false);
 
   // Update elapsed timer for in-progress duration habits
   useEffect(() => {
@@ -60,75 +58,41 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
     return () => clearInterval(interval);
   }, [inProgress, habit.startedAt]);
 
-  async function handleStartDuration() {
-    haptic("medium");
-    await startDurationHabit(habit);
-  }
+  // Tap on icon = toggle complete (with debounce)
+  async function handleIconTap(e: Event) {
+    e.stopPropagation();
+    if (completing) return; // debounce
 
-  async function handleCompleteDuration() {
-    haptic("medium");
-    setCompleting(true);
-    await toggleComplete(habit);
-    setCompleting(false);
-    if (onCompleted) onCompleted(habit);
-  }
-
-  async function handleUncomplete() {
-    haptic("light");
-    await toggleComplete(habit);
-  }
-
-  function handleTap() {
-    if (done) {
-      handleUncomplete();
+    if (isDuration && !done && !inProgress) {
+      haptic("medium");
+      await startDurationHabit(habit);
       return;
     }
 
-    if (isDuration) {
-      if (inProgress) {
-        handleCompleteDuration();
-      } else {
-        handleStartDuration();
-      }
+    if (isDuration && inProgress) {
+      haptic("medium");
+      setCompleting(true);
+      await toggleComplete(habit);
+      setCompleting(false);
+      if (onCompleted) onCompleted(habit);
       return;
     }
 
-    // Instant habit — complete NOW with current time
+    // Instant or undo
     haptic("medium");
     setCompleting(true);
     const now = new Date();
-    const timeStr = `в ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    toggleComplete(habit, timeStr).then(() => {
-      setCompleting(false);
-      if (onCompleted) onCompleted(habit);
-    });
+    const timeStr = done ? undefined : `в ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    await toggleComplete(habit, timeStr);
+    setCompleting(false);
+    if (!done && onCompleted) onCompleted(habit);
   }
 
-  function onTouchStart() {
-    didLongPress.current = false;
-    longPressTimer.current = setTimeout(() => {
-      didLongPress.current = true;
-      haptic("heavy");
-      if (onOpenDetail) onOpenDetail(habit);
-    }, 500);
-  }
-
-  function onTouchEnd(e: Event) {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    if (didLongPress.current) {
-      e.preventDefault();
-      return;
-    }
-    handleTap();
-  }
-
-  function onTouchMove() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
+  // Tap on card body = open detail
+  function handleCardTap() {
+    if (onOpenDetail) {
+      haptic("light");
+      onOpenDetail(habit);
     }
   }
 
@@ -155,13 +119,15 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
   return (
     <div
       class={`habit-card-v2${done ? " completed" : ""}${inProgress ? " in-progress" : ""}${isPaused ? " paused" : ""} ${completing ? `completing-card completing-${habit.stage}` : ""}`}
-      onTouchStart={isPaused ? undefined : onTouchStart}
-      onTouchEnd={isPaused ? undefined : onTouchEnd}
-      onTouchMove={isPaused ? undefined : onTouchMove}
-      onMouseUp={isPaused ? undefined : () => { if (!didLongPress.current) handleTap(); }}
+      onClick={isPaused ? undefined : handleCardTap}
     >
-      {/* Icon */}
-      <div class="habit-icon-wrap" style={{ background: iconGradient }}>
+      {/* Icon — tap to complete */}
+      <div
+        class="habit-icon-wrap"
+        style={{ background: iconGradient }}
+        onClick={isPaused ? undefined : handleIconTap}
+        onTouchEnd={isPaused ? undefined : (e) => { e.stopPropagation(); }}
+      >
         {done ? (
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
             <path d="M5 11l4.5 4.5 8-9.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -196,22 +162,22 @@ export function HabitCard({ habit, onOpenDetail, onCompleted }: HabitCardProps) 
         </div>
       </div>
 
-      {/* Action / Detail */}
+      {/* Action buttons */}
       {isDuration && !done && !inProgress ? (
-        <button class="habit-start-btn" onClick={(e) => { e.stopPropagation(); handleStartDuration(); }}
-          onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+        <button class="habit-start-btn" onClick={(e) => { e.stopPropagation(); haptic("medium"); startDurationHabit(habit); }}
+          onTouchEnd={(e) => e.stopPropagation()}>
           Начать
         </button>
       ) : isDuration && inProgress ? (
-        <button class="habit-finish-btn" onClick={(e) => { e.stopPropagation(); handleCompleteDuration(); }}
-          onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+        <button class="habit-finish-btn" onClick={(e) => { e.stopPropagation(); handleIconTap(e); }}
+          onTouchEnd={(e) => e.stopPropagation()}>
           Готово
         </button>
       ) : (
         <button
           class="habit-detail-arrow"
           onClick={(e) => { e.stopPropagation(); haptic("light"); if (onOpenDetail) onOpenDetail(habit); }}
-          onTouchEnd={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M7 13l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
