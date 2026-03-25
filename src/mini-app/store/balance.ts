@@ -8,11 +8,14 @@ export const balanceDetail = signal<BalanceAreaDetail | null>(null);
 export const balanceLoading = signal(false);
 export const balanceError = signal(false);
 
-let overviewLoaded = false;
+let lastFetchedAt = 0;
+const CACHE_TTL = 30_000;
 
 export async function loadBalanceOverview(): Promise<void> {
-  if (overviewLoaded && balanceOverview.value) return;
-  balanceLoading.value = true;
+  const now = Date.now();
+  if (lastFetchedAt && now - lastFetchedAt < CACHE_TTL && balanceOverview.value) return;
+
+  if (!balanceOverview.value) balanceLoading.value = true;
   balanceError.value = false;
   try {
     const [overview, radar] = await Promise.all([
@@ -21,7 +24,7 @@ export async function loadBalanceOverview(): Promise<void> {
     ]);
     balanceOverview.value = overview;
     radarData.value = radar;
-    overviewLoaded = true;
+    lastFetchedAt = Date.now();
   } catch {
     balanceError.value = true;
   } finally {
@@ -42,7 +45,7 @@ export async function loadBalanceArea(area: string): Promise<void> {
 }
 
 export function resetBalanceCache(): void {
-  overviewLoaded = false;
+  lastFetchedAt = 0;
   balanceOverview.value = null;
   radarData.value = null;
   balanceDetail.value = null;

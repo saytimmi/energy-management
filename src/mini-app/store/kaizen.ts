@@ -30,6 +30,9 @@ export const digestsLoading = signal(false);
 // Errors
 export const kaizenError = signal(false);
 
+let lastFetchedAt = 0;
+const CACHE_TTL = 30_000;
+
 // Combined loading state
 export const kaizenLoading = computed(() =>
   reflectionStatusLoading.value || algorithmsLoading.value || reflectionsLoading.value
@@ -114,6 +117,9 @@ export async function loadDigests(): Promise<void> {
 }
 
 export async function loadKaizenData(): Promise<void> {
+  const now = Date.now();
+  if (lastFetchedAt && now - lastFetchedAt < CACHE_TTL && algorithms.value.length > 0) return;
+
   kaizenError.value = false;
   try {
     await Promise.all([
@@ -123,6 +129,7 @@ export async function loadKaizenData(): Promise<void> {
       loadObservations(),
       loadDigests(),
     ]);
+    lastFetchedAt = Date.now();
   } catch {
     kaizenError.value = true;
   }

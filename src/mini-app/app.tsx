@@ -18,7 +18,14 @@ export function App() {
     initTelegram();
     syncTheme();
     initRouter();
-    loadAppConfig();
+
+    // Prefetch all critical data in parallel for instant tab switching
+    Promise.all([
+      loadAppConfig(),
+      loadEnergy(),
+      loadHabits(),
+      loadBalanceOverview(),
+    ]);
 
     // Reload data when returning from Telegram
     onActivated(() => {
@@ -26,7 +33,7 @@ export function App() {
       loadEnergy();
       resetBalanceCache();
       loadBalanceOverview();
-      loadHabits();
+      loadHabits(true);
     });
   }, []);
 
@@ -39,7 +46,7 @@ export function App() {
 
   return (
     <>
-      <div key={route} class="screen-enter">
+      <div class="screen-enter">
         {route === "hub" && <Hub />}
         {route === "energy" && <EnergyDashboard />}
         {route === "habits" && <HabitsScreen />}

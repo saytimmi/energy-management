@@ -10,6 +10,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .hidden { display: none !important; }
@@ -86,8 +88,7 @@ body {
 /* ── Glass Card Mixin (via class) ── */
 .glass-card {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius);
 }
@@ -102,8 +103,7 @@ body {
 
 .ring-card {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: 24px;
   padding: 22px 14px 16px;
@@ -202,8 +202,7 @@ body {
 
 .obs-item {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm); padding: 12px 14px;
   display: flex; gap: 10px; align-items: flex-start;
@@ -260,8 +259,7 @@ body {
 .analytics-content { display: flex; flex-direction: column; gap: 8px; }
 .analytics-card {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm); padding: 14px 16px;
   font-size: 13px; line-height: 1.55; color: var(--text);
@@ -279,8 +277,7 @@ body {
   background: var(--surface); font-family: inherit;
   font-size: 13px; font-weight: 500; color: var(--text2);
   cursor: pointer; transition: all 0.2s;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
 }
 .pill.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
@@ -354,8 +351,7 @@ body {
 
 .tl-card {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm); padding: 10px 13px 11px;
   animation: cardIn 0.4s ease both;
@@ -459,8 +455,7 @@ body {
 
 .hub-card {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius);
   padding: 16px;
@@ -511,8 +506,7 @@ body {
 
 .day-progress {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius); padding: 16px;
 }
@@ -543,13 +537,13 @@ body {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 16px;
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
   margin-bottom: 8px; cursor: pointer;
-  transition: transform 0.15s, opacity 0.3s, border-color 0.2s;
+  transition: transform 0.12s;
   -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
+  will-change: transform;
 }
 .habit-card-v2:active { transform: scale(0.97); }
 .habit-card-v2.completed { border-color: rgba(200, 255, 115, 0.12); }
@@ -999,8 +993,7 @@ body {
 
 .stage-indicator {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center;
 }
@@ -1011,8 +1004,7 @@ body {
 
 .detail-stats {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
   display: flex; flex-direction: column; gap: 6px; font-size: 14px;
@@ -1022,8 +1014,7 @@ body {
 
 .detail-why {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius); padding: 16px;
 }
@@ -1086,8 +1077,7 @@ body {
 .milestone-toast {
   position: fixed; bottom: 80px; left: 16px; right: 16px;
   background: var(--surface-solid);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm); padding: 16px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3);
@@ -1101,8 +1091,7 @@ body {
 /* Correlation Card */
 .correlation-card {
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 12px;
 }
@@ -1142,8 +1131,7 @@ body {
 .journal-habits-section {
   padding: 16px;
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius); margin-bottom: 8px;
 }
@@ -1194,8 +1182,7 @@ body {
 .strength-section {
   padding: 16px;
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+
   border: 1px solid var(--surface-border);
   border-radius: var(--radius);
   margin: 12px 16px;

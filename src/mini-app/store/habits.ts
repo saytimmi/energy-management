@@ -6,6 +6,9 @@ export const habitsData = signal<HabitsGrouped | null>(null);
 export const habitsLoading = signal(false);
 export const habitsError = signal(false);
 
+let lastFetchedAt = 0;
+const CACHE_TTL = 30_000;
+
 export const todayProgress = computed(() => {
   if (!habitsData.value) return { completed: 0, total: 0 };
   const all = [...habitsData.value.morning, ...habitsData.value.afternoon, ...habitsData.value.evening];
@@ -15,11 +18,16 @@ export const todayProgress = computed(() => {
   };
 });
 
-export async function loadHabits(): Promise<void> {
-  habitsLoading.value = true;
+export async function loadHabits(force = false): Promise<void> {
+  const now = Date.now();
+  if (!force && lastFetchedAt && now - lastFetchedAt < CACHE_TTL && habitsData.value) return;
+
+  // Only show spinner on first load
+  if (!habitsData.value) habitsLoading.value = true;
   habitsError.value = false;
   try {
     habitsData.value = await api.habits();
+    lastFetchedAt = Date.now();
   } catch {
     habitsError.value = true;
   } finally {
@@ -40,11 +48,10 @@ function optimisticUpdate(habitId: number, patch: Partial<HabitData>): void {
 }
 
 export async function startDurationHabit(habit: HabitData): Promise<void> {
-  // Optimistic
   optimisticUpdate(habit.id, { inProgress: true, startedAt: new Date().toISOString() });
   try {
     await api.startHabit(habit.id);
-    await loadHabits();
+    loadHabits(true);
   } catch (err) {
     console.error("Failed to start habit:", err);
     optimisticUpdate(habit.id, { inProgress: false, startedAt: null });
@@ -54,7 +61,6 @@ export async function startDurationHabit(habit: HabitData): Promise<void> {
 export async function toggleComplete(habit: HabitData, note?: string): Promise<void> {
   const wasCompleted = habit.completedToday;
 
-  // Optimistic update — instant UI response
   optimisticUpdate(habit.id, {
     completedToday: !wasCompleted,
     inProgress: false,
@@ -67,11 +73,9 @@ export async function toggleComplete(habit: HabitData, note?: string): Promise<v
     } else {
       await api.completeHabit(habit.id, note);
     }
-    // Background refresh for accurate data
-    loadHabits();
+    loadHabits(true);
   } catch (err) {
     console.error("Failed to toggle habit:", err);
-    // Revert on error
     optimisticUpdate(habit.id, {
       completedToday: wasCompleted,
       inProgress: habit.inProgress,
@@ -83,7 +87,7 @@ export async function toggleComplete(habit: HabitData, note?: string): Promise<v
 export async function createHabit(data: CreateHabitPayload): Promise<HabitData | null> {
   try {
     const habit = await api.createHabit(data);
-    await loadHabits();
+    await loadHabits(true);
     return habit;
   } catch (err) {
     console.error("Failed to create habit:", err);
@@ -94,7 +98,7 @@ export async function createHabit(data: CreateHabitPayload): Promise<HabitData |
 export async function deleteHabit(id: number): Promise<boolean> {
   try {
     await api.deleteHabit(id);
-    await loadHabits();
+    await loadHabits(true);
     return true;
   } catch (err) {
     console.error("Failed to delete habit:", err);
@@ -105,7 +109,7 @@ export async function deleteHabit(id: number): Promise<boolean> {
 export async function updateHabit(id: number, data: Partial<CreateHabitPayload>): Promise<HabitData | null> {
   try {
     const habit = await api.updateHabit(id, data);
-    await loadHabits();
+    await loadHabits(true);
     return habit;
   } catch (err) {
     console.error("Failed to update habit:", err);
@@ -116,7 +120,7 @@ export async function updateHabit(id: number, data: Partial<CreateHabitPayload>)
 export async function pauseHabit(id: number, days: number): Promise<boolean> {
   try {
     await api.pauseHabit(id, days);
-    await loadHabits();
+    await loadHabits(true);
     return true;
   } catch (err) {
     console.error("Failed to pause habit:", err);
@@ -127,7 +131,7 @@ export async function pauseHabit(id: number, days: number): Promise<boolean> {
 export async function resumeHabit(id: number): Promise<boolean> {
   try {
     await api.resumeHabit(id);
-    await loadHabits();
+    await loadHabits(true);
     return true;
   } catch (err) {
     console.error("Failed to resume habit:", err);
