@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "prisma generate && tsc && vite build --config vite.config.mts",
-    "start": "npx prisma db push --accept-data-loss; node dist/index.js",
+    "start": "npx prisma migrate deploy; node dist/index.js",
     "dev": "concurrently -n bot,vite \"tsx watch src/index.ts\" \"vite dev --config vite.config.mts\"",
     "dev:bot": "tsx watch src/index.ts",
     "dev:vite": "vite dev --config vite.config.mts",

@@ -14,8 +14,10 @@ const AREA_LABELS: Record<string, string> = {
  * Shows progress per area (balance score change + goal completion).
  * Prompts user to review goals with AI.
  */
-export async function sendQuarterlyReview(): Promise<void> {
-  const users = await prisma.user.findMany();
+export async function sendQuarterlyReview(userIds?: number[]): Promise<void> {
+  const users = userIds
+    ? await prisma.user.findMany({ where: { id: { in: userIds } } })
+    : await prisma.user.findMany();
 
   const now = new Date();
   const quarter = Math.ceil((now.getMonth() + 1) / 3);
@@ -76,8 +78,10 @@ export async function sendQuarterlyReview(): Promise<void> {
  * Yearly mission review — sent on January 1st.
  * Asks if mission still resonates, invites user to update.
  */
-export async function sendMissionReview(): Promise<void> {
-  const users = await prisma.user.findMany();
+export async function sendMissionReview(userIds?: number[]): Promise<void> {
+  const users = userIds
+    ? await prisma.user.findMany({ where: { id: { in: userIds } } })
+    : await prisma.user.findMany();
 
   console.log(`[strategy-cron] Sending yearly mission review to ${users.length} user(s)`);
 

@@ -61,6 +61,24 @@ export function settingsRoute(router: Router): void {
         data,
       });
 
+      // Sync habit pause state with vacation mode
+      if (vacationUntil !== undefined) {
+        if (vacationUntil) {
+          // Entering vacation — pause all active habits
+          const pauseDate = new Date(vacationUntil);
+          await prisma.habit.updateMany({
+            where: { userId, isActive: true, pausedAt: null },
+            data: { pausedAt: new Date(), pausedUntil: pauseDate },
+          });
+        } else {
+          // Ending vacation — resume all habits that were paused
+          await prisma.habit.updateMany({
+            where: { userId, isActive: true, pausedAt: { not: null } },
+            data: { pausedAt: null, pausedUntil: null },
+          });
+        }
+      }
+
       const prefs = (user as any).notificationPrefs as NotificationPrefs | null;
 
       res.json({

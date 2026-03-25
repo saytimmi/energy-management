@@ -7,6 +7,7 @@ import { isOnVacation } from "./awareness.js";
 import {
   calculateStreak,
   calculateConsistency30d,
+  calculateWeeklyTargetConsistency,
   determineStage,
   shouldAutoFreeze,
   calculateStrength,
@@ -157,12 +158,10 @@ export async function runDailyHabitCron(): Promise<void> {
 
     // Recalculate streak & consistency
     const streak = calculateStreak(completedLogs, today);
-    const consistency = calculateConsistency30d(
-      completedLogs,
-      habit.frequency,
-      habit.customDays ?? undefined,
-      today,
-    );
+    // Use weekly target consistency for habits with targetPerWeek
+    const consistency = (habit.frequency === "weekly" || habit.frequency === "custom") && habit.targetPerWeek
+      ? calculateWeeklyTargetConsistency(completedLogs, habit.targetPerWeek, today)
+      : calculateConsistency30d(completedLogs, habit.frequency, habit.customDays ?? undefined, today);
     const newStage = determineStage(habit.createdAt, habit.stage, consistency, today);
 
     const data: Record<string, unknown> = {
@@ -275,7 +274,7 @@ export async function runWeeklyHabitReset(): Promise<void> {
 /**
  * Send routine reminders for a given slot to all users with pending habits.
  */
-export async function sendRoutineReminders(slot: "morning" | "afternoon" | "evening"): Promise<void> {
+export async function sendRoutineReminders(slot: "morning" | "afternoon" | "evening", userIds?: number[]): Promise<void> {
   console.log(`[habit-cron] Sending ${slot} routine reminders`);
 
   const today = new Date();
@@ -283,6 +282,7 @@ export async function sendRoutineReminders(slot: "morning" | "afternoon" | "even
 
   const users = await prisma.user.findMany({
     where: {
+      ...(userIds ? { id: { in: userIds } } : {}),
       habits: {
         some: { isActive: true, routineSlot: slot, pausedAt: null },
       },

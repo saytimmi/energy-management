@@ -8,8 +8,10 @@ import { isOnVacation } from "./awareness.js";
  * if not, sends a reminder with yesterday's context summary.
  * Runs at 8:00 AM daily.
  */
-export async function sendKaizenReminders(): Promise<void> {
-  const users = await prisma.user.findMany();
+export async function sendKaizenReminders(userIds?: number[]): Promise<void> {
+  const users = userIds
+    ? await prisma.user.findMany({ where: { id: { in: userIds } } })
+    : await prisma.user.findMany();
 
   const now = new Date();
   const yesterday = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - 1));

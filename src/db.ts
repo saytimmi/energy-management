@@ -10,18 +10,9 @@ export async function findOrCreateUser(
   lastName?: string,
   username?: string
 ): Promise<User> {
-  const existing = await prisma.user.findUnique({
+  return prisma.user.upsert({
     where: { telegramId },
-  });
-
-  if (existing) {
-    return prisma.user.update({
-      where: { telegramId },
-      data: { firstName, lastName, username },
-    });
-  }
-
-  return prisma.user.create({
-    data: { telegramId, firstName, lastName, username },
+    update: { firstName, lastName, username },
+    create: { telegramId, firstName, lastName, username },
   });
 }

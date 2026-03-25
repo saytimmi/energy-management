@@ -66,52 +66,69 @@ export function startScheduler(): void {
 
   // === TIMEZONE-AWARE USER-FACING CRONS (hourly poll) ===
 
-  // Every hour at :30 — check for habit reminders + other timed events
   const hourlyUserCrons = cron.schedule("0 * * * *", async () => {
     try {
       // Morning habits (local 7:00)
       const morning7 = await getUsersByLocalHour(7);
       if (morning7.length > 0) {
-        sendRoutineReminders("morning").catch(err => console.error("Morning habit reminder failed:", err));
+        sendRoutineReminders("morning", morning7).catch(err => console.error("Morning habit reminder failed:", err));
       }
 
       // Kaizen reminder (local 8:00)
-      sendKaizenReminders().catch(err => console.error("Kaizen reminder failed:", err));
+      const kaizen8 = await getUsersByLocalHour(8);
+      if (kaizen8.length > 0) {
+        sendKaizenReminders(kaizen8).catch(err => console.error("Kaizen reminder failed:", err));
+      }
 
       // Smart nudge (local 9:00)
-      sendDailyNudges().catch(err => console.error("Daily nudge failed:", err));
+      const nudge9 = await getUsersByLocalHour(9);
+      if (nudge9.length > 0) {
+        sendDailyNudges(nudge9).catch(err => console.error("Daily nudge failed:", err));
+      }
 
       // Balance check (local 10:00)
-      checkBalanceAssessment().catch(err => console.error("Balance check failed:", err));
+      const balance10 = await getUsersByLocalHour(10);
+      if (balance10.length > 0) {
+        checkBalanceAssessment(balance10).catch(err => console.error("Balance check failed:", err));
+      }
 
       // Afternoon habits (local 13:00)
       const afternoon = await getUsersByLocalHour(13);
       if (afternoon.length > 0) {
-        sendRoutineReminders("afternoon").catch(err => console.error("Afternoon habit reminder failed:", err));
+        sendRoutineReminders("afternoon", afternoon).catch(err => console.error("Afternoon habit reminder failed:", err));
       }
 
       // Evening habits (local 20:00)
       const evening = await getUsersByLocalHour(20);
       if (evening.length > 0) {
-        sendRoutineReminders("evening").catch(err => console.error("Evening habit reminder failed:", err));
+        sendRoutineReminders("evening", evening).catch(err => console.error("Evening habit reminder failed:", err));
       }
 
-      // Weekly digest Sunday 20:00
+      // Weekly digest Sunday 20:00 local
+      const digest20sun = await getUsersByLocalHour(20);
       const now = new Date();
-      if (now.getDay() === 0) {
-        sendWeeklyDigest().catch(err => console.error("Weekly digest failed:", err));
+      // Check if it's Sunday for any of these users (using their local time)
+      if (digest20sun.length > 0) {
+        const sundayUsers = await filterUsersByLocalDay(digest20sun, 0); // 0 = Sunday
+        if (sundayUsers.length > 0) {
+          sendWeeklyDigest(sundayUsers).catch(err => console.error("Weekly digest failed:", err));
+        }
       }
 
-      // Quarterly review (1st of quarter months)
-      const month = now.getMonth() + 1;
-      const day = now.getDate();
-      if ([1, 4, 7, 10].includes(month) && day === 1) {
-        sendQuarterlyReview().catch(err => console.error("Quarterly review failed:", err));
+      // Quarterly review (1st of quarter months) — local 10:00
+      if (balance10.length > 0) {
+        const quarterUsers = await filterUsersByLocalDate(balance10, [1, 4, 7, 10], 1);
+        if (quarterUsers.length > 0) {
+          sendQuarterlyReview(quarterUsers).catch(err => console.error("Quarterly review failed:", err));
+        }
       }
 
-      // Yearly mission review (Jan 1)
-      if (month === 1 && day === 1) {
-        sendMissionReview().catch(err => console.error("Mission review failed:", err));
+      // Yearly mission review (Jan 1) — local 10:00
+      if (balance10.length > 0) {
+        const yearUsers = await filterUsersByLocalDate(balance10, [1], 1);
+        if (yearUsers.length > 0) {
+          sendMissionReview(yearUsers).catch(err => console.error("Mission review failed:", err));
+        }
       }
     } catch (err) {
       console.error("Hourly user crons failed:", err);
@@ -119,6 +136,42 @@ export function startScheduler(): void {
   });
   tasks.push(hourlyUserCrons);
   console.log("Timezone-aware user crons scheduled: every hour at :00");
+}
+
+/**
+ * Filter user IDs by local day of week (0=Sunday, 1=Monday, etc.)
+ */
+async function filterUsersByLocalDay(userIds: number[], targetDay: number): Promise<number[]> {
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, timezone: true },
+  });
+  return users.filter(u => {
+    try {
+      const tz = u.timezone || "UTC";
+      const day = parseInt(new Date().toLocaleString("en-US", { timeZone: tz, weekday: "narrow" }), 10);
+      // weekday narrow gives locale-specific, use getDay equivalent
+      const localDay = new Date(new Date().toLocaleString("en-US", { timeZone: tz })).getDay();
+      return localDay === targetDay;
+    } catch { return false; }
+  }).map(u => u.id);
+}
+
+/**
+ * Filter user IDs by local month + day-of-month
+ */
+async function filterUsersByLocalDate(userIds: number[], months: number[], dayOfMonth: number): Promise<number[]> {
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, timezone: true },
+  });
+  return users.filter(u => {
+    try {
+      const tz = u.timezone || "UTC";
+      const localDate = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
+      return months.includes(localDate.getMonth() + 1) && localDate.getDate() === dayOfMonth;
+    } catch { return false; }
+  }).map(u => u.id);
 }
 
 export function stopScheduler(): void {

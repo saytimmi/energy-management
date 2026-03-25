@@ -16,12 +16,25 @@ export function validateInitData(initData: string, botToken: string): boolean {
     const params = new URLSearchParams(initData);
     const hash = params.get("hash");
     if (!hash) return false;
+
+    // Check auth_date expiry (24 hours) to prevent replay attacks
+    const authDate = params.get("auth_date");
+    if (authDate) {
+      const authTimestamp = parseInt(authDate, 10);
+      const now = Math.floor(Date.now() / 1000);
+      if (now - authTimestamp > 86400) return false; // expired (24h)
+    }
+
     params.delete("hash");
     const entries = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
     const dataCheckString = entries.map(([k, v]) => `${k}=${v}`).join("\n");
     const secretKey = crypto.createHmac("sha256", "WebAppData").update(botToken).digest();
     const computed = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
-    return computed === hash;
+    // Timing-safe comparison to prevent timing attacks
+    const hashBuf = Buffer.from(hash, "hex");
+    const computedBuf = Buffer.from(computed, "hex");
+    if (hashBuf.length !== computedBuf.length) return false;
+    return crypto.timingSafeEqual(hashBuf, computedBuf);
   } catch {
     return false;
   }
@@ -64,22 +77,6 @@ export function telegramAuth(req: Request, res: Response, next: NextFunction): v
         if (!user) { res.status(404).json({ error: "user_not_found" }); return; }
         (req as any).userId = user.id;
         (req as any).telegramId = BigInt(tgUser.telegramId);
-        next();
-      })
-      .catch(() => { res.status(500).json({ error: "internal_error" }); });
-    return;
-  }
-
-  // Fallback: legacy ?telegramId= query param
-  const telegramIdParam = req.query.telegramId as string | undefined;
-  if (telegramIdParam) {
-    const telegramId = BigInt(telegramIdParam);
-    prisma.user
-      .findUnique({ where: { telegramId } })
-      .then((user) => {
-        if (!user) { res.status(404).json({ error: "user_not_found" }); return; }
-        (req as any).userId = user.id;
-        (req as any).telegramId = telegramId;
         next();
       })
       .catch(() => { res.status(500).json({ error: "internal_error" }); });

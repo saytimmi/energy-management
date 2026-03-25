@@ -5,8 +5,10 @@ import { isOnVacation } from "./awareness.js";
 
 const ASSESSMENT_INTERVAL_DAYS = 14;
 
-export async function checkBalanceAssessment(): Promise<void> {
-  const users = await prisma.user.findMany();
+export async function checkBalanceAssessment(userIds?: number[]): Promise<void> {
+  const users = userIds
+    ? await prisma.user.findMany({ where: { id: { in: userIds } } })
+    : await prisma.user.findMany();
 
   for (const user of users) {
     try {

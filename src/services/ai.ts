@@ -630,7 +630,8 @@ async function executeTool(
       const allowedFields = [
         "name", "icon", "routineSlot", "duration", "isDuration", "triggerAction",
         "minimalDose", "whyToday", "whyMonth", "whyYear", "whyIdentity",
-        "lifeArea", "energyType",
+        "lifeArea", "energyType", "goalId", "frequency", "customDays", "targetPerWeek",
+        "isItBeneficial", "breakTrigger", "replacement",
       ];
       for (const field of allowedFields) {
         if (input[field] !== undefined) updateData[field] = input[field];

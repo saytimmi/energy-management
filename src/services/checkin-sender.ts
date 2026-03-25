@@ -39,6 +39,8 @@ export async function sendScheduledCheckins(): Promise<void> {
 
   for (const user of users) {
     try {
+      if (isOnVacation(user as any)) continue;
+
       const tz = user.timezone || "UTC";
       const now = new Date();
       const localHour = parseInt(

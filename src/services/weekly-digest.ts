@@ -556,8 +556,10 @@ export async function handleDigestCallback(ctx: any, data: string): Promise<void
 
 // --- Main: send weekly digest to all users ---
 
-export async function sendWeeklyDigest(): Promise<void> {
-  const users = await prisma.user.findMany();
+export async function sendWeeklyDigest(userIds?: number[]): Promise<void> {
+  const users = userIds
+    ? await prisma.user.findMany({ where: { id: { in: userIds } } })
+    : await prisma.user.findMany();
 
   console.log(`Sending weekly digest to ${users.length} user(s)`);
 

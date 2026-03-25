@@ -28,8 +28,10 @@ const AREA_LABELS: Record<string, string> = {
 /**
  * Main entry: analyze each user's data and send the most impactful nudge.
  */
-export async function sendDailyNudges(): Promise<void> {
-  const users = await prisma.user.findMany();
+export async function sendDailyNudges(userIds?: number[]): Promise<void> {
+  const users = userIds
+    ? await prisma.user.findMany({ where: { id: { in: userIds } } })
+    : await prisma.user.findMany();
   console.log(`[smart-nudges] Analyzing ${users.length} user(s)`);
 
   for (const user of users) {
