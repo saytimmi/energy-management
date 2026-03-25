@@ -37,20 +37,20 @@ function pickIcon(name: string): string {
 }
 
 const LIFE_AREAS = [
-  { id: "health", label: "Здоровье", icon: "🩺" },
-  { id: "career", label: "Карьера", icon: "🚀" },
-  { id: "relationships", label: "Отношения", icon: "💞" },
-  { id: "finances", label: "Финансы", icon: "💎" },
-  { id: "family", label: "Семья", icon: "🏡" },
-  { id: "growth", label: "Развитие", icon: "📚" },
-  { id: "recreation", label: "Отдых", icon: "🧘" },
-  { id: "environment", label: "Среда", icon: "🌿" },
+  { id: "health", label: "Здоровье" },
+  { id: "career", label: "Карьера" },
+  { id: "relationships", label: "Отношения" },
+  { id: "finances", label: "Финансы" },
+  { id: "family", label: "Семья" },
+  { id: "growth", label: "Развитие" },
+  { id: "recreation", label: "Отдых" },
+  { id: "environment", label: "Среда" },
 ] as const;
 
 const SLOTS = [
-  { id: "morning", label: "Утро", icon: "🌅" },
-  { id: "afternoon", label: "День", icon: "☀️" },
-  { id: "evening", label: "Вечер", icon: "🌙" },
+  { id: "morning", label: "Утро", icon: "" },
+  { id: "afternoon", label: "День", icon: "" },
+  { id: "evening", label: "Вечер", icon: "" },
 ] as const;
 
 interface Props {
@@ -202,7 +202,6 @@ export function HabitCreate({ onClose, microActionId }: Props) {
                   class={`create-slot-btn${routineSlot === s.id ? " active" : ""}`}
                   onClick={() => { setRoutineSlot(s.id); haptic("light"); }}
                 >
-                  <span class="create-slot-icon">{s.icon}</span>
                   <span class="create-slot-label">{s.label}</span>
                 </button>
               ))}
@@ -264,7 +263,7 @@ export function HabitCreate({ onClose, microActionId }: Props) {
                   class={`create-area-btn${lifeArea === a.id ? " active" : ""}`}
                   onClick={() => { setLifeArea(a.id); haptic("light"); }}
                 >
-                  {a.icon} {a.label}
+                  {a.label}
                 </button>
               ))}
             </div>

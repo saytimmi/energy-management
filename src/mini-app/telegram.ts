@@ -27,6 +27,8 @@ declare global {
           offClick(cb: () => void): void;
         };
         onEvent(event: string, cb: () => void): void;
+        sendData(data: string): void;
+        close(): void;
       };
     };
   }
@@ -77,6 +79,23 @@ export function openTelegramLink(path: string): void {
     (tg as any)?.openTelegramLink?.(url);
   } catch {
     window.open(url, "_blank");
+  }
+}
+
+/**
+ * Send a pre-filled message to the bot from Mini App.
+ * Uses sendData (closes Mini App, bot receives web_app_data event).
+ * Fallback: close + deep link.
+ */
+export function chatWithBot(botUsername: string, message: string): void {
+  if (tg) {
+    try {
+      tg.sendData(JSON.stringify({ action: "chat", text: message }));
+    } catch {
+      tg.close();
+    }
+  } else {
+    window.open(`https://t.me/${botUsername}?text=${encodeURIComponent(message)}`, "_blank");
   }
 }
 
