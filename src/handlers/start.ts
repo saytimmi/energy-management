@@ -1,26 +1,25 @@
-import { type CommandContext, Context, InlineKeyboard } from "grammy";
+import { type CommandContext, Context, Keyboard } from "grammy";
 import { findOrCreateUser } from "../db.js";
 import prisma from "../db.js";
 import { chat } from "../services/ai.js";
 import { config } from "../config.js";
 
-const WELCOME_NEW = `✨ *Привет\\!*
+const WELCOME_NEW = (name: string) =>
+  `Привет, ${name}! 👋\n\nЯ — AI-коуч. Помогу управлять энергией, привычками и целями.\n\nПросто пиши как другу — текстом или голосом. Я пойму.\n\nНачнём с чекина? 👇`;
 
-Я — твой персональный коуч по управлению энергией и жизнью\\.
+export function getReplyKeyboard(): Keyboard {
+  const kb = new Keyboard()
+    .text("⚡ Энергия").text("🔋 Привычки").text("📊 Отчёт")
+    .row()
+    .resized()
+    .persistent();
 
-Отслеживаю 4 типа энергии:
-🏃 *Физическая* — тело, сон, еда
-🧠 *Ментальная* — фокус, концентрация
-💚 *Эмоциональная* — отношения, настроение
-🔮 *Духовная* — смысл, миссия
+  if (config.webappUrl) {
+    kb.webApp("📱 Energy App", config.webappUrl);
+  }
 
-*Как это работает:*
-→ Просто пиши мне как другу
-→ Отправляй голосовые 🎤
-→ Я сам пойму что с энергией
-→ Данные видны в Energy App
-
-Расскажи, как ты себя сейчас чувствуешь? 👇`;
+  return kb;
+}
 
 export async function startHandler(ctx: CommandContext<Context>) {
   const from = ctx.from;
@@ -52,7 +51,7 @@ export async function startHandler(ctx: CommandContext<Context>) {
     );
     const text = result.text.trim() || "С возвращением! Чем могу помочь?";
     await ctx.reply(text, {
-      reply_markup: getMainKeyboard(),
+      reply_markup: getReplyKeyboard(),
     });
     return;
   }
@@ -63,10 +62,9 @@ export async function startHandler(ctx: CommandContext<Context>) {
   });
 
   if (totalMessages === 0) {
-    // Brand new user — show welcome
-    await ctx.reply(WELCOME_NEW, {
-      parse_mode: "MarkdownV2",
-      reply_markup: getMainKeyboard(),
+    // Brand new user — short warm welcome
+    await ctx.reply(WELCOME_NEW(from.first_name), {
+      reply_markup: getReplyKeyboard(),
     });
   } else {
     // Returning user — warm AI greeting
@@ -77,24 +75,7 @@ export async function startHandler(ctx: CommandContext<Context>) {
     );
     const text = result.text.trim() || `Привет, ${from.first_name}! Рад видеть снова 👋`;
     await ctx.reply(text, {
-      reply_markup: getMainKeyboard(),
+      reply_markup: getReplyKeyboard(),
     });
   }
 }
-
-function getMainKeyboard(): InlineKeyboard {
-  const kb = new InlineKeyboard();
-  kb.text("⚡ Записать энергию", "action:checkin");
-  kb.row();
-  kb.text("📊 Мой отчёт", "action:report");
-
-  if (config.webappUrl) {
-    kb.row();
-    kb.webApp("📱 Energy App", config.webappUrl);
-  }
-
-  return kb;
-}
-
-// Re-export for use in other handlers
-export { getMainKeyboard };

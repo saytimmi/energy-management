@@ -1,43 +1,30 @@
-import { type CommandContext, Context, InlineKeyboard } from "grammy";
-import { config } from "../config.js";
+import { type CommandContext, Context } from "grammy";
+import { getReplyKeyboard } from "./start.js";
 
-const HELP_TEXT = `🔋 *Energy Bot — Справка*
+const HELP_TEXT = `⚡ Energy — твоя ОС для жизни
 
-*Команды:*
-/start — Начать или вернуться
-/energy — Записать уровень энергии
-/report — Анализ и рекомендации
-/help — Эта справка
+Команды:
+/energy — записать энергию
+/habits — мои привычки
+/kaizen — рефлексия дня
+/report — анализ и отчёт
 
-*Как общаться:*
-💬 Пиши текстом — я пойму
-🎤 Отправь голосовое — расшифрую
-📱 Открой Energy App — дашборд
+Как общаться:
+→ пиши текстом — я пойму
+→ отправь голосовое — расшифрую
+→ открой Energy App — дашборд и аналитика
 
-*Чекины:*
-🌅 Утром в 9:00 — спрошу как проснулся
-🌙 Вечером в 21:00 — подведём итоги
+Что умею:
+⚡ энергия — 4 типа, паттерны, триггеры
+🔋 привычки — streaks, рутины, сила привычки
+⚖️ баланс — 8 сфер жизни, radar-chart
+🧭 стратегия — миссия, цели с прогрессом
+🧠 кайдзен — рефлексия, алгоритмы, дайджесты
 
-*4 типа энергии:*
-🏃 Физическая → сон, еда, движение
-🧠 Ментальная → фокус, расфокус, медитация
-💚 Эмоциональная → люди, смех, природа
-🔮 Духовная → миссия, помощь другим
-
-_Каждый тип восстанавливается только своим способом_`;
+Чекины: утром в 9:00 и вечером в 21:00`;
 
 export async function helpHandler(ctx: CommandContext<Context>) {
-  const kb = new InlineKeyboard();
-  kb.text("⚡ Записать энергию", "action:checkin");
-  kb.text("📊 Мой отчёт", "action:report");
-
-  if (config.webappUrl) {
-    kb.row();
-    kb.webApp("📱 Energy App", config.webappUrl);
-  }
-
   await ctx.reply(HELP_TEXT, {
-    parse_mode: "Markdown",
-    reply_markup: kb,
+    reply_markup: getReplyKeyboard(),
   });
 }

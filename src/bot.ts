@@ -115,6 +115,42 @@ bot.command("energy", energyHandler);
 bot.command("report", reportHandler);
 bot.command("kaizen", kaizenHandler);
 
+// /habits command — show habits summary via AI
+bot.command("habits", async (ctx) => {
+  const from = ctx.from;
+  if (!from) return;
+  const result = await chat(
+    BigInt(from.id),
+    "Покажи мои привычки — вызови get_user_habits",
+    from.first_name,
+  );
+  if (result.text.trim()) {
+    await ctx.reply(result.text);
+  }
+});
+
+// Reply keyboard button handlers
+bot.hears("⚡ Энергия", async (ctx) => {
+  if (ctx.from) await energyHandler(ctx as any);
+});
+
+bot.hears("🔋 Привычки", async (ctx) => {
+  const from = ctx.from;
+  if (!from) return;
+  const result = await chat(
+    BigInt(from.id),
+    "Покажи мои привычки — вызови get_user_habits",
+    from.first_name,
+  );
+  if (result.text.trim()) {
+    await ctx.reply(result.text);
+  }
+});
+
+bot.hears("📊 Отчёт", async (ctx) => {
+  if (ctx.from) await reportHandler(ctx as any);
+});
+
 // Inline button actions (from start/help keyboards)
 bot.callbackQuery("action:checkin", async (ctx) => {
   await ctx.answerCallbackQuery();
@@ -205,7 +241,7 @@ bot.on("message:voice", async (ctx) => {
   }
 });
 
-// Text messages — check for custom reason input first, then buffer for AI
+// Text messages — check reply keyboard buttons first, then checkin flow, then buffer
 bot.on("message:text", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
@@ -222,19 +258,21 @@ bot.on("message:text", async (ctx) => {
 export async function setupBot() {
   // Set commands menu
   await bot.api.setMyCommands([
-    { command: "start", description: "🏠 Главное меню" },
-    { command: "energy", description: "⚡ Записать энергию" },
-    { command: "report", description: "📊 Анализ и рекомендации" },
-    { command: "help", description: "❓ Справка" },
+    { command: "start", description: "Главное меню" },
+    { command: "energy", description: "Записать энергию" },
+    { command: "habits", description: "Мои привычки" },
+    { command: "kaizen", description: "Рефлексия дня" },
+    { command: "report", description: "Анализ и отчёт" },
+    { command: "help", description: "Справка" },
   ]);
 
   // Set bot description (shown before user starts the bot)
   try {
     await (bot.api as any).callApi("setMyDescription", {
-      description: "🔋 Персональный помощник по управлению энергией.\n\nОтслеживаю 4 типа энергии: физическую, ментальную, эмоциональную и духовную.\n\nПиши текстом или голосом — я пойму.",
+      description: "Твоя операционная система для управления жизнью.\n\n⚡ Энергия — 4 типа, паттерны и триггеры\n🔋 Привычки — forgiving streaks, рутины\n⚖️ Баланс — 8 сфер жизни, radar-chart\n🧭 Стратегия — миссия, цели с прогрессом\n🧠 Кайдзен — рефлексия, алгоритмы\n\nAI-коуч знает твой контекст и пишет как друг.\nТекстом или голосом. Аналитика — в Energy App.",
     });
     await (bot.api as any).callApi("setMyShortDescription", {
-      short_description: "🔋 Управление 4 типами энергии",
+      short_description: "Персональная ОС — энергия, привычки, баланс жизни, AI-коуч",
     });
   } catch (err) {
     console.warn("Could not set bot description:", err);
@@ -245,7 +283,7 @@ export async function setupBot() {
     await bot.api.setChatMenuButton({
       menu_button: {
         type: "web_app",
-        text: "📱 Energy App",
+        text: "Energy App",
         web_app: { url: config.webappUrl },
       },
     });
