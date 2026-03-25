@@ -184,6 +184,21 @@ bot.callbackQuery(/^goal_(done|drop):/, async (ctx) => {
 // Inline keyboard callbacks (checkin flow)
 bot.on("callback_query:data", handleCheckinCallback);
 
+// Web App data — Mini App sends pre-filled messages via sendData
+bot.on("message:web_app_data", async (ctx) => {
+  const from = ctx.from;
+  if (!from) return;
+
+  try {
+    const payload = JSON.parse(ctx.message.web_app_data.data);
+    if (payload.action === "chat" && payload.text) {
+      bufferMessage(from.id, payload.text, from.first_name, from.last_name ?? undefined, from.username ?? undefined);
+    }
+  } catch (err) {
+    console.warn("Invalid web_app_data:", err);
+  }
+});
+
 // Photo messages — bot can't see images, inform user
 bot.on("message:photo", async (ctx) => {
   const from = ctx.from;

@@ -2,7 +2,7 @@ import { useEffect } from "preact/hooks";
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { navigate } from "../../router";
-import { haptic, openTelegramLink } from "../../telegram";
+import { haptic, chatWithBot } from "../../telegram";
 import { api } from "../../api/client";
 import { deleteAlgorithm } from "../../store/kaizen";
 import { botUsername } from "../../store/strategy";
@@ -46,7 +46,7 @@ export function AlgorithmDetail({ id }: AlgorithmDetailProps) {
     if (!botUsername.value) return;
     haptic("medium");
     const algoTitle = algorithmData.value?.title ?? "алгоритм";
-    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent(`Хочу обсудить алгоритм "${algoTitle}"`));
+    chatWithBot(botUsername.value, `Хочу обсудить алгоритм "${algoTitle}"`);
   };
 
   const handleDelete = async () => {

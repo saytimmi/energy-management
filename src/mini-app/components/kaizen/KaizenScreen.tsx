@@ -1,7 +1,7 @@
 import { useEffect } from "preact/hooks";
 import { useState } from "preact/hooks";
 import { navigate } from "../../router";
-import { haptic, openTelegramLink } from "../../telegram";
+import { haptic, chatWithBot } from "../../telegram";
 import {
   reflectionStatus,
   algorithms,
@@ -45,7 +45,7 @@ export function KaizenScreen({ param }: KaizenScreenProps) {
   const handleAskAI = () => {
     if (!botUsername.value) return;
     haptic("medium");
-    openTelegramLink(botUsername.value + "?text=" + encodeURIComponent("Давай проведём рефлексию"));
+    chatWithBot(botUsername.value, "Давай проведём рефлексию");
   };
 
   const status = reflectionStatus.value;
