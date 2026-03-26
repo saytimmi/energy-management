@@ -2,6 +2,7 @@ import prisma from "../db.js";
 import { bot } from "../bot.js";
 import { trackError } from "./monitor.js";
 import { isOnVacation } from "./awareness.js";
+import { isUserBlocked, handleSendError } from "./blocked-users.js";
 
 /**
  * Morning kaizen reminder — checks if yesterday's reflection exists,
@@ -22,6 +23,7 @@ export async function sendKaizenReminders(userIds?: number[]): Promise<void> {
   for (const user of users) {
     try {
       if (isOnVacation(user as any)) continue;
+      if (isUserBlocked(Number(user.telegramId))) continue;
       // Check if reflection already exists for yesterday
       const reflection = await prisma.reflection.findFirst({
         where: {
@@ -94,6 +96,7 @@ export async function sendKaizenReminders(userIds?: number[]): Promise<void> {
         `🧠 Время для кайдзен-часа!\n\nВчера (${dateStr}):${contextMsg || "\nДанных пока нет."}\n\nЧто было самым важным вчера? Напиши, и мы порефлексируем вместе.`
       );
     } catch (err) {
+      handleSendError(err, Number(user.telegramId));
       await trackError("kaizen-reminder", err, { userId: user.id });
       console.warn(`Failed to send kaizen reminder to user ${user.id}:`, err);
     }

@@ -10,6 +10,31 @@ const anthropic = new Anthropic({
   apiKey: config.anthropicApiKey,
 });
 
+// --- Rate-limit retry wrapper ---
+
+async function callWithRetry(
+  params: Anthropic.MessageCreateParamsNonStreaming,
+  maxRetries = 2,
+): Promise<Anthropic.Message> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (error: unknown) {
+      const status = (error as { status?: number }).status;
+      const headers = (error as { headers?: Record<string, string> }).headers;
+      if (status === 429 && attempt < maxRetries) {
+        const retryAfter = headers?.["retry-after"];
+        const delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : (attempt + 1) * 5000;
+        console.warn(`[ai] Rate limited, retry in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("callWithRetry: unreachable");
+}
+
 // --- Types ---
 
 export interface ChatAction {
@@ -1492,7 +1517,7 @@ export async function chat(
 
   try {
     const rawReply = await measured("ai_response_ms", async () => {
-      let response = await anthropic.messages.create({
+      let response = await callWithRetry({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
         system: systemWithContext,
@@ -1523,7 +1548,7 @@ export async function chat(
         history.push({ role: "assistant", content: response.content as Anthropic.ContentBlockParam[] });
         history.push({ role: "user", content: toolResults });
 
-        response = await anthropic.messages.create({
+        response = await callWithRetry({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1024,
           system: systemWithContext,

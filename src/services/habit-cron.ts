@@ -4,6 +4,7 @@
 
 import prisma from "../db.js";
 import { isOnVacation } from "./awareness.js";
+import { isUserBlocked, handleSendError } from "./blocked-users.js";
 import {
   calculateStreak,
   calculateConsistency30d,
@@ -233,6 +234,7 @@ export async function runDailyHabitCron(): Promise<void> {
 
     if (missedDays >= missedThreshold) {
       const chatId = Number(habit.user.telegramId);
+      if (isUserBlocked(chatId)) continue;
       try {
         await sendMissedDayNudge(chatId, {
           id: habit.id,
@@ -299,6 +301,7 @@ export async function sendRoutineReminders(slot: "morning" | "afternoon" | "even
 
   for (const user of users) {
     if (isOnVacation(user as any)) continue;
+    if (isUserBlocked(Number(user.telegramId))) continue;
 
     // Filter habits scheduled for today
     const scheduledHabits = user.habits.filter(h => {

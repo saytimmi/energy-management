@@ -2,6 +2,7 @@ import prisma from "../db.js";
 import { sendCheckInMessage } from "../handlers/checkin.js";
 import { trackError } from "./monitor.js";
 import { isOnVacation } from "./awareness.js";
+import { isUserBlocked, handleSendError } from "./blocked-users.js";
 
 /**
  * Send checkin to all users — legacy, used as fallback.
@@ -19,8 +20,10 @@ export async function sendCheckInToAll(
     try {
       if (isOnVacation(user as any)) continue;
       const chatId = Number(user.telegramId);
+      if (isUserBlocked(chatId)) continue;
       await sendCheckInMessage(chatId, logType);
     } catch (err) {
+      handleSendError(err, Number(user.telegramId));
       await trackError("scheduler", err, { logType, userId: user.id });
       console.warn(
         `Failed to send ${logType} check-in to user ${user.id} (telegramId: ${user.telegramId}):`,
@@ -40,6 +43,7 @@ export async function sendScheduledCheckins(): Promise<void> {
   for (const user of users) {
     try {
       if (isOnVacation(user as any)) continue;
+      if (isUserBlocked(Number(user.telegramId))) continue;
 
       const tz = user.timezone || "UTC";
       const now = new Date();

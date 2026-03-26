@@ -15,10 +15,41 @@ import prisma from "./db.js";
 import { trackError } from "./services/monitor.js";
 import { handleHabitCallback } from "./handlers/habits.js";
 import { handleGoalCallback } from "./services/smart-nudges.js";
+import { handleSendError } from "./services/blocked-users.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
-// Adaptive buffer: short delay for first message, longer for bursts
+// --- Per-user serial queue ---
+// Ensures only one AI call per user at a time (prevents rate limit from concurrent voice+text)
+const userQueues = new Map<number, Promise<void>>();
+
+function enqueueForUser(userId: number, fn: () => Promise<void>): void {
+  const prev = userQueues.get(userId) ?? Promise.resolve();
+  const next = prev.then(fn, fn).catch(() => {}); // chain, swallow errors (handled inside fn)
+  userQueues.set(userId, next);
+  // Cleanup after completion
+  next.then(() => {
+    if (userQueues.get(userId) === next) userQueues.delete(userId);
+  });
+}
+
+// --- Send message with Markdown fallback ---
+async function sendMarkdown(chatId: number, text: string): Promise<void> {
+  try {
+    await bot.api.sendMessage(chatId, text, { parse_mode: "Markdown" });
+  } catch (err) {
+    // Markdown parse error — retry as plain text (strip ** and other formatting)
+    const errMsg = String(err);
+    if (errMsg.includes("can't parse") || errMsg.includes("Bad Request") || errMsg.includes("400")) {
+      const plain = text.replace(/\*\*/g, "").replace(/__/g, "");
+      await bot.api.sendMessage(chatId, plain);
+    } else {
+      throw err;
+    }
+  }
+}
+
+// --- Adaptive buffer ---
 const messageBuffers = new Map<number, { messages: string[]; timer: NodeJS.Timeout; firstName: string; lastName?: string; username?: string; hasVoice?: boolean }>();
 
 const FIRST_MSG_DELAY = 3_000;  // 3 sec — single message, respond fast
@@ -43,54 +74,58 @@ async function flushBuffer(userId: number) {
   if (!buf) return;
   messageBuffers.delete(userId);
 
-  try {
-    const combined = buf.messages.join("\n");
-    const telegramId = BigInt(userId);
-
-    await findOrCreateUser(telegramId, buf.firstName, buf.lastName, buf.username);
-
-    // Show "typing..." indicator
+  // Enqueue to prevent concurrent AI calls for same user
+  enqueueForUser(userId, async () => {
     try {
-      await bot.api.sendChatAction(userId, "typing");
-    } catch {}
+      const combined = buf.messages.join("\n");
+      const telegramId = BigInt(userId);
 
-    const result = await chat(telegramId, combined, buf.firstName, buf.hasVoice ? "voice" : "text");
+      await findOrCreateUser(telegramId, buf.firstName, buf.lastName, buf.username);
 
-    // Small delay to make typing feel natural
-    await new Promise(r => setTimeout(r, 1500));
-
-    try {
-      await bot.api.sendChatAction(userId, "typing");
-    } catch {}
-
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Send text reply (skip if empty — e.g. tool-only response with no text)
-    if (result.text.trim()) {
+      // Show "typing..." indicator
       try {
-        await bot.api.sendMessage(userId, result.text);
-      } catch (err) {
-        console.error("Failed to send buffered reply:", err);
+        await bot.api.sendChatAction(userId, "typing");
+      } catch {}
+
+      const result = await chat(telegramId, combined, buf.firstName, buf.hasVoice ? "voice" : "text");
+
+      // Small delay to make typing feel natural
+      await new Promise(r => setTimeout(r, 1500));
+
+      try {
+        await bot.api.sendChatAction(userId, "typing");
+      } catch {}
+
+      await new Promise(r => setTimeout(r, 1000));
+
+      // Send text reply with Markdown formatting
+      if (result.text.trim()) {
+        try {
+          await sendMarkdown(userId, result.text);
+        } catch (err) {
+          if (handleSendError(err, userId)) return;
+          console.error("Failed to send buffered reply:", err);
+        }
       }
-    }
 
-    // Handle actions (e.g., start checkin with InlineKeyboard)
-    await handleChatActions(userId, result.actions);
+      // Handle actions (e.g., start checkin with InlineKeyboard)
+      await handleChatActions(userId, result.actions);
 
-    // If neither text nor actions were sent, ensure user gets something
-    if (!result.text.trim() && result.actions.length === 0) {
+      // If neither text nor actions were sent, ensure user gets something
+      if (!result.text.trim() && result.actions.length === 0) {
+        try {
+          await bot.api.sendMessage(userId, "Хм, не совсем понял. Расскажи подробнее — что ты хочешь сделать?");
+        } catch {}
+      }
+    } catch (err) {
+      // Catch-all: always respond to user, never leave them hanging
+      await trackError("bot", err, { handler: "flushBuffer", userId });
+      console.error("flushBuffer error:", err);
       try {
-        await bot.api.sendMessage(userId, "Хм, не совсем понял. Расскажи подробнее — что ты хочешь сделать?");
+        await bot.api.sendMessage(userId, "Прости, произошла ошибка 😔 Попробуй ещё раз через минутку.");
       } catch {}
     }
-  } catch (err) {
-    // Catch-all: always respond to user, never leave them hanging
-    await trackError("bot", err, { handler: "flushBuffer", userId });
-    console.error("flushBuffer error:", err);
-    try {
-      await bot.api.sendMessage(userId, "Прости, произошла ошибка 😔 Попробуй ещё раз через минутку.");
-    } catch {}
-  }
+  });
 }
 
 /**
@@ -125,7 +160,13 @@ bot.command("habits", async (ctx) => {
     from.first_name,
   );
   if (result.text.trim()) {
-    await ctx.reply(result.text);
+    try {
+      await sendMarkdown(ctx.chat.id, result.text);
+    } catch (err) {
+      if (!handleSendError(err, ctx.chat.id)) {
+        await ctx.reply(result.text);
+      }
+    }
   }
 });
 
@@ -143,7 +184,13 @@ bot.hears("🔋 Привычки", async (ctx) => {
     from.first_name,
   );
   if (result.text.trim()) {
-    await ctx.reply(result.text);
+    try {
+      await sendMarkdown(ctx.chat.id, result.text);
+    } catch (err) {
+      if (!handleSendError(err, ctx.chat.id)) {
+        await ctx.reply(result.text);
+      }
+    }
   }
 });
 

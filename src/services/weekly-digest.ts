@@ -11,6 +11,7 @@ import { InlineKeyboard } from "grammy";
 import { getHabitEnergyCorrelation } from "./habit-correlation.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { isOnVacation } from "./awareness.js";
+import { isUserBlocked, handleSendError } from "./blocked-users.js";
 
 // --- Types ---
 
@@ -566,6 +567,7 @@ export async function sendWeeklyDigest(userIds?: number[]): Promise<void> {
   for (const user of users) {
     try {
       if (isOnVacation(user as any)) continue;
+      if (isUserBlocked(Number(user.telegramId))) continue;
       const insight = await analyzeWeeklyPatterns(user.id);
       if (!insight) continue; // Not enough data
 

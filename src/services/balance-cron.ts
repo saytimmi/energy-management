@@ -2,6 +2,7 @@ import prisma from "../db.js";
 import { bot } from "../bot.js";
 import { trackError } from "./monitor.js";
 import { isOnVacation } from "./awareness.js";
+import { isUserBlocked, handleSendError } from "./blocked-users.js";
 
 const ASSESSMENT_INTERVAL_DAYS = 14;
 
@@ -13,6 +14,7 @@ export async function checkBalanceAssessment(userIds?: number[]): Promise<void> 
   for (const user of users) {
     try {
       if (isOnVacation(user as any)) continue;
+      if (isUserBlocked(Number(user.telegramId))) continue;
       // Find the most recent balance rating for this user
       const lastRating = await prisma.balanceRating.findFirst({
         where: { userId: user.id },
@@ -45,6 +47,7 @@ export async function checkBalanceAssessment(userIds?: number[]): Promise<void> 
         console.log(`Balance assessment reminder sent to user ${user.id} (${daysSinceLastAssessment} days since last)`);
       }
     } catch (err) {
+      handleSendError(err, Number(user.telegramId));
       await trackError("balance-cron", err, { userId: user.id });
       console.warn(`Failed to check balance assessment for user ${user.id}:`, err);
     }

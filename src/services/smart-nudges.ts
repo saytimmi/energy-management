@@ -10,6 +10,7 @@ import { trackError } from "./monitor.js";
 import { InlineKeyboard } from "grammy";
 import Anthropic from "@anthropic-ai/sdk";
 import { isOnVacation } from "./awareness.js";
+import { isUserBlocked, handleSendError } from "./blocked-users.js";
 
 // --- Nudge types by priority ---
 
@@ -37,6 +38,8 @@ export async function sendDailyNudges(userIds?: number[]): Promise<void> {
   for (const user of users) {
     try {
       if (isOnVacation(user as any)) continue;
+      const chatId = Number(user.telegramId);
+      if (isUserBlocked(chatId)) continue;
       const nudges = await collectNudges(user.id);
       if (nudges.length === 0) continue;
 
@@ -44,12 +47,12 @@ export async function sendDailyNudges(userIds?: number[]): Promise<void> {
       nudges.sort((a, b) => b.priority - a.priority);
       const best = nudges[0];
 
-      const chatId = Number(user.telegramId);
       await bot.api.sendMessage(chatId, best.text, {
         parse_mode: "Markdown",
         ...(best.keyboard ? { reply_markup: best.keyboard } : {}),
       });
     } catch (err) {
+      handleSendError(err, Number(user.telegramId));
       await trackError("smart-nudges", err, { userId: user.id });
     }
   }

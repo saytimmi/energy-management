@@ -2,6 +2,7 @@ import prisma from "../db.js";
 import { bot } from "../bot.js";
 import { trackError } from "./monitor.js";
 import { isOnVacation } from "./awareness.js";
+import { isUserBlocked, handleSendError } from "./blocked-users.js";
 
 const AREA_LABELS: Record<string, string> = {
   health: "Здоровье", career: "Карьера", relationships: "Отношения",
@@ -31,6 +32,7 @@ export async function sendQuarterlyReview(userIds?: number[]): Promise<void> {
   for (const user of users) {
     try {
       if (isOnVacation(user as any)) continue;
+      if (isUserBlocked(Number(user.telegramId))) continue;
       // Get goals for previous quarter
       const prevGoals = await prisma.goal.findMany({
         where: { userId: user.id, period: prevPeriod },
@@ -69,6 +71,7 @@ export async function sendQuarterlyReview(userIds?: number[]): Promise<void> {
       const chatId = Number(user.telegramId);
       await bot.api.sendMessage(chatId, lines.join("\n"), { parse_mode: "Markdown" });
     } catch (err) {
+      handleSendError(err, Number(user.telegramId));
       await trackError("strategy-cron-quarterly", err, { userId: user.id });
     }
   }
@@ -88,6 +91,7 @@ export async function sendMissionReview(userIds?: number[]): Promise<void> {
   for (const user of users) {
     try {
       if (isOnVacation(user as any)) continue;
+      if (isUserBlocked(Number(user.telegramId))) continue;
       const mission = await prisma.mission.findUnique({
         where: { userId: user.id },
       });
@@ -112,6 +116,7 @@ export async function sendMissionReview(userIds?: number[]): Promise<void> {
         );
       }
     } catch (err) {
+      handleSendError(err, Number(user.telegramId));
       await trackError("strategy-cron-yearly", err, { userId: user.id });
     }
   }
